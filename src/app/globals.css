@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Modernist tokens ── */
+  --color-bg: #f3f2f2;
+  --color-surface: #ffffff;
+  --color-text: #201e1d;
+  --color-muted: #6b6664;
+  --color-divider: #201e1d;
+  --color-hairline: #d6d3d1;
+
+  --color-accent: #ec3013;
+  --color-accent-100: #fde4df;
+  --color-accent-200: #f9bdb1;
+  --color-accent-300: #f59182;
+  --color-accent-400: #f16049;
+  --color-accent-500: #ec3013;
+  --color-accent-600: #c8250c;
+  --color-accent-700: #a11c07;
+  --color-accent-800: #7a1404;
+  --color-accent-900: #530d02;
+
+  --color-neutral-100: #f3f2f2;
+  --color-neutral-200: #e2e0df;
+  --color-neutral-300: #c8c5c3;
+  --color-neutral-400: #9c9795;
+  --color-neutral-500: #6b6664;
+  --color-neutral-600: #4e4a48;
+  --color-neutral-700: #383533;
+  --color-neutral-800: #2a2726;
+  --color-neutral-900: #201e1d;
+
+  --font-heading: Archivo, ui-sans-serif, system-ui, sans-serif;
+  --font-body: Archivo, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Không bo góc, không đổ bóng — quy tắc hệ thống */
+  --radius-none: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-full: 0px;
+
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}
+
+/* Bo góc bị vô hiệu hoá toàn cục: rounded-* không còn tác dụng. */
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-accent-200);
+    color: var(--color-accent-900);
+  }
+
+  [disabled],
+  .is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+}
+
+@utility rule {
+  border-bottom: 2px solid var(--color-divider);
+}
+
+@utility grayscale-photo {
+  filter: grayscale(1) contrast(1.05);
+}
