@@ -64,7 +64,7 @@ export function Checkbox({
   label,
   className,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: React.ReactNode }) {
   return (
     <label className="flex cursor-pointer items-center gap-2.5 text-[14px]">
       <input
@@ -86,7 +86,7 @@ export function Radio({
   label,
   className,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: React.ReactNode }) {
   return (
     <label className="flex cursor-pointer items-center gap-2.5 text-[14px]">
       <input

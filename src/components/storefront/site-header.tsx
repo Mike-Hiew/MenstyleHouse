@@ -1,23 +1,22 @@
 import Link from "next/link";
-import { Search, User, ShoppingBag } from "lucide-react";
-import { db } from "@/lib/db";
+import { User, ShoppingBag } from "lucide-react";
 import { IconButton } from "@/components/ui/button";
+import { getNavCategories } from "@/server/navigation";
+import { SearchBox } from "./search-box";
 
 export async function SiteHeader() {
-  const categories = await db.category.findMany({
-    orderBy: { sort: "asc" },
-    select: { name: true, slug: true },
-  });
+  const categories = await getNavCategories();
 
   return (
     <header className="border-b-2 border-divider bg-surface">
       <div className="flex h-9 items-center justify-between border-b border-hairline px-6 text-[12px] font-semibold uppercase tracking-[0.08em] text-neutral-600">
         <span>Miễn phí giao hàng cho đơn từ 500.000đ</span>
+        {/* Hai trang này thuộc M2/M6 — link giữ đúng mockup, tạm rơi vào trang 404. */}
         <div className="flex items-center gap-5">
-          <Link href="/tra-cuu-don" className="hover:text-accent-700">
+          <Link href={{ pathname: "/tra-cuu-don" }} className="hover:text-accent-700">
             Tra cứu đơn
           </Link>
-          <Link href="/ho-tro" className="hover:text-accent-700">
+          <Link href={{ pathname: "/ho-tro" }} className="hover:text-accent-700">
             Hỗ trợ
           </Link>
         </div>
@@ -31,7 +30,7 @@ export async function SiteHeader() {
           <span className="h-2.5 w-2.5 bg-accent" aria-hidden />
         </Link>
 
-        <nav className="flex flex-1 items-center gap-6 text-[14px] font-semibold">
+        <nav className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-1 text-[14px] font-semibold">
           {categories.map((c) => (
             <Link
               key={c.slug}
@@ -41,12 +40,13 @@ export async function SiteHeader() {
               {c.name}
             </Link>
           ))}
+          <Link href="/san-pham" className="py-1 text-neutral-500 hover:text-accent-700">
+            Tất cả
+          </Link>
         </nav>
 
         <div className="flex items-center gap-1">
-          <IconButton aria-label="Tìm kiếm">
-            <Search size={18} />
-          </IconButton>
+          <SearchBox />
           <IconButton aria-label="Tài khoản">
             <User size={18} />
           </IconButton>
