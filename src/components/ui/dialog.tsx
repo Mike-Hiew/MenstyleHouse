@@ -1,10 +1,15 @@
 "use client";
 
-import * as React from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { IconButton } from "./button";
+import { useOverlay } from "./overlay";
 
+/**
+ * Dưới `lg:` mọi Dialog tự chuyển thành sheet đáy (rộng hết màn, cao tối đa
+ * 85vh, chân nút cố định) — quy tắc trong `docs/RESPONSIVE.md`. Chỉ đổi bằng
+ * CSS nên không có nhánh JSX riêng cho mobile.
+ */
 export function Dialog({
   open,
   onClose,
@@ -20,42 +25,13 @@ export function Dialog({
   children: React.ReactNode;
   actions?: React.ReactNode;
 }) {
-  const panelRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key !== "Tab" || !panelRef.current) return;
-      const items = panelRef.current.querySelectorAll<HTMLElement>(
-        'a[href],button:not([disabled]),input:not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])',
-      );
-      if (!items.length) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    panelRef.current?.querySelector<HTMLElement>("button,input,select,textarea")?.focus();
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [open, onClose]);
+  const panelRef = useOverlay(open, onClose);
 
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/55 p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-neutral-900/55 lg:items-center lg:p-6"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -63,18 +39,24 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        style={{ width }}
-        className="max-h-[88vh] w-full overflow-auto border-2 border-divider bg-surface"
+        style={{ ["--dialog-w" as string]: width + "px" }}
+        className={cn(
+          "flex max-h-[85vh] w-full flex-col border-t-2 border-divider bg-surface",
+          "pb-[env(safe-area-inset-bottom)]",
+          "lg:max-h-[88vh] lg:w-[var(--dialog-w)] lg:border-2 lg:pb-0",
+        )}
       >
-        <div className="flex items-center justify-between border-b-2 border-divider px-5 py-3.5">
+        <div className="flex flex-none items-center justify-between border-b-2 border-divider px-5 py-3.5">
           <h2 className="text-[17px] font-extrabold">{title}</h2>
           <IconButton aria-label="Đóng" onClick={onClose}>
             <X size={18} />
           </IconButton>
         </div>
-        <div className="px-5 py-5">{children}</div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">{children}</div>
+
         {actions ? (
-          <div className={cn("flex justify-end gap-2 border-t-2 border-divider px-5 py-3.5")}>
+          <div className="flex flex-none justify-end gap-2 border-t-2 border-divider px-5 py-3.5">
             {actions}
           </div>
         ) : null}

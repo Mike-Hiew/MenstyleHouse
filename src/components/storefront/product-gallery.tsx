@@ -2,16 +2,17 @@
 
 import * as React from "react";
 import { cn } from "@/lib/cn";
+import { Photo } from "@/components/ui/photo";
 
 type Shot = { id: string; url: string; alt: string };
 
-/** Ảnh lớn + dải thumbnail. Thumbnail là button nên tab và Enter đều dùng được. */
+/** Ảnh lớn + cột thumbnail 88px. Thumbnail là button nên tab và Enter đều dùng được. */
 export function ProductGallery({ images, name }: { images: Shot[]; name: string }) {
   const [active, setActive] = React.useState(0);
 
   if (images.length === 0) {
     return (
-      <div className="flex aspect-[3/4] items-center justify-center border-2 border-divider bg-neutral-200 text-[13px] text-neutral-500">
+      <div className="flex aspect-[3/4] items-center justify-center bg-subtle text-[13px] text-muted">
         Chưa có ảnh sản phẩm
       </div>
     );
@@ -20,39 +21,45 @@ export function ProductGallery({ images, name }: { images: Shot[]; name: string 
   const current = images[Math.min(active, images.length - 1)];
 
   return (
-    // Chặn bề rộng: ảnh 3/4 trên cột rộng sẽ cao hơn màn hình và đẩy cột thông tin trống.
-    <div className="flex w-full max-w-[620px] gap-3">
+    // Mobile: ảnh lớn trên, dải thumbnail cuộn ngang bên dưới.
+    // Desktop: cột thumbnail cố định 88px bên trái như mockup.
+    <div
+      className={cn(
+        "flex flex-col-reverse gap-3",
+        images.length > 1 && "lg:grid lg:grid-cols-[88px_1fr]",
+      )}
+    >
       {images.length > 1 ? (
-        <div className="flex w-20 shrink-0 flex-col gap-2" role="tablist" aria-label={"Ảnh " + name}>
+        <div
+          className="flex gap-2.5 overflow-x-auto lg:flex-col"
+          role="tablist"
+          aria-label={"Ảnh " + name}
+        >
           {images.map((img, i) => (
             <button
               key={img.id}
               role="tab"
               aria-selected={i === active}
-              aria-label={"Ảnh " + (i + 1)}
+              aria-label={"Xem ảnh " + (i + 1)}
               onClick={() => setActive(i)}
               className={cn(
-                "aspect-[3/4] border-2 bg-neutral-200 grayscale-photo",
-                i === active ? "border-accent" : "border-divider hover:border-neutral-500",
+                "relative block aspect-[3/4] w-[68px] flex-none border-2 bg-subtle lg:w-auto",
+                i === active ? "border-divider" : "border-hairline hover:border-faint",
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.url} alt="" className="h-full w-full object-cover" />
+              <Photo src={img.url} alt="" sizes="(min-width: 1024px) 88px, 68px" />
             </button>
           ))}
         </div>
       ) : null}
 
-      <div className="min-w-0 flex-1 border-2 border-divider bg-neutral-200">
-        <div className="aspect-[3/4] grayscale-photo">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={current.url}
-            alt={current.alt}
-            className="h-full w-full object-cover"
-            fetchPriority="high"
-          />
-        </div>
+      <div className="relative aspect-[3/4] w-full bg-subtle">
+        <Photo
+          src={current.url}
+          alt={current.alt}
+          sizes="(min-width: 1024px) 45vw, 100vw"
+          priority
+        />
       </div>
     </div>
   );

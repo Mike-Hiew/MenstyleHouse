@@ -3,8 +3,9 @@
  */
 const vnd = new Intl.NumberFormat("vi-VN");
 
+/** Mockup viết "459.000 ₫" — dấu cách rồi ký hiệu ₫, không phải chữ "đ". */
 export function formatVnd(amount: number): string {
-  return vnd.format(Math.round(amount)) + "đ";
+  return vnd.format(Math.round(amount)) + " ₫";
 }
 
 export function formatVndPlain(amount: number): string {

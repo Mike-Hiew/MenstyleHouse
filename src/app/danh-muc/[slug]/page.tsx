@@ -2,9 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { findCategoryBySlug } from "@/server/navigation";
-import { SiteHeader } from "@/components/storefront/site-header";
+import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
-import { Breadcrumb } from "@/components/storefront/breadcrumb";
 import { CatalogView } from "@/components/storefront/catalog-view";
 import { CatalogSkeleton } from "@/components/storefront/catalog-skeleton";
 import { parseCatalogQuery, serializeCatalogQuery, type RawSearchParams } from "@/lib/catalog";
@@ -31,14 +30,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
 
   return (
     <>
-      <SiteHeader />
-      <Breadcrumb
-        items={[
-          { label: "Trang chủ", href: "/" },
-          { label: "Sản phẩm", href: "/san-pham" },
-          { label: category.name },
-        ]}
-      />
+      <Header />
       <main>
         {/* Kiểm tra danh mục tồn tại xong mới stream — nếu bọc bằng loading.tsx
             thì response đã đi trước và notFound() không đặt được status 404. */}
@@ -49,6 +41,8 @@ export default async function CategoryPage({ params, searchParams }: Params) {
             basePath={basePath}
             params={urlParams}
             title={category.name}
+            crumbs={["TRANG CHỦ", "SẢN PHẨM", category.name.toUpperCase()]}
+            categoryName={category.name}
           />
         </Suspense>
       </main>

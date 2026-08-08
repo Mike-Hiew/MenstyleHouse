@@ -21,9 +21,10 @@ const variants: Record<Variant, string> = {
     "bg-transparent text-accent-700 border-2 border-accent hover:bg-accent-100 active:bg-accent-200",
 };
 
+/** Mobile cao hơn để đạt vùng chạm 44px; nút chính 48px theo docs/RESPONSIVE.md. */
 const sizes: Record<Size, string> = {
-  sm: "h-9 px-3 text-[13px]",
-  md: "h-11 px-4 text-[14px]",
+  sm: "h-11 px-3 text-[13px] lg:h-9",
+  md: "h-12 px-4 text-[14px] lg:h-11",
   lg: "h-13 px-5 text-[15px]",
 };
 

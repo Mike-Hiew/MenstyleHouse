@@ -1,20 +1,13 @@
 import Link from "next/link";
-import { PackageSearch } from "lucide-react";
-import { ProductGrid } from "./product-card";
-import { Pagination } from "./pagination";
-import { ActiveFilterChips, FilterDialogButton, FilterSidebar, SortSelect } from "./catalog-filters";
-import {
-  countActiveFilters,
-  hasActiveFilters,
-  type CatalogQuery,
-  type Scope,
-} from "@/lib/catalog";
+import { Container, Crumbs } from "./shell";
+import { CatalogBody } from "./catalog-body";
+import { describeFilters, hasActiveFilters, type CatalogQuery, type Scope } from "@/lib/catalog";
 import { listProducts, loadFacets } from "@/server/catalog";
-import { clearFilters } from "@/lib/search-params";
+import { formatVnd } from "@/lib/money";
 
 /**
- * Khung danh sách sản phẩm dùng chung cho /san-pham, /danh-muc/[slug] và
- * /tim-kiem. Chỉ khác nhau ở `scope` và phần tiêu đề.
+ * Khung danh sách sản phẩm dùng chung cho /san-pham và /danh-muc/[slug].
+ * Server lo truy vấn, phần tương tác nằm trong `CatalogBody`.
  */
 export async function CatalogView({
   query,
@@ -22,111 +15,102 @@ export async function CatalogView({
   basePath,
   params,
   title,
-  subtitle,
+  crumbs,
+  categoryName,
 }: {
   query: CatalogQuery;
   scope: Scope;
   basePath: string;
   params: URLSearchParams;
   title: string;
-  subtitle?: string;
+  crumbs: string[];
+  categoryName?: string;
 }) {
-  const [page, facets] = await Promise.all([listProducts(query, scope), loadFacets(query, scope)]);
+  const [page, facets] = await Promise.all([
+    listProducts(query, scope),
+    loadFacets(query, scope),
+  ]);
 
-  const shared = {
-    basePath,
-    params: params.toString(),
-    facets,
-    lockCategory: Boolean(scope.categorySlug),
-  };
-  const filtered = hasActiveFilters(query);
+  /*
+   * "N sản phẩm · giá tối đa X" theo mockup (`resultText`). Câu này hiện **cả
+   * khi chưa lọc gì**, với X là giá của sản phẩm đắt nhất — nó nói cho khách
+   * biết thanh kéo đang ở đâu và kéo được tới đâu.
+   *
+   * `gia-tu` không còn ô nhập nào ngoài giao diện nhưng vẫn nhận qua URL, nên
+   * vẫn phải nói đúng khi nó có mặt.
+   */
+  const from = query["gia-tu"];
+  const to = query["gia-den"] || facets.priceCeil;
+  const priceNote =
+    facets.priceCeil === 0
+      ? ""
+      : from
+        ? ` · ${formatVnd(from)} – ${formatVnd(to)}`
+        : " · giá tối đa " + formatVnd(to);
+  const resultText = page.total + " sản phẩm" + priceNote;
 
   return (
-    <div className="px-6 py-8">
-      <header className="mb-6 border-b-2 border-divider pb-4">
-        <h1 className="text-[32px] leading-tight">{title}</h1>
-        {subtitle ? <p className="mt-1.5 text-[14px] text-neutral-600">{subtitle}</p> : null}
-      </header>
+    <Container className="pb-16 pt-6">
+      <Crumbs parts={crumbs} />
 
-      <div className="flex gap-8">
-        <FilterSidebar {...shared} />
-
-        <section className="min-w-0 flex-1">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-hairline pb-3">
-            <div className="flex items-center gap-3">
-              <FilterDialogButton {...shared} activeCount={countActiveFilters(query)} />
-              <p className="text-[13px] text-neutral-600">
-                <strong className="font-mono text-text">{page.total}</strong> sản phẩm
-                {page.pages > 1 ? (
-                  <span className="text-neutral-500">
-                    {" "}
-                    · trang {page.page}/{page.pages}
-                  </span>
-                ) : null}
-              </p>
-            </div>
-            <SortSelect basePath={basePath} params={params.toString()} />
-          </div>
-
-          <ActiveFilterChips {...shared} />
-
-          {page.items.length > 0 ? (
-            <>
-              <ProductGrid products={page.items} />
-              <Pagination
-                page={page.page}
-                pages={page.pages}
-                basePath={basePath}
-                params={params}
-              />
-            </>
-          ) : (
-            <EmptyState filtered={filtered} basePath={basePath} params={params} />
-          )}
-        </section>
-      </div>
-    </div>
+      <CatalogBody
+        basePath={basePath}
+        params={params.toString()}
+        facets={facets}
+        lockCategory={Boolean(scope.categorySlug)}
+        items={page.items}
+        total={page.total}
+        remaining={page.remaining}
+        shown={query.xem}
+        title={title}
+        resultText={resultText}
+        empty={
+          <EmptyState
+            query={query}
+            basePath={basePath}
+            params={params}
+            categoryName={categoryName}
+          />
+        }
+      />
+    </Container>
   );
 }
 
 function EmptyState({
-  filtered,
+  query,
   basePath,
   params,
+  categoryName,
 }: {
-  filtered: boolean;
+  query: CatalogQuery;
   basePath: string;
   params: URLSearchParams;
+  categoryName?: string;
 }) {
-  const reset = clearFilters(params).toString();
+  const filtered = hasActiveFilters(query);
+  const keep = new URLSearchParams();
+  const q = params.get("q");
+  if (q) keep.set("q", q);
 
   return (
-    <div className="flex flex-col items-center gap-4 border-2 border-divider bg-surface px-6 py-24 text-center">
-      <PackageSearch size={40} className="text-neutral-400" aria-hidden />
-      <h2 className="text-[20px]">
-        {filtered ? "Không có sản phẩm nào khớp bộ lọc" : "Danh mục này chưa có sản phẩm"}
+    <div className="border border-dashed border-border-soft bg-subtle px-5 py-12 lg:px-8 lg:py-16">
+      <h2 className="mb-2.5 text-[20px] lg:text-[22px]">
+        {filtered ? "Chưa có sản phẩm nào khớp bộ lọc" : "Danh mục này chưa có sản phẩm"}
       </h2>
-      <p className="max-w-md text-[14px] text-neutral-600">
+      <p className="mb-5 max-w-[420px] text-[14px] text-muted">
         {filtered
-          ? "Thử bỏ bớt một vài điều kiện, hoặc xem toàn bộ catalog."
+          ? "Thử bỏ bớt một điều kiện, hoặc nâng mức giá tối đa lên. Hiện bạn đang lọc: " +
+            describeFilters(query, categoryName) +
+            "."
           : "Hàng đang được nhập về. Bạn xem tạm các danh mục khác nhé."}
       </p>
-      <div className="flex flex-wrap justify-center gap-3 pt-1">
-        {filtered ? (
-          <Link
-            href={{ pathname: basePath, query: reset }}
-            className="inline-flex h-11 items-center border-2 border-divider px-4 text-[14px] font-semibold hover:bg-neutral-200"
-          >
-            Xoá bộ lọc
-          </Link>
-        ) : null}
-        <Link
-          href="/san-pham"
-          className="inline-flex h-11 items-center bg-accent px-4 text-[14px] font-semibold text-white hover:bg-accent-600"
-        >
-          Xem tất cả sản phẩm
-        </Link>
-      </div>
+      <Link
+        href={{ pathname: filtered ? basePath : "/san-pham", query: keep.toString() }}
+        className="inline-flex min-h-12 items-center bg-accent px-6 text-[14px] font-extrabold text-bg hover:bg-accent-600"
+      >
+        {filtered ? "XOÁ BỘ LỌC" : "XEM TẤT CẢ SẢN PHẨM"}
+      </Link>
     </div>
   );
 }

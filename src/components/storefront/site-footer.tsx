@@ -1,74 +1,85 @@
 import Link from "next/link";
-import { getNavCategories } from "@/server/navigation";
+import type { Route } from "next";
+import { Container } from "./shell";
 
-const HELP = [
-  { label: "Tra cứu đơn", href: "/tra-cuu-don" },
-  { label: "Hỗ trợ", href: "/ho-tro" },
-  { label: "Chính sách đổi trả", href: "/ho-tro" },
-  { label: "Hướng dẫn chọn size", href: "/san-pham" },
+/** Footer theo mockup: nền khối phụ, cột giới thiệu rộng hơn, đáy mono. */
+const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
+  {
+    title: "MUA SẮM",
+    links: [
+      { label: "Tất cả sản phẩm", href: "/san-pham" },
+      { label: "Hàng sale", href: "/san-pham?km=1" },
+      { label: "Hướng dẫn chọn size", href: "/san-pham" },
+    ],
+  },
+  {
+    title: "HỖ TRỢ",
+    links: [
+      { label: "Tra cứu đơn hàng", href: "/tra-cuu-don" },
+      { label: "Chính sách vận chuyển", href: "/chinh-sach/van-chuyen" },
+      { label: "Chính sách đổi trả", href: "/chinh-sach/doi-tra" },
+      { label: "Chính sách bảo mật", href: "/chinh-sach/bao-mat" },
+      { label: "Liên hệ & FAQ", href: "/ho-tro" },
+    ],
+  },
+  {
+    title: "CỬA HÀNG",
+    links: [
+      // Giới thiệu cửa hàng = trang chủ (mockup: `['Giới thiệu cửa hàng','home']`).
+      { label: "Giới thiệu cửa hàng", href: "/" },
+      { label: "Tài khoản của bạn", href: "/tai-khoan" },
+      // Chưa có trang tuyển dụng; đưa về form liên hệ như ba link chính sách,
+      // thay vì thả về trang chủ như mockup — trang chủ không trả lời được câu
+      // hỏi người ta bấm vào để hỏi.
+      { label: "Tuyển dụng", href: "/ho-tro" },
+    ],
+  },
 ];
 
-export async function SiteFooter() {
-  const categories = await getNavCategories();
-
+export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t-2 border-divider bg-surface">
-      <div className="grid grid-cols-1 gap-px bg-divider md:grid-cols-4">
-        <div className="bg-surface px-6 py-8">
-          <div className="mb-3 flex items-baseline gap-2">
-            <span className="text-[17px] font-extrabold tracking-[-0.03em]">MEN STYLE HOUSE</span>
-            <span className="h-2 w-2 bg-accent" aria-hidden />
+    <footer className="mt-16 border-t-2 border-divider bg-subtle">
+      <Container className="grid grid-cols-1 gap-8 py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-0">
+        <div className="md:pr-8">
+          <div className="mb-3.5 flex items-center gap-2.5">
+            <span className="block h-5 w-5 bg-accent" aria-hidden />
+            <span className="text-[16px] font-extrabold uppercase tracking-[-0.02em]">
+              Men Style House
+            </span>
           </div>
-          <p className="max-w-xs text-[13px] text-neutral-600">
-            Quần áo nam đúng dáng, đúng giá. Chất liệu thật, số đo thật, đổi trả
-            trong 15 ngày.
+          <p className="text-[13.5px] leading-[1.7] text-muted">
+            Đồ nam cơ bản, form chuẩn người Việt.
+            <br />
+            142 Nguyễn Văn Trỗi, Phú Nhuận, TP.HCM
+            <br />
+            1900 6060 · cskh@menstylehouse.vn
           </p>
         </div>
 
-        <nav className="bg-surface px-6 py-8" aria-label="Danh mục">
-          <h2 className="mb-3 text-[12px] font-bold uppercase tracking-[0.08em] text-neutral-500">
-            Danh mục
-          </h2>
-          <ul className="flex flex-col gap-1.5 text-[13px]">
-            {categories.map((c) => (
-              <li key={c.slug}>
-                <Link href={{ pathname: "/danh-muc/" + c.slug }} className="hover:text-accent-700">
-                  {c.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        {COLUMNS.map((col) => (
+          <nav key={col.title} aria-label={col.title}>
+            <h2 className="label-tech mb-3.5 font-bold tracking-[0.12em]">{col.title}</h2>
+            <ul className="flex flex-col gap-2.5">
+              {col.links.map((l) => (
+                <li key={l.label}>
+                  <Link
+                    href={l.href as Route}
+                    className="flex min-h-11 items-center text-[13.5px] hover:text-accent-700 lg:min-h-0"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
+      </Container>
 
-        <nav className="bg-surface px-6 py-8" aria-label="Hỗ trợ khách hàng">
-          <h2 className="mb-3 text-[12px] font-bold uppercase tracking-[0.08em] text-neutral-500">
-            Hỗ trợ
-          </h2>
-          <ul className="flex flex-col gap-1.5 text-[13px]">
-            {HELP.map((h) => (
-              <li key={h.label}>
-                <Link href={{ pathname: h.href }} className="hover:text-accent-700">
-                  {h.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <div className="bg-surface px-6 py-8">
-          <h2 className="mb-3 text-[12px] font-bold uppercase tracking-[0.08em] text-neutral-500">
-            Liên hệ
-          </h2>
-          <ul className="flex flex-col gap-1.5 text-[13px] text-neutral-600">
-            <li className="font-mono">1900 6789</li>
-            <li className="font-mono">hotro@menstylehouse.vn</li>
-            <li>8:00 – 21:00, tất cả các ngày</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="border-t-2 border-divider px-6 py-4 text-[12px] text-neutral-500">
-        © 2026 Men Style House. Giá đã bao gồm VAT.
+      <div className="border-t border-hairline">
+        <Container className="label-tech flex flex-wrap justify-between gap-2 py-4.5 font-bold">
+          <span>© 2026 MEN STYLE HOUSE — MST 0316 998 221</span>
+          <span>GIÁ ĐÃ GỒM VAT</span>
+        </Container>
       </div>
     </footer>
   );

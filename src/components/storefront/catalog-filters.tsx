@@ -1,301 +1,291 @@
 "use client";
 
 import * as React from "react";
-import type { Route } from "next";
-import { useRouter } from "next/navigation";
-import { SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { Button } from "@/components/ui/button";
-import { Checkbox, Select } from "@/components/ui/input";
-import { Dialog } from "@/components/ui/dialog";
 import { SORTS, type Facets, type SortKey } from "@/lib/catalog";
-import { clearFilters, qs, readList, setValue, toggleValue } from "@/lib/search-params";
+import { readList, setValue, toggleValue } from "@/lib/search-params";
+import { formatVnd } from "@/lib/money";
 
 /**
- * Bộ lọc điều khiển bằng URL: mọi thao tác đẩy một query string mới rồi để
- * server tính lại. Không giữ trạng thái lọc ở client nên chia sẻ link là đủ.
+ * Các nhóm lọc là thành phần *điều khiển được*: nhận một `URLSearchParams` và
+ * trả về bản mới. Nhờ vậy desktop áp ngay còn mobile giữ bản nháp trong sheet
+ * rồi mới áp khi bấm "Áp dụng" — khác biệt có chủ ý, ghi trong
+ * `docs/RESPONSIVE.md`.
+ *
+ * Bố cục và nội dung bám sheet lọc của mockup: danh mục và màu là checkbox
+ * **có số đếm**, size là chip (hết hàng thì mờ và không bấm được), giá là **một
+ * thanh kéo "giá tối đa"** — mockup chỉ có một cận trên, không có ô "giá từ".
  */
 
-type Shared = {
-  basePath: string;
-  /** Query string hiện tại, không có dấu `?`. */
-  params: string;
+export type FilterFieldsProps = {
+  value: URLSearchParams;
+  onChange: (next: URLSearchParams) => void;
   facets: Facets;
   /** Trang /danh-muc/[slug] khoá danh mục nên ẩn nhóm lọc danh mục. */
   lockCategory?: boolean;
 };
 
-function useNavigate(basePath: string, params: string) {
-  const router = useRouter();
-  const [pending, startTransition] = React.useTransition();
+const LABEL = "label-tech mb-2.5 font-bold";
 
-  const go = React.useCallback(
-    (next: URLSearchParams) => {
-      startTransition(() => {
-        router.push((basePath + qs(next)) as Route, { scroll: false });
-      });
-    },
-    [basePath, router],
-  );
-
-  const current = React.useCallback(() => new URLSearchParams(params), [params]);
-
-  return { go, current, pending };
-}
-
-/* ── Một nhóm lọc ─────────────────────────────────────────── */
-
-function FacetGroup({
-  title,
-  paramKey,
-  options,
-  selected,
-  onToggle,
-}: {
-  title: string;
-  paramKey: string;
-  options: Facets["colors"];
-  selected: string[];
-  onToggle: (key: string, value: string) => void;
-}) {
-  if (options.length === 0) return null;
+export function FilterFields({ value, onChange, facets, lockCategory }: FilterFieldsProps) {
+  const cats = readList(value, "danh-muc");
+  const colors = readList(value, "mau");
+  const sizes = readList(value, "size");
+  const brands = readList(value, "thuong-hieu");
 
   return (
-    <fieldset className="border-b border-hairline px-5 py-4 last:border-b-0">
-      <legend className="mb-2.5 text-[12px] font-bold uppercase tracking-[0.08em] text-neutral-600">
-        {title}
-      </legend>
-      <div className="flex flex-col gap-2">
-        {options.map((o) => {
-          const checked = selected.includes(o.value);
-          const off = o.count === 0 && !checked;
-          return (
-            <Checkbox
-              key={o.value}
-              checked={checked}
-              disabled={off}
-              onChange={() => onToggle(paramKey, o.value)}
-              label={
-                <span className={cn("flex flex-1 items-center gap-2", off && "text-neutral-400")}>
-                  {o.hex ? (
-                    <span
-                      className="h-3.5 w-3.5 shrink-0 border border-hairline"
-                      style={{ background: o.hex }}
-                      aria-hidden
-                    />
-                  ) : null}
-                  <span className="flex-1">{o.label}</span>
-                  <span className="font-mono text-[12px] text-neutral-500">{o.count}</span>
-                </span>
-              }
-            />
-          );
-        })}
-      </div>
-    </fieldset>
-  );
-}
-
-/* ── Bảng lọc dùng chung cho sidebar và dialog ─────────────── */
-
-function FilterPanel({ basePath, params, facets, lockCategory }: Shared) {
-  const { go, current } = useNavigate(basePath, params);
-  const sp = current();
-
-  const onToggle = (key: string, value: string) => go(toggleValue(sp, key, value));
-
-  return (
-    <div>
+    <>
       {lockCategory ? null : (
-        <FacetGroup
-          title="Danh mục"
-          paramKey="danh-muc"
-          options={facets.categories}
-          selected={readList(sp, "danh-muc")}
-          onToggle={onToggle}
-        />
+        <section className="mb-6">
+          <div className={LABEL}>DANH MỤC</div>
+          {facets.categories.map((c) => (
+            <CountRow
+              key={c.value}
+              label={c.label}
+              count={c.count}
+              checked={cats.includes(c.value)}
+              onToggle={() => onChange(toggleValue(value, "danh-muc", c.value))}
+            />
+          ))}
+        </section>
       )}
 
-      <FacetGroup
-        title="Khoảng giá"
-        paramKey="gia"
-        options={facets.prices}
-        selected={readList(sp, "gia")}
-        onToggle={onToggle}
-      />
-
-      <FacetGroup
-        title="Màu sắc"
-        paramKey="mau"
-        options={facets.colors}
-        selected={readList(sp, "mau")}
-        onToggle={onToggle}
-      />
-
-      <FacetGroup
-        title="Kích cỡ"
-        paramKey="size"
-        options={facets.sizes}
-        selected={readList(sp, "size")}
-        onToggle={onToggle}
-      />
-
-      <FacetGroup
-        title="Thương hiệu"
-        paramKey="thuong-hieu"
-        options={facets.brands}
-        selected={readList(sp, "thuong-hieu")}
-        onToggle={onToggle}
-      />
-
-      <fieldset className="border-b border-hairline px-5 py-4 last:border-b-0">
-        <legend className="mb-2.5 text-[12px] font-bold uppercase tracking-[0.08em] text-neutral-600">
-          Khuyến mãi
-        </legend>
-        <Checkbox
-          checked={sp.get("km") === "1"}
-          disabled={facets.sale === 0 && sp.get("km") !== "1"}
-          onChange={() => go(setValue(sp, "km", sp.get("km") === "1" ? null : "1"))}
-          label={
-            <span className="flex flex-1 items-center gap-2">
-              <span className="flex-1">Đang giảm giá</span>
-              <span className="font-mono text-[12px] text-neutral-500">{facets.sale}</span>
-            </span>
-          }
-        />
-      </fieldset>
-    </div>
-  );
-}
-
-export function FilterSidebar(props: Shared) {
-  return (
-    <aside
-      aria-label="Bộ lọc sản phẩm"
-      className="hidden w-64 shrink-0 self-start border-2 border-divider bg-surface lg:block"
-    >
-      <h2 className="border-b-2 border-divider px-5 py-3 text-[13px] font-extrabold uppercase tracking-[0.08em]">
-        Bộ lọc
-      </h2>
-      <FilterPanel {...props} />
-    </aside>
-  );
-}
-
-/** Trên màn hẹp bộ lọc nằm trong dialog — dialog đã bẫy focus và đóng bằng Esc. */
-export function FilterDialogButton({ activeCount, ...props }: Shared & { activeCount: number }) {
-  const [open, setOpen] = React.useState(false);
-
-  return (
-    <div className="lg:hidden">
-      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
-        <SlidersHorizontal size={15} />
-        Bộ lọc
-        {activeCount > 0 ? (
-          <span className="ml-1 bg-accent px-1.5 py-0.5 font-mono text-[11px] text-white">
-            {activeCount}
-          </span>
-        ) : null}
-      </Button>
-
-      <Dialog open={open} onClose={() => setOpen(false)} title="Bộ lọc" width={420}>
-        <div className="-mx-5 -my-5">
-          <FilterPanel {...props} />
+      <section className="mb-6">
+        <div className={LABEL}>SIZE</div>
+        <div className="flex flex-wrap gap-1.5">
+          {facets.sizes.map((s) => {
+            const on = sizes.includes(s.value);
+            const out = s.count === 0 && !on;
+            return (
+              <button
+                key={s.value}
+                type="button"
+                aria-pressed={on}
+                disabled={out}
+                title={out ? s.label + " — không có sản phẩm nào" : s.label}
+                onClick={() => onChange(toggleValue(value, "size", s.value))}
+                className={cn(
+                  // Ô size là đích chạm thật: tối thiểu 44px trên mobile.
+                  "flex h-11 min-w-11 items-center justify-center border px-3.5 text-[12px] font-extrabold lg:h-9 lg:min-w-9",
+                  on
+                    ? "border-accent bg-accent text-bg"
+                    : "border-border-soft hover:bg-subtle",
+                  out && "opacity-40",
+                )}
+              >
+                {s.value}
+              </button>
+            );
+          })}
         </div>
-      </Dialog>
-    </div>
+      </section>
+
+      {facets.colors.length > 0 ? (
+        <section className="mb-6">
+          <div className={LABEL}>MÀU</div>
+          <div className="flex flex-wrap gap-2">
+            {facets.colors.map((c) => {
+              const on = colors.includes(c.value);
+              const out = c.count === 0 && !on;
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  aria-label={c.label + " — " + c.count + " sản phẩm"}
+                  aria-pressed={on}
+                  disabled={out}
+                  title={c.label + " · " + c.count}
+                  onClick={() => onChange(toggleValue(value, "mau", c.value))}
+                  className={cn(
+                    "h-11 w-11 border-2 p-[3px]",
+                    on ? "border-accent" : "border-hairline hover:border-faint",
+                    out && "opacity-30",
+                  )}
+                >
+                  <span className="block h-full w-full" style={{ background: c.hex }} />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      <PriceSlider
+        floor={facets.priceFloor}
+        ceil={facets.priceCeil}
+        value={value.get("gia-den") ?? ""}
+        onCommit={(v) => onChange(setValue(value, "gia-den", v))}
+      />
+
+      <section className="mb-6">
+        <div className={LABEL}>THƯƠNG HIỆU</div>
+        {facets.brands.map((b) => (
+          <CountRow
+            key={b.value}
+            label={b.label}
+            count={b.count}
+            checked={brands.includes(b.value)}
+            onToggle={() => onChange(toggleValue(value, "thuong-hieu", b.value))}
+          />
+        ))}
+      </section>
+
+      <section className="mb-5">
+        <div className={LABEL}>KHUYẾN MÃI</div>
+        <CountRow
+          label="Đang giảm giá"
+          count={facets.sale}
+          checked={value.get("km") === "1"}
+          onToggle={() => onChange(setValue(value, "km", value.get("km") === "1" ? null : "1"))}
+        />
+      </section>
+    </>
   );
 }
 
-export function SortSelect({ basePath, params }: Pick<Shared, "basePath" | "params">) {
-  const { go, current } = useNavigate(basePath, params);
-  const sp = current();
-  const value = (sp.get("sap-xep") ?? "moi-nhat") as SortKey;
-
+function CountRow({
+  label,
+  count,
+  checked,
+  onToggle,
+}: {
+  label: string;
+  count: number;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  const off = count === 0 && !checked;
   return (
-    <label className="flex items-center gap-2 text-[13px] font-semibold text-neutral-600">
-      <span className="whitespace-nowrap uppercase tracking-[0.08em]">Sắp xếp</span>
-      <Select
-        className="h-9 w-48 text-[13px]"
-        value={value}
-        onChange={(e) => go(setValue(sp, "sap-xep", e.target.value))}
-      >
-        {Object.entries(SORTS).map(([key, label]) => (
-          <option key={key} value={key}>
-            {label}
-          </option>
-        ))}
-      </Select>
+    <label
+      className={cn(
+        "flex min-h-11 items-center gap-2.5 text-[13.5px] lg:min-h-9",
+        off ? "cursor-not-allowed text-neutral-400" : "cursor-pointer",
+      )}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={off}
+        onChange={onToggle}
+        className="h-[18px] w-[18px] flex-none accent-accent"
+      />
+      <span className="flex-1">{label}</span>
+      <span className="font-mono text-[12px] text-faint">{count}</span>
     </label>
   );
 }
 
-/* ── Thẻ bộ lọc đang bật ──────────────────────────────────── */
+const BUOC = 10_000;
 
-const CHIP_GROUPS: { key: string; prefix: string }[] = [
-  { key: "danh-muc", prefix: "" },
-  { key: "gia", prefix: "" },
-  { key: "mau", prefix: "Màu " },
-  { key: "size", prefix: "Size " },
-  { key: "thuong-hieu", prefix: "" },
-];
+/**
+ * Một thanh kéo "giá tối đa", đúng mockup:
+ * `<input type="range" min max step="10000" aria-label="Giá tối đa">`.
+ *
+ * Ba điều đáng ghi:
+ *
+ * 1. **Cận trên là giá của sản phẩm đắt nhất đang xem**, không phải một con số
+ *    viết cứng. Kéo hết thanh mà vẫn còn hàng bị lọc mất là thanh nói dối.
+ * 2. **Kéo thì không tải lại, thả tay mới tải.** `onChange` của `type=range`
+ *    bắn liên tục theo từng pixel; áp thẳng vào URL là mỗi lần kéo gọi server
+ *    vài chục lần. Số bên trên vẫn chạy theo tay nhờ trạng thái cục bộ.
+ * 3. **Kéo hết sang phải là bỏ lọc** (xoá tham số khỏi URL), chứ không phải lọc
+ *    "≤ giá cao nhất" — giữ tham số lại thì bộ đếm bộ lọc báo đang bật một cái
+ *    lọc chẳng loại được gì.
+ */
+function PriceSlider({
+  floor,
+  ceil,
+  value,
+  onCommit,
+}: {
+  floor: number;
+  ceil: number;
+  value: string;
+  onCommit: (v: string | null) => void;
+}) {
+  const trong = (v: number) => Math.min(ceil, Math.max(floor, v));
+  const tuUrl = value ? trong(Number(value)) : ceil;
 
-export function ActiveFilterChips({
-  basePath,
-  params,
-  facets,
-  lockCategory,
-}: Shared) {
-  const { go, current } = useNavigate(basePath, params);
-  const sp = current();
+  const [draft, setDraft] = React.useState(tuUrl);
+  React.useEffect(() => setDraft(tuUrl), [tuUrl]);
 
-  const labelFor = (key: string, value: string) => {
-    const pool =
-      key === "danh-muc"
-        ? facets.categories
-        : key === "gia"
-          ? facets.prices
-          : key === "mau"
-            ? facets.colors
-            : key === "size"
-              ? facets.sizes
-              : facets.brands;
-    return pool.find((o) => o.value === value)?.label ?? value;
+  // Còn một mức giá duy nhất thì thanh kéo không kéo được đi đâu; ẩn đi thay vì
+  // bày ra một ô điều khiển bấm vào không có tác dụng gì.
+  if (!(ceil > floor)) return null;
+
+  const commit = (v: number) => {
+    const next = v >= ceil ? null : String(v);
+    if ((next ?? "") === value) return;
+    onCommit(next);
   };
 
-  const chips: { key: string; value: string; text: string }[] = [];
-  for (const g of CHIP_GROUPS) {
-    if (lockCategory && g.key === "danh-muc") continue;
-    for (const v of readList(sp, g.key)) {
-      chips.push({ key: g.key, value: v, text: g.prefix + labelFor(g.key, v) });
-    }
-  }
-  if (sp.get("km") === "1") chips.push({ key: "km", value: "1", text: "Đang giảm giá" });
-
-  if (chips.length === 0) return null;
-
   return (
-    <div className="flex flex-wrap items-center gap-2 pb-4">
-      {chips.map((c) => (
-        <button
-          key={c.key + c.value}
-          onClick={() =>
-            go(c.key === "km" ? setValue(sp, "km", null) : toggleValue(sp, c.key, c.value))
-          }
-          className="inline-flex items-center gap-1.5 border-2 border-divider px-2.5 py-1 text-[12px] font-semibold hover:bg-neutral-200"
-        >
-          {c.text}
-          <X size={13} aria-hidden />
-          <span className="sr-only">Bỏ lọc</span>
-        </button>
-      ))}
+    <section className="mb-6">
+      <div className={LABEL}>GIÁ TỐI ĐA — {formatVnd(draft)}</div>
+      <input
+        type="range"
+        aria-label="Giá tối đa"
+        min={floor}
+        max={ceil}
+        step={BUOC}
+        value={draft}
+        onChange={(e) => setDraft(Number(e.target.value))}
+        onPointerUp={(e) => commit(Number(e.currentTarget.value))}
+        onKeyUp={(e) => commit(Number(e.currentTarget.value))}
+        onBlur={(e) => commit(Number(e.currentTarget.value))}
+        className="h-11 w-full accent-accent lg:h-8"
+      />
+    </section>
+  );
+}
 
+/** Cột lọc cố định bên trái, chỉ hiện từ `lg:`. Mỗi thao tác áp dụng ngay. */
+export function FilterSidebar({
+  value,
+  onChange,
+  facets,
+  lockCategory,
+  onClear,
+}: FilterFieldsProps & { onClear: () => void }) {
+  return (
+    <aside
+      aria-label="Bộ lọc sản phẩm"
+      className="hidden self-start border-t-2 border-divider pt-4 lg:sticky lg:top-[120px] lg:block"
+    >
+      <h2 className="mb-4 text-[16px] font-extrabold">Bộ lọc</h2>
+      <FilterFields
+        value={value}
+        onChange={onChange}
+        facets={facets}
+        lockCategory={lockCategory}
+      />
       <button
-        onClick={() => go(clearFilters(sp))}
-        className="px-1 text-[12px] font-bold uppercase tracking-[0.08em] text-accent-700 hover:underline"
+        type="button"
+        onClick={onClear}
+        className="w-full border border-border-soft px-3.5 py-2.5 text-left text-[13px] font-extrabold hover:bg-subtle"
       >
-        Xoá tất cả
+        XOÁ BỘ LỌC
       </button>
-    </div>
+    </aside>
+  );
+}
+
+export const SORT_ENTRIES = Object.entries(SORTS) as [SortKey, string][];
+
+/** Ô sắp xếp của desktop; mobile dùng sheet nên ẩn đi. */
+export function SortSelect({ value, onChange }: { value: SortKey; onChange: (v: string) => void }) {
+  return (
+    <select
+      aria-label="Sắp xếp"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="hidden border border-border-soft bg-bg px-3.5 py-2.5 text-[13px] font-semibold lg:block"
+    >
+      {SORT_ENTRIES.map(([key, label]) => (
+        <option key={key} value={key}>
+          {label}
+        </option>
+      ))}
+    </select>
   );
 }

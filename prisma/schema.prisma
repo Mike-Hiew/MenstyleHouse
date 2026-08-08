@@ -17,20 +17,32 @@ enum Role {
 }
 
 model User {
-  id            String       @id @default(cuid())
-  email         String?      @unique
-  phone         String?      @unique
-  phoneVerified Boolean      @default(false)
-  passwordHash  String?
-  name          String
-  role          Role         @default(CUSTOMER)
-  pointBalance  Int          @default(0)
-  createdAt     DateTime     @default(now())
-  addresses     Address[]
-  orders        Order[]
-  pointEntries  PointEntry[]
-  carts         Cart[]
-  tickets       Ticket[]
+  id             String          @id @default(cuid())
+  email          String?         @unique
+  phone          String?         @unique
+  phoneVerified  Boolean         @default(false)
+  passwordHash   String?
+  name           String
+  role           Role            @default(CUSTOMER)
+  pointBalance   Int             @default(0)
+  /// Tài khoản bị tắt không đăng nhập được và bị đá khỏi phiên đang mở. Dùng
+  /// thay cho xoá: người đã phát hành hoá đơn thì không xoá được.
+  active         Boolean         @default(true)
+  /// Mọi phiên phát trước mốc này coi như chết. Phiên là JWT nên không thu hồi
+  /// từng cái được; đẩy mốc lên là giết sạch phiên cũ trong một lần ghi. Đổi
+  /// mật khẩu đẩy mốc này — nếu không, người chiếm được tài khoản vẫn ngồi
+  /// trong đó sau khi chủ tài khoản đã đổi mật khẩu.
+  sessionsValidFrom DateTime     @default(now())
+  createdAt      DateTime        @default(now())
+  addresses      Address[]
+  orders         Order[]
+  pointEntries   PointEntry[]
+  carts          Cart[]
+  tickets        Ticket[]
+  invoicesIssued Invoice[]
+  invitesSent    StaffInvite[]   @relation("InviteAuthor")
+  passwordResets PasswordReset[]
+  wishlist       Wishlist[]
 }
 
 model Address {
@@ -92,25 +104,33 @@ enum ProductStatus {
 }
 
 model Product {
-  id          String         @id @default(cuid())
-  name        String
-  slug        String         @unique
-  description String
-  categoryId  String
-  category    Category       @relation(fields: [categoryId], references: [id])
-  brandId     String?
-  brand       Brand?         @relation(fields: [brandId], references: [id])
-  basePrice   Int
-  salePrice   Int?
-  status      ProductStatus  @default(DRAFT)
-  material    String?
-  careNote    String?
-  ratingAvg   Float          @default(0)
-  ratingCount Int            @default(0)
-  images      ProductImage[]
-  variants    Variant[]
-  reviews     Review[]
-  createdAt   DateTime       @default(now())
+  id             String         @id @default(cuid())
+  /// Mã sản phẩm `MSH-136`. SKU của mọi biến thể dựng từ đây, nên nó phải là
+  /// một cột thật chứ không phải mẩu chữ moi ra từ `name` — đổi tên sản phẩm
+  /// không được làm đổi SKU đã in trên tem và đã nằm trong đơn cũ.
+  code           String         @unique
+  name           String
+  slug           String         @unique
+  description    String
+  /// Thẻ tiêu đề và mô tả cho máy tìm kiếm; bỏ trống thì dùng tên và mô tả.
+  seoTitle       String?
+  seoDescription String?
+  categoryId     String
+  category       Category       @relation(fields: [categoryId], references: [id])
+  brandId        String?
+  brand          Brand?         @relation(fields: [brandId], references: [id])
+  basePrice      Int
+  salePrice      Int?
+  status         ProductStatus  @default(DRAFT)
+  material       String?
+  careNote       String?
+  ratingAvg      Float          @default(0)
+  ratingCount    Int            @default(0)
+  images         ProductImage[]
+  variants       Variant[]
+  reviews        Review[]
+  wishedBy       Wishlist[]
+  createdAt      DateTime       @default(now())
 
   @@index([categoryId, status])
 }
@@ -119,9 +139,36 @@ model ProductImage {
   id        String  @id @default(cuid())
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Link ngoài, hoặc /api/anh/<blobId>-<checksum> khi ảnh nằm trong DB.
   url       String
   alt       String
   sort      Int     @default(0)
+
+  /// Nhiều ảnh dùng chung một blob được: hai sản phẩm cùng một tấm lookbook thì
+  /// chỉ lưu bytes một lần. Đặt `@unique` ở đây là vô hiệu hoá luôn việc dùng
+  /// lại theo checksum, vì ảnh thứ hai sẽ đâm vào ràng buộc.
+  blobId String?
+  blob   ProductImageBlob? @relation(fields: [blobId], references: [id], onDelete: SetNull)
+
+  @@index([blobId])
+}
+
+/// Ảnh lưu thẳng trong DB — quyết định tạm cho giai đoạn thử nghiệm, xem M4.5
+/// trong BUILD-PLAN.md. Tách khỏi `ProductImage` để truy vấn catalog không bao
+/// giờ kéo theo bytes: mỗi trang danh sách 12 sản phẩm sẽ là hàng chục MB.
+model ProductImageBlob {
+  id          String         @id @default(cuid())
+  data        Bytes
+  contentType String         @default("image/webp")
+  width       Int
+  height      Int
+  byteSize    Int
+  /// Băm nội dung; nằm trong URL để cache đặt được `immutable`.
+  checksum    String
+  createdAt   DateTime       @default(now())
+  images      ProductImage[]
+
+  @@index([checksum, byteSize])
 }
 
 model Variant {
@@ -200,20 +247,20 @@ enum Carrier {
 }
 
 model Order {
-  id            String        @id @default(cuid())
-  code          String        @unique
-  userId        String?
-  user          User?         @relation(fields: [userId], references: [id])
-  isGuest       Boolean       @default(true)
+  id      String  @id @default(cuid())
+  code    String  @unique
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id])
+  isGuest Boolean @default(true)
 
-  receiver      String
-  phone         String
-  email         String?
-  province      String
-  district      String
-  ward          String
-  street        String
-  note          String?
+  receiver String
+  phone    String
+  email    String?
+  province String
+  district String
+  ward     String
+  street   String
+  note     String?
 
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(UNPAID)
@@ -221,19 +268,30 @@ model Order {
   carrier       Carrier?
   trackingCode  String?
 
-  subtotal      Int
-  discount      Int           @default(0)
-  shippingFee   Int           @default(0)
-  total         Int
-  pointsEarned  Int           @default(0)
-  pointsUsed    Int           @default(0)
+  subtotal     Int
+  discount     Int @default(0)
+  shippingFee  Int @default(0)
+  total        Int
+  pointsEarned Int @default(0)
+  pointsUsed   Int @default(0)
 
-  couponCode    String?
-  items         OrderItem[]
-  events        OrderEvent[]
-  invoice       Invoice?
-  payments      Payment[]
-  createdAt     DateTime      @default(now())
+  couponCode String?
+
+  /// Khách tick "Xuất hoá đơn công ty (VAT)" lúc đặt. Chỉ là *yêu cầu* — hoá
+  /// đơn phải do kế toán phát hành mới có số, vì dãy số hoá đơn đã cấp thì
+  /// không được thủng lỗ. Snapshot luôn thông tin người mua như luật số 3 với
+  /// địa chỉ giao: đơn đã đặt thì không đổi theo hồ sơ công ty sau này.
+  vatRequested Boolean @default(false)
+  vatBuyerName String?
+  vatTaxCode   String?
+  vatAddress   String?
+  vatEmail     String?
+
+  items     OrderItem[]
+  events    OrderEvent[]
+  invoice   Invoice?
+  payments  Payment[]
+  createdAt DateTime     @default(now())
 
   @@index([status, createdAt])
   @@index([phone])
@@ -281,10 +339,15 @@ model Payment {
 
 // ─── Hoá đơn GTGT ────────────────────────────────────────────
 model Invoice {
-  id          String   @id @default(cuid())
-  orderId     String   @unique
-  order       Order    @relation(fields: [orderId], references: [id])
-  number      String   @unique
+  id      String @id @default(cuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  /// Ký hiệu mẫu số hoá đơn, ví dụ `1C26TMS` — chữ số cuối của năm nằm trong
+  /// đó nên dãy số đánh lại từ 1 mỗi năm. Vì vậy `number` chỉ duy nhất *trong*
+  /// một ký hiệu, không duy nhất toàn bảng.
+  symbol      String
+  number      String
   buyerName   String
   buyerTax    String?
   buyerAddr   String
@@ -293,7 +356,13 @@ model Invoice {
   vatAmount   Int
   grossAmount Int
   issuedAt    DateTime @default(now())
+  /// Ai bấm phát hành — dòng ký tên người bán trên bản in lấy từ đây.
+  issuedById  String?
+  issuedBy    User?    @relation(fields: [issuedById], references: [id])
   eInvoiceId  String?
+
+  @@unique([symbol, number])
+  @@index([issuedAt])
 }
 
 // ─── Kho ─────────────────────────────────────────────────────
@@ -486,4 +555,140 @@ model Counter {
 model Setting {
   key   String @id
   value Json
+}
+
+/// Cài đặt cửa hàng — **một dòng duy nhất**.
+///
+/// `id` có giá trị mặc định cố định nên không thể lỡ tay tạo dòng thứ hai: mọi
+/// `create` không truyền id đều đâm vào khoá chính. Trước đây những con số này
+/// nằm rải rác thành hằng số trong mã (`VAT_RATE`, `FREE_SHIP_THRESHOLD`,
+/// `TIER_THRESHOLD`, thông tin cửa hàng lặp ở 8 chỗ) — đổi một giá trị phải đi
+/// sửa từng file và luôn sót một chỗ.
+model StoreSetting {
+  id String @id @default("cua-hang")
+
+  /// Thông tin cửa hàng — dùng cho hoá đơn, chân trang và khối chuyển khoản.
+  shopName    String
+  taxCode     String
+  address     String
+  hotline     String
+  email       String
+  bankName    String
+  bankAccount String
+  bankOwner   String
+  /// Ảnh QR chuyển khoản (VietQR), lưu trong DB như ảnh sản phẩm — xem M4.5.
+  /// Giữ cả `qrUrl` lẫn `qrBlobId`: URL mang checksum để cache được `immutable`,
+  /// còn blobId để dọn blob mồ côi khi thay ảnh khác.
+  qrUrl       String?
+  qrBlobId    String?
+
+  /// Vận chuyển & thuế. Tiền là Int đồng, thuế suất là số nguyên phần trăm.
+  shipInnerCity Int
+  shipProvince  Int
+  freeShipFrom  Int
+  vatRate       Int
+
+  /// Giữ đơn trả trước bao lâu trước khi tự huỷ (phút).
+  holdMinutes Int
+
+  /// Ngưỡng phân hạng theo chi tiêu 12 tháng. So sánh bằng dấu lớn hơn **chặt**.
+  tierSilver  Int
+  tierGold    Int
+  tierDiamond Int
+
+  /// Phương thức thanh toán đang bật. Ví điện tử chưa có nên chưa có cờ.
+  payCod  Boolean @default(true)
+  payBank Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+}
+
+/// Ma trận vai trò × khả năng.
+///
+/// Trước đây quyền là danh sách vai trò viết cứng ở 14 trang; đổi một quyền
+/// phải sửa mã và deploy. `ADMIN` **không** có dòng nào ở đây — chủ cửa hàng
+/// luôn có mọi khả năng, chốt ở `canDo` chứ không phải dữ liệu sửa được.
+model RolePermission {
+  id         String @id @default(cuid())
+  role       Role
+  /// Khoá khai trong `src/lib/permissions.ts`. Không phải dữ liệu tự do: mỗi
+  /// khoá tương ứng một chốt chặn có thật ở server.
+  permission String
+
+  @@unique([role, permission])
+  @@index([role])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+/// Lời mời tham gia quản trị.
+///
+/// Chưa có hệ thống gửi mail nên quản trị lấy **đường dẫn mời** rồi tự gửi cho
+/// người kia. Token nằm trong đường dẫn; người được mời tự đặt mật khẩu, nên
+/// không ai phải đọc mật khẩu của người khác qua điện thoại.
+model StaffInvite {
+  id          String       @id @default(cuid())
+  email       String
+  role        Role
+  token       String       @unique
+  status      InviteStatus @default(PENDING)
+  invitedById String?
+  invitedBy   User?        @relation("InviteAuthor", fields: [invitedById], references: [id], onDelete: SetNull)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@index([email, status])
+}
+
+/// Yêu cầu đặt lại mật khẩu.
+///
+/// Hạn **1 giờ**, ngắn hơn lời mời (7 ngày) rất nhiều: lời mời là thứ người ta
+/// chờ, còn token đặt lại mật khẩu là chìa khoá vào một tài khoản đã tồn tại —
+/// mỗi giờ nó còn sống là một giờ hộp thư bị lộ có thể bị lợi dụng.
+///
+/// Dùng một lần: `usedAt` khác null là chết.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, usedAt])
+}
+
+/// Người đăng ký nhận tin sale ngoài trang chủ.
+model NewsletterSubscriber {
+  id    String @id @default(cuid())
+  email String @unique
+  /// Nguồn đăng ký, để sau còn biết khối nào mang lại người đăng ký.
+  source         String    @default("home")
+  createdAt      DateTime  @default(now())
+  /// Huỷ nhận tin là **đánh dấu**, không xoá dòng: xoá xong người ta đăng ký
+  /// lại bằng chính email đó rồi lại nhận thư, và không còn dấu vết là họ từng
+  /// bảo đừng gửi nữa.
+  unsubscribedAt DateTime?
+
+  @@index([unsubscribedAt])
+}
+
+/// Sản phẩm khách bấm tim. Mockup có tab "Sản phẩm yêu thích" ở trang tài khoản.
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  /// Một người thích một sản phẩm đúng một lần; bấm lại là bỏ thích.
+  @@unique([userId, productId])
+  @@index([userId])
 }

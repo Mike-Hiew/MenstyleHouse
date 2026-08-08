@@ -1,0 +1,75 @@
+name: CI
+
+# Chạy trên mọi PR và mọi lần đẩy lên main. `docs/BUILD-PLAN.md` (M4) bắt buộc
+# test bất biến tồn kho phải xanh trong CI trước khi merge.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# PR đẩy liên tiếp thì huỷ lượt chạy cũ, đỡ tốn runner.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kiem-tra:
+    name: Typecheck · Lint · Test · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      # Test đụng DB thật (auditStock, đếm facet, huỷ đơn) nên không mock được.
+      # Dùng đúng Postgres 17 như môi trường dev.
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: menstylehouse
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/menstylehouse?schema=public
+      # Auth.js đòi có secret lúc build; giá trị này chỉ dùng trong CI.
+      AUTH_SECRET: ci-secret-khong-dung-cho-that
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Cài dependency
+        run: npm ci
+
+      # Dùng migrate deploy chứ không db push: production chạy đúng chuỗi
+      # migration này, CI phải kiểm chính nó chứ không phải một đường khác.
+      - name: Chạy migration
+        run: npx prisma migrate deploy
+
+      # Test đọc dữ liệu thật (số đếm bộ lọc, biến thể còn hàng) nên phải seed.
+      - name: Nạp dữ liệu mẫu
+        run: npm run db:seed
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # Trong đây có bất biến stock === Σ(movements.delta) — điều kiện của M4.
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

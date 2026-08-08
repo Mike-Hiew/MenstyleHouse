@@ -1,9 +1,11 @@
 /**
- * Chỉnh sửa query string cho bộ lọc catalog. Dùng chung giữa server (phân trang,
- * link xoá lọc) và client (FilterBar) để URL luôn cùng một định dạng.
+ * Chỉnh sửa query string cho bộ lọc catalog. Dùng chung giữa server (nút tải
+ * thêm) và client (bộ lọc) để URL luôn cùng một định dạng.
+ *
+ * Mọi thao tác đổi bộ lọc đều đặt lại số sản phẩm đang mở (`xem`) — nếu không,
+ * khách đã bấm "Tải thêm" ba lần rồi đổi danh mục sẽ tải 48 sản phẩm một lúc.
  */
 
-/** Giá trị nhiều lựa chọn lưu dạng `?mau=Đen,Navy` — ngắn và dễ đọc. */
 export function readList(sp: URLSearchParams, key: string): string[] {
   const raw = sp.get(key);
   if (!raw) return [];
@@ -15,13 +17,13 @@ function writeList(sp: URLSearchParams, key: string, values: string[]) {
   else sp.delete(key);
 }
 
-/** Bật/tắt một giá trị trong bộ lọc nhiều lựa chọn. Luôn về trang 1. */
+/** Bật/tắt một giá trị trong bộ lọc nhiều lựa chọn (size, thương hiệu). */
 export function toggleValue(current: URLSearchParams, key: string, value: string): URLSearchParams {
   const sp = new URLSearchParams(current);
   const list = readList(sp, key);
   const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
   writeList(sp, key, next);
-  sp.delete("trang");
+  sp.delete("xem");
   return sp;
 }
 
@@ -33,15 +35,14 @@ export function setValue(
   const sp = new URLSearchParams(current);
   if (value === null || value === "") sp.delete(key);
   else sp.set(key, value);
-  if (key !== "trang") sp.delete("trang");
+  if (key !== "xem") sp.delete("xem");
   return sp;
 }
 
-/** Giữ nguyên bộ lọc, chỉ đổi trang. */
-export function setPage(current: URLSearchParams, page: number): URLSearchParams {
+/** Mở thêm một lô sản phẩm, giữ nguyên bộ lọc. */
+export function setShown(current: URLSearchParams, shown: number): URLSearchParams {
   const sp = new URLSearchParams(current);
-  if (page <= 1) sp.delete("trang");
-  else sp.set("trang", String(page));
+  sp.set("xem", String(shown));
   return sp;
 }
 

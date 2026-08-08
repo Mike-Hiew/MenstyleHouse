@@ -1,3 +1,5 @@
+import bcrypt from "bcryptjs";
+import { buildSku } from "../src/lib/slug";
 import {
   PrismaClient,
   type OrderStatus,
@@ -7,6 +9,9 @@ import {
 } from "@prisma/client";
 
 const db = new PrismaClient();
+
+/** Mật khẩu dev cho mọi tài khoản nội bộ. Đổi trước khi lên production. */
+const STAFF_PASSWORD = "admin123456";
 
 /* Số ngẫu nhiên có hạt giống — seed chạy lại cho ra cùng dữ liệu. */
 let seedState = 20260807;
@@ -133,14 +138,23 @@ async function main() {
   const brands = await Promise.all(BRANDS.map((name) => db.brand.create({ data: { name } })));
 
   // ── Người dùng ────────────────────────────────────────────
+  // Tài khoản nội bộ dùng chung một mật khẩu dev để seed xong là vào /admin
+  // được ngay. Không có `passwordHash` thì Auth.js từ chối đăng nhập.
+  const devPassword = await bcrypt.hash(STAFF_PASSWORD, 10);
   const staff = await db.user.create({
-    data: { name: "Quản trị viên", email: "admin@menstylehouse.vn", role: "ADMIN", phone: "0900000001" },
+    data: {
+      name: "Quản trị viên",
+      email: "admin@menstylehouse.vn",
+      role: "ADMIN",
+      phone: "0900000001",
+      passwordHash: devPassword,
+    },
   });
   await db.user.createMany({
     data: [
-      { name: "Nhân viên bán hàng", email: "staff@menstylehouse.vn", role: "STAFF", phone: "0900000002" },
-      { name: "Thủ kho", email: "kho@menstylehouse.vn", role: "WAREHOUSE", phone: "0900000003" },
-      { name: "Kế toán", email: "ketoan@menstylehouse.vn", role: "ACCOUNTANT", phone: "0900000004" },
+      { name: "Nhân viên bán hàng", email: "staff@menstylehouse.vn", role: "STAFF", phone: "0900000002", passwordHash: devPassword },
+      { name: "Thủ kho", email: "kho@menstylehouse.vn", role: "WAREHOUSE", phone: "0900000003", passwordHash: devPassword },
+      { name: "Kế toán", email: "ketoan@menstylehouse.vn", role: "ACCOUNTANT", phone: "0900000004", passwordHash: devPassword },
     ],
   });
 
@@ -194,7 +208,8 @@ async function main() {
     const category = categories[i % categories.length];
     const names = NAME_PARTS[cat.slug];
     const baseName = names[Math.floor(i / CATEGORIES.length) % names.length];
-    const name = baseName + " MSH-" + String(101 + i);
+    const code = "MSH-" + String(101 + i);
+    const name = baseName + " " + code;
     const basePrice = int(19, 89) * 10000;
     const onSale = rnd() < 0.3;
 
@@ -203,6 +218,7 @@ async function main() {
 
     const product = await db.product.create({
       data: {
+        code,
         name,
         slug: slugify(name),
         description:
@@ -231,7 +247,7 @@ async function main() {
         const v = await db.variant.create({
           data: {
             productId: product.id,
-            sku: "MSH-" + String(101 + i) + "-" + slugify(c.color).slice(0, 3).toUpperCase() + "-" + size,
+            sku: buildSku(code, c.color, size),
             color: c.color,
             colorHex: c.hex,
             size,
@@ -313,6 +329,57 @@ async function main() {
       { code: "MEMBER50", type: "FIXED", value: 50000, minSubtotal: 400000, memberOnly: true, perUserLimit: 2, startsAt: now, endsAt: later },
       { code: "THU2026", type: "PERCENT", value: 20, minSubtotal: 800000, maxDiscount: 300000, usageLimit: 200, startsAt: now, endsAt: later },
     ],
+  });
+
+  // ── Yêu cầu hỗ trợ ────────────────────────────────────────
+  // Đủ bốn trạng thái để màn Hỗ trợ có dữ liệu ngay sau khi seed, và để các
+  // tab lọc có cái mà đếm.
+  const YEU_CAU = [
+    { subject: "Đổi size áo hoodie từ L sang XL", status: "OPEN" as const, ten: "Trần Minh Quân", lienHe: "0903128447" },
+    { subject: "Chưa nhận được hàng sau 5 ngày", status: "OPEN" as const, ten: "Lê Thị Hồng", lienHe: "hong.le@gmail.com" },
+    { subject: "Xuất hoá đơn công ty cho đơn đã đặt", status: "PENDING" as const, ten: "Phạm Anh Tuấn", lienHe: "ketoan@abc.vn" },
+    { subject: "Áo bị lỗi đường may ở vai", status: "PENDING" as const, ten: "Nguyễn Hải Đăng", lienHe: "0912345678" },
+    { subject: "Hỏi chất liệu quần jeans MSH-106", status: "RESOLVED" as const, ten: "Võ Thành Long", lienHe: "long.vo@gmail.com" },
+    { subject: "Hoàn tiền đơn đã huỷ", status: "CLOSED" as const, ten: "Đỗ Khánh Linh", lienHe: "0987654321" },
+  ];
+
+  for (let i = 0; i < YEU_CAU.length; i++) {
+    const y = YEU_CAU[i];
+    const gui = new Date(now.getTime() - (i + 1) * 36e5 * 9);
+    await db.ticket.create({
+      data: {
+        code: "TIC-" + now.getFullYear() + "-" + String(i + 1).padStart(5, "0"),
+        subject: y.subject,
+        status: y.status,
+        channel: "web",
+        createdAt: gui,
+        messages: {
+          create: [
+            {
+              authorName: y.ten + " · " + y.lienHe,
+              isStaff: false,
+              body: y.subject + ". Nhờ cửa hàng kiểm tra và phản hồi giúp mình.",
+              createdAt: gui,
+            },
+            ...(y.status === "RESOLVED" || y.status === "CLOSED"
+              ? [
+                  {
+                    authorName: "Trần Thu",
+                    isStaff: true,
+                    body: "Chào anh/chị, cửa hàng đã kiểm tra và xử lý. Anh/chị kiểm tra lại giúp nhé.",
+                    createdAt: new Date(gui.getTime() + 2 * 36e5),
+                  },
+                ]
+              : []),
+          ],
+        },
+      },
+    });
+  }
+  await db.counter.upsert({
+    where: { key: "TIC-" + now.getFullYear() },
+    create: { key: "TIC-" + now.getFullYear(), value: YEU_CAU.length },
+    update: { value: YEU_CAU.length },
   });
 
   // ── 30 đơn mẫu đủ trạng thái ──────────────────────────────

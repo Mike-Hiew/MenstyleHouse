@@ -4,10 +4,13 @@
   /* ── Modernist tokens ── */
   --color-bg: #f3f2f2;
   --color-surface: #ffffff;
+  --color-subtle: #eae9e9;
   --color-text: #201e1d;
-  --color-muted: #6b6664;
+  --color-muted: #605d5d;
+  --color-faint: #7d7979;
   --color-divider: #201e1d;
-  --color-hairline: #d6d3d1;
+  --color-hairline: #d7d3d3;
+  --color-border-soft: rgba(32, 30, 29, 0.4);
 
   --color-accent: #ec3013;
   --color-accent-100: #fde4df;
@@ -15,16 +18,16 @@
   --color-accent-300: #f59182;
   --color-accent-400: #f16049;
   --color-accent-500: #ec3013;
-  --color-accent-600: #c8250c;
-  --color-accent-700: #a11c07;
+  --color-accent-600: #ae1800;
+  --color-accent-700: #8d1300;
   --color-accent-800: #7a1404;
   --color-accent-900: #530d02;
 
   --color-neutral-100: #f3f2f2;
   --color-neutral-200: #e2e0df;
-  --color-neutral-300: #c8c5c3;
+  --color-neutral-300: #d7d3d3;
   --color-neutral-400: #9c9795;
-  --color-neutral-500: #6b6664;
+  --color-neutral-500: #605d5d;
   --color-neutral-600: #4e4a48;
   --color-neutral-700: #383533;
   --color-neutral-800: #2a2726;
@@ -74,7 +77,7 @@
   h4 {
     font-family: var(--font-heading);
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
     text-wrap: balance;
   }
 
@@ -104,5 +107,14 @@
 }
 
 @utility grayscale-photo {
-  filter: grayscale(1) contrast(1.05);
+  filter: grayscale(1) contrast(1.08);
+}
+
+@utility label-tech {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-faint);
 }

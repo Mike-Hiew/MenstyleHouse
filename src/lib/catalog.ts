@@ -4,26 +4,23 @@ import { z } from "zod";
  * Phần thuần của tầng catalog: đọc/ghi tham số URL, hằng số hiển thị, tính giá.
  * Không chạm Prisma nên client component import được. Truy vấn nằm ở
  * `src/server/catalog.ts`.
+ *
+ * Mô hình lọc bám sheet lọc của `docs/mockup/Men Style House Mobile.dc.html`:
+ * danh mục và màu là checkbox **có số đếm**, size là chip, giá là hai ô từ–đến.
+ * Cùng một mô hình cho mọi bề rộng — `docs/RESPONSIVE.md` cấm tách hai nhánh.
  */
 
-export const PER_PAGE = 12;
+/** Mỗi lần bấm "Tải thêm" mở thêm bấy nhiêu sản phẩm. */
+export const PAGE_STEP = 12;
 
 export const SORTS = {
   "moi-nhat": "Mới nhất",
   "gia-tang": "Giá thấp → cao",
   "gia-giam": "Giá cao → thấp",
-  "danh-gia": "Đánh giá cao",
+  "ban-chay": "Bán chạy",
 } as const;
 
 export type SortKey = keyof typeof SORTS;
-
-/** Khoảng giá dựng sẵn — có số đếm nên dễ đọc hơn ô nhập tự do. */
-export const PRICE_BUCKETS = [
-  { key: "0-300", label: "Dưới 300.000đ", min: 0, max: 299_999 },
-  { key: "300-500", label: "300.000đ – 500.000đ", min: 300_000, max: 500_000 },
-  { key: "500-700", label: "500.000đ – 700.000đ", min: 500_001, max: 700_000 },
-  { key: "700-", label: "Trên 700.000đ", min: 700_001, max: null },
-] as const;
 
 /** Thứ tự size khi hiển thị — chữ trước, số sau, Freesize cuối. */
 const SIZE_ORDER = ["S", "M", "L", "XL", "XXL", "29", "30", "31", "32", "34", "36", "Freesize"];
@@ -38,7 +35,7 @@ export function compareSizes(a: string, b: string): number {
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
-/** Nhận cả `?mau=Đen&mau=Navy` lẫn `?mau=Đen,Navy`, bỏ trùng. */
+/** Nhận cả `?size=L&size=XL` lẫn `?size=L,XL`, bỏ trùng. */
 const multi = z
   .preprocess((v) => {
     const raw = Array.isArray(v) ? v : typeof v === "string" ? [v] : [];
@@ -58,12 +55,19 @@ const text = z
   }, z.string())
   .catch("");
 
-const pageNum = z
+const money = z
   .preprocess((v) => {
     const n = Number(Array.isArray(v) ? v[0] : v);
-    return Number.isFinite(n) ? Math.floor(n) : 1;
-  }, z.number().int().min(1).max(500))
-  .catch(1);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  }, z.number().int().min(0).max(100_000_000))
+  .catch(0);
+
+const shown = z
+  .preprocess((v) => {
+    const n = Number(Array.isArray(v) ? v[0] : v);
+    return Number.isFinite(n) ? Math.floor(n) : PAGE_STEP;
+  }, z.number().int().min(PAGE_STEP).max(600))
+  .catch(PAGE_STEP);
 
 export const catalogQuerySchema = z.object({
   q: text,
@@ -71,45 +75,52 @@ export const catalogQuerySchema = z.object({
   "thuong-hieu": multi,
   mau: multi,
   size: multi,
-  gia: multi,
+  /** 0 nghĩa là không đặt cận. */
+  "gia-tu": money,
+  "gia-den": money,
   km: flag,
-  "sap-xep": z.enum(["moi-nhat", "gia-tang", "gia-giam", "danh-gia"]).catch("moi-nhat"),
-  trang: pageNum,
+  "sap-xep": z.enum(["moi-nhat", "gia-tang", "gia-giam", "ban-chay"]).catch("moi-nhat"),
+  xem: shown,
 });
 
 export type CatalogQuery = z.infer<typeof catalogQuerySchema>;
 
 /** URL do khách sửa tay không được làm sập trang, chỉ rơi về mặc định. */
 export function parseCatalogQuery(params: RawSearchParams): CatalogQuery {
-  return catalogQuerySchema.parse(params);
+  const q = catalogQuerySchema.parse(params);
+  // Nhập ngược (từ 900k đến 200k) thì đảo lại thay vì trả về rỗng khó hiểu.
+  if (q["gia-tu"] && q["gia-den"] && q["gia-tu"] > q["gia-den"]) {
+    return { ...q, "gia-tu": q["gia-den"], "gia-den": q["gia-tu"] };
+  }
+  return q;
 }
 
-/**
- * Ngược lại của `parseCatalogQuery`. Mọi link trên trang dựng từ đây nên URL
- * luôn chuẩn hoá — tham số lạ trong URL khách dán vào không lọt ra ngoài.
- */
+/** Ngược lại của `parseCatalogQuery`; mọi link trên trang dựng từ đây. */
 export function serializeCatalogQuery(q: CatalogQuery): URLSearchParams {
   const sp = new URLSearchParams();
   if (q.q) sp.set("q", q.q);
-  for (const key of ["danh-muc", "thuong-hieu", "mau", "size", "gia"] as const) {
+  for (const key of ["danh-muc", "thuong-hieu", "mau", "size"] as const) {
     if (q[key].length) sp.set(key, q[key].join(","));
   }
+  if (q["gia-tu"] > 0) sp.set("gia-tu", String(q["gia-tu"]));
+  if (q["gia-den"] > 0) sp.set("gia-den", String(q["gia-den"]));
   if (q.km) sp.set("km", "1");
   if (q["sap-xep"] !== "moi-nhat") sp.set("sap-xep", q["sap-xep"]);
-  if (q.trang > 1) sp.set("trang", String(q.trang));
+  if (q.xem !== PAGE_STEP) sp.set("xem", String(q.xem));
   return sp;
 }
 
-/** Có bộ lọc nào đang bật không (không tính sắp xếp và phân trang). */
+/** Có bộ lọc nào đang bật không (không tính sắp xếp và số sản phẩm đã mở). */
 export function hasActiveFilters(q: CatalogQuery): boolean {
   return (
     q.q !== "" ||
     q.km ||
+    q["gia-tu"] > 0 ||
+    q["gia-den"] > 0 ||
     q["danh-muc"].length > 0 ||
     q["thuong-hieu"].length > 0 ||
     q.mau.length > 0 ||
-    q.size.length > 0 ||
-    q.gia.length > 0
+    q.size.length > 0
   );
 }
 
@@ -119,9 +130,26 @@ export function countActiveFilters(q: CatalogQuery): number {
     q["thuong-hieu"].length +
     q.mau.length +
     q.size.length +
-    q.gia.length +
+    (q["gia-tu"] || q["gia-den"] ? 1 : 0) +
     (q.km ? 1 : 0)
   );
+}
+
+/** Câu mô tả bộ lọc đang bật — dùng trong trạng thái rỗng. */
+export function describeFilters(q: CatalogQuery, categoryName?: string): string {
+  const parts: string[] = [];
+  if (q.q) parts.push(`từ khoá “${q.q}”`);
+  if (categoryName) parts.push(categoryName.toLowerCase());
+  else if (q["danh-muc"].length) parts.push(q["danh-muc"].join(", "));
+  if (q.mau.length) parts.push("màu " + q.mau.join(", "));
+  if (q.size.length) parts.push("size " + q.size.join(", "));
+  if (q["thuong-hieu"].length) parts.push(q["thuong-hieu"].join(", "));
+  // Giá là lý do hay gặp nhất khiến không còn sản phẩm nào, nên phải nêu tên.
+  if (q["gia-tu"] && q["gia-den"]) parts.push(`giá ${q["gia-tu"]}–${q["gia-den"]} ₫`);
+  else if (q["gia-den"]) parts.push(`giá ≤ ${q["gia-den"]} ₫`);
+  else if (q["gia-tu"]) parts.push(`giá ≥ ${q["gia-tu"]} ₫`);
+  if (q.km) parts.push("chỉ hàng giảm giá");
+  return parts.length ? parts.join(" · ") : "không có điều kiện nào";
 }
 
 /* ── Phạm vi truy vấn và số đếm ───────────────────────────── */
@@ -142,13 +170,14 @@ export type Facets = {
   brands: FacetOption[];
   colors: FacetOption[];
   sizes: FacetOption[];
-  prices: FacetOption[];
   sale: number;
+  /** Gợi ý cho placeholder của hai ô giá. */
+  priceFloor: number;
+  priceCeil: number;
 };
 
 /* ── Giá ──────────────────────────────────────────────────── */
 
-/** Giá thực tế hiển thị trên thẻ sản phẩm. */
 export function effectivePrice(p: { basePrice: number; salePrice: number | null }): number {
   return p.salePrice ?? p.basePrice;
 }

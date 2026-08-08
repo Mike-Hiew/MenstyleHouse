@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
+import { WelcomeDialog } from "@/components/storefront/welcome-dialog";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -26,7 +27,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="vi" className={archivo.variable + " " + mono.variable}>
       <body className="flex min-h-screen flex-col">
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          {children}
+          <WelcomeDialog />
+        </ToastProvider>
       </body>
     </html>
   );

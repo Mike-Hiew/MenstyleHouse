@@ -1,8 +1,12 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
 
+/**
+ * Chữ 16px ở mốc mặc định là bắt buộc: dưới 16px thì iOS Safari tự phóng to
+ * trang khi khách chạm vào ô nhập. Desktop mới hạ xuống 14px.
+ */
 const fieldBase =
-  "w-full border-2 border-divider bg-surface px-3 text-[14px] text-text " +
+  "w-full border-2 border-divider bg-surface px-3 text-[16px] text-text lg:text-[14px] " +
   "placeholder:text-neutral-400 focus:border-accent focus-visible:outline-none " +
   "disabled:opacity-45";
 
@@ -10,7 +14,7 @@ export const Input = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement>
 >(function Input({ className, ...props }, ref) {
-  return <input ref={ref} className={cn(fieldBase, "h-11", className)} {...props} />;
+  return <input ref={ref} className={cn(fieldBase, "h-12 lg:h-11", className)} {...props} />;
 });
 
 export const Textarea = React.forwardRef<
@@ -27,7 +31,11 @@ export const Select = React.forwardRef<
   React.SelectHTMLAttributes<HTMLSelectElement>
 >(function Select({ className, ...props }, ref) {
   return (
-    <select ref={ref} className={cn(fieldBase, "h-11 appearance-none pr-8", className)} {...props} />
+    <select
+      ref={ref}
+      className={cn(fieldBase, "h-12 appearance-none pr-8 lg:h-11", className)}
+      {...props}
+    />
   );
 });
 

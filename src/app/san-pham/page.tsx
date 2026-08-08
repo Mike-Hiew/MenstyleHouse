@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { SiteHeader } from "@/components/storefront/site-header";
+import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
-import { Breadcrumb } from "@/components/storefront/breadcrumb";
 import { CatalogView } from "@/components/storefront/catalog-view";
 import { CatalogSkeleton } from "@/components/storefront/catalog-skeleton";
 import { parseCatalogQuery, serializeCatalogQuery, type RawSearchParams } from "@/lib/catalog";
@@ -24,10 +23,7 @@ export default async function ProductsPage({
 
   return (
     <>
-      <SiteHeader />
-      <Breadcrumb
-        items={[{ label: "Trang chủ", href: "/" }, { label: query.q ? "Tìm kiếm" : "Sản phẩm" }]}
-      />
+      <Header />
       <main>
         {/* Suspense đặt trong page chứ không dùng loading.tsx: loading.tsx bọc cả
             route nên response stream ngay, làm notFound() không đặt được status 404. */}
@@ -38,11 +34,7 @@ export default async function ProductsPage({
             basePath="/san-pham"
             params={params}
             title={query.q ? "Kết quả cho “" + query.q + "”" : "Tất cả sản phẩm"}
-            subtitle={
-              query.q
-                ? undefined
-                : "Lọc theo danh mục, giá, màu và size. Số cạnh mỗi ô là số sản phẩm mang thuộc tính đó, tính theo các nhóm lọc còn lại."
-            }
+            crumbs={["TRANG CHỦ", query.q ? "TÌM KIẾM" : "SẢN PHẨM"]}
           />
         </Suspense>
       </main>

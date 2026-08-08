@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SiteHeader } from "@/components/storefront/site-header";
+import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
-import { Breadcrumb } from "@/components/storefront/breadcrumb";
+import { Container, Crumbs } from "@/components/storefront/shell";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { VariantPicker } from "@/components/storefront/variant-picker";
-import { ReviewSection } from "@/components/storefront/review-list";
-import { ProductGrid } from "@/components/storefront/product-card";
-import { StarRating } from "@/components/storefront/star-rating";
-import { getProductBySlug, getRatingBreakdown, getRelated } from "@/server/catalog";
+import { ReviewSection, Stars } from "@/components/storefront/review-list";
+import { ReviewForm } from "@/components/storefront/review-form";
+import { WishlistButton } from "@/components/storefront/wishlist-button";
+import { getProductBySlug, getRelated, type ProductDetail } from "@/server/catalog";
 import { sizeChartFor } from "@/lib/size-chart";
+import { effectivePrice } from "@/lib/catalog";
+import { formatVnd } from "@/lib/money";
+import { Photo } from "@/components/ui/photo";
+import { currentUserId } from "@/auth";
+import { isWished } from "@/server/wishlist";
+import { ProductJsonLd } from "@/components/storefront/product-jsonld";
 
 export const dynamic = "force-dynamic";
 
@@ -25,131 +31,163 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
+/** Bốn mục gập bên dưới khối mua hàng, đúng thứ tự mockup. */
+function accordionsFor(p: ProductDetail) {
+  const colors = [...new Set(p.variants.map((v) => v.color))].join(", ");
+  return [
+    { title: "Mô tả sản phẩm", body: p.description },
+    {
+      title: "Chất liệu & bảo quản",
+      body: [p.material, p.careNote].filter(Boolean).join("\n"),
+    },
+    {
+      title: "Màu & size có sẵn",
+      body:
+        "Màu: " +
+        colors +
+        "\nSize: " +
+        [...new Set(p.variants.map((v) => v.size))].join(", "),
+    },
+    {
+      title: "Giao hàng & đổi trả",
+      body:
+        "Giao toàn quốc 2–4 ngày, nội thành TP.HCM và Hà Nội 1–2 ngày.\n" +
+        "Miễn phí giao cho đơn từ 500.000 ₫.\n" +
+        "Đổi size miễn phí trong 15 ngày, sản phẩm còn nguyên tem mác.",
+    },
+  ].filter((a) => a.body.trim() !== "");
+}
+
 export default async function ProductPage({ params }: Params) {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const [breakdown, related] = await Promise.all([
-    getRatingBreakdown(product.id),
-    getRelated(product),
-  ]);
+  const [related, userId] = await Promise.all([getRelated(product), currentUserId()]);
+  const daThich = userId ? await isWished(userId, product.id) : false;
 
-  const totalStock = product.variants.reduce((s, v) => s + v.stock, 0);
+  const conHang = product.variants.some((v) => v.stock > 0);
 
   return (
     <>
-      <SiteHeader />
-      <Breadcrumb
-        items={[
-          { label: "Trang chủ", href: "/" },
-          { label: "Sản phẩm", href: "/san-pham" },
-          { label: product.category.name, href: "/danh-muc/" + product.category.slug },
-          { label: product.name },
-        ]}
+      <ProductJsonLd
+        sp={{
+          name: product.name,
+          slug: product.slug,
+          description: product.seoDescription || product.description,
+          sku: product.code,
+          brand: product.brand?.name ?? null,
+          image: product.images[0]?.url ?? null,
+          price: effectivePrice(product),
+          conHang,
+          ratingAvg: product.ratingAvg,
+          ratingCount: product.ratingCount,
+        }}
       />
+      <Header />
 
       <main>
-        <div className="grid gap-10 px-6 py-8 lg:grid-cols-2">
-          <ProductGallery images={product.images} name={product.name} />
+        <Container className="pb-16 pt-6">
+          <Crumbs parts={["TRANG CHỦ", "SẢN PHẨM", product.name.toUpperCase()]} />
 
-          <div className="flex flex-col gap-6">
+          {/*
+            `grid-cols-1` chứ không để lưới tự chọn một cột: cột ngầm co giãn
+            theo max-content, mà dải thumbnail cuộn ngang có max-content bằng
+            tổng bề rộng mọi ảnh. Sản phẩm từ 5 ảnh trở lên là trang tràn ngang
+            trên điện thoại. `grid-cols-1` cho ra `minmax(0, 1fr)` nên cột không
+            vượt khung, và dải thumbnail cuộn đúng như thiết kế.
+          */}
+          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2">
+            <ProductGallery images={product.images} name={product.name} />
+
             <div>
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-500">
-                <Link
-                  href={{ pathname: "/danh-muc/" + product.category.slug }}
-                  className="hover:text-accent-700"
-                >
-                  {product.category.name}
-                </Link>
-                {product.brand ? <span>· {product.brand.name}</span> : null}
+              <div className="label-tech font-bold tracking-[0.1em] text-neutral-400">
+                {product.brand ? product.brand.name + " · " : ""}
+                {product.category.name}
               </div>
 
-              <h1 className="mb-3 text-[32px] leading-tight">{product.name}</h1>
+              <h1 className="my-3 text-[26px] leading-[1.15] lg:text-[40px] lg:leading-[1.1]">
+                {product.name}
+              </h1>
 
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="mb-6 flex items-center gap-2.5 text-[13px] text-muted">
                 {product.ratingCount > 0 ? (
-                  <a href="#danh-gia" className="hover:text-accent-700">
-                    <StarRating value={product.ratingAvg} count={product.ratingCount} />
-                  </a>
+                  <>
+                    <Stars value={product.ratingAvg} />
+                    <a href="#danh-gia" className="hover:text-accent-700">
+                      {product.ratingAvg.toFixed(1)} · {product.ratingCount} đánh giá
+                    </a>
+                  </>
                 ) : (
-                  <span className="text-[13px] text-neutral-400">Chưa có đánh giá</span>
+                  <span>Chưa có đánh giá</span>
                 )}
-                <span className="text-[13px] text-neutral-500">
-                  {totalStock > 0 ? product.variants.length + " biến thể" : "Tạm hết hàng"}
-                </span>
+              </div>
+
+              <VariantPicker
+                variants={product.variants.map((v) => ({
+                  id: v.id,
+                  sku: v.sku,
+                  color: v.color,
+                  colorHex: v.colorHex,
+                  size: v.size,
+                  stock: v.stock,
+                  lowStockAt: v.lowStockAt,
+                  priceDelta: v.priceDelta,
+                }))}
+                basePrice={product.basePrice}
+                salePrice={product.salePrice}
+                sizeChart={sizeChartFor(product.category.slug)}
+                accordions={accordionsFor(product)}
+              />
+
+              {/* Lưu để mua sau — tab "Sản phẩm yêu thích" ở trang tài khoản. */}
+              <div className="mt-4">
+                <WishlistButton
+                  productId={product.id}
+                  daThich={daThich}
+                  daDangNhap={Boolean(userId)}
+                />
               </div>
             </div>
-
-            <VariantPicker
-              variants={product.variants.map((v) => ({
-                id: v.id,
-                sku: v.sku,
-                color: v.color,
-                colorHex: v.colorHex,
-                size: v.size,
-                stock: v.stock,
-                lowStockAt: v.lowStockAt,
-                priceDelta: v.priceDelta,
-              }))}
-              basePrice={product.basePrice}
-              salePrice={product.salePrice}
-              sizeChart={sizeChartFor(product.category.slug)}
-            />
           </div>
-        </div>
 
-        <section className="border-t-2 border-divider px-6 py-10">
-          <div className="grid gap-8 lg:grid-cols-2">
-            <div>
-              <h2 className="mb-3 text-[20px]">Mô tả</h2>
-              <p className="max-w-prose text-[15px] text-neutral-700">{product.description}</p>
-            </div>
+          <ReviewSection
+            reviews={product.reviews}
+            ratingAvg={product.ratingAvg}
+            ratingCount={product.ratingCount}
+          />
+          <ReviewForm productId={product.id} />
 
-            <div>
-              <h2 className="mb-3 text-[20px]">Thông tin</h2>
-              <dl className="border-2 border-divider bg-surface">
-                <Spec label="Chất liệu" value={product.material} />
-                <Spec label="Bảo quản" value={product.careNote} />
-                <Spec label="Thương hiệu" value={product.brand?.name ?? null} />
-                <Spec label="Danh mục" value={product.category.name} />
-                <Spec
-                  label="Màu có sẵn"
-                  value={[...new Set(product.variants.map((v) => v.color))].join(", ")}
-                />
-              </dl>
-            </div>
-          </div>
-        </section>
-
-        <ReviewSection
-          reviews={product.reviews}
-          breakdown={breakdown}
-          ratingAvg={product.ratingAvg}
-          ratingCount={product.ratingCount}
-        />
-
-        {related.length > 0 ? (
-          <section className="border-t-2 border-divider px-6 py-10">
-            <h2 className="mb-5 border-b-2 border-divider pb-3 text-[24px]">Sản phẩm tương tự</h2>
-            <ProductGrid products={related} />
-          </section>
-        ) : null}
+          {related.length > 0 ? (
+            <section className="mt-14 border-t-2 border-divider pt-6">
+              <h2 className="mb-6 text-[28px]">Có thể bạn cũng thích</h2>
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+                {related.map((p) => (
+                  <Link key={p.id} href={{ pathname: "/san-pham/" + p.slug }} className="group">
+                    <div className="relative aspect-[3/4] w-full bg-subtle">
+                      {p.images[0] ? (
+                        <Photo
+                          src={p.images[0].url}
+                          alt={p.images[0].alt}
+                          sizes="(min-width: 768px) 25vw, 50vw"
+                        />
+                      ) : null}
+                    </div>
+                    <h3 className="mb-1.5 mt-3 text-[14.5px] font-semibold leading-[1.35] group-hover:text-accent-700">
+                      {p.name}
+                    </h3>
+                    <span className="text-[15px] font-extrabold">
+                      {formatVnd(effectivePrice(p))}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </Container>
       </main>
 
       <SiteFooter />
     </>
-  );
-}
-
-function Spec({ label, value }: { label: string; value: string | null }) {
-  if (!value) return null;
-  return (
-    <div className="flex gap-4 border-b border-hairline px-4 py-2.5 last:border-b-0">
-      <dt className="w-32 shrink-0 text-[12px] font-bold uppercase tracking-[0.08em] text-neutral-500">
-        {label}
-      </dt>
-      <dd className="text-[14px]">{value}</dd>
-    </div>
   );
 }

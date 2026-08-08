@@ -7,3 +7,7 @@ build
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Bản trích mockup — sinh lại bằng `node scripts/trich-mockup.js`
+docs/mockup/trich-day-du.txt
+docs/mockup/trich-markup.html

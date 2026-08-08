@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { SiteHeader } from "@/components/storefront/site-header";
+import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 
 export default function NotFound() {
   return (
     <>
-      <SiteHeader />
+      <Header />
       <main className="flex min-h-[55vh] items-center justify-center px-6 py-20">
         <div className="flex max-w-lg flex-col items-center gap-4 text-center">
           <span className="font-mono text-[56px] font-bold leading-none text-accent">404</span>
