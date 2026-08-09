@@ -4,6 +4,12 @@ out
 build
 .env
 .env*.local
+# Bí mật của máy chủ: AUTH_SECRET, mật khẩu Postgres, khoá cổng thanh toán.
+.env.production
+
+# Log và bản sao lưu sinh ra lúc chạy
+*.log
+sao-luu/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
