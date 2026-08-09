@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
+  /**
+   * Gói sẵn để chạy trong container: Next lần theo đúng những gì mã thật sự
+   * `import` rồi chép vào `.next/standalone`, nên ảnh Docker mang khoảng 200 MB
+   * thay vì hơn 1 GB `node_modules`. Ảnh nhỏ thì máy 2 GB kéo về và khởi động
+   * lại nhanh hơn hẳn.
+   *
+   * Trên Vercel thì tắt: nền tảng tự cắt hàm từ output của Next theo cách riêng,
+   * bật `standalone` ở đó chỉ dựng thêm một bản `node_modules` không ai chạy.
+   */
+  output: process.env.VERCEL ? undefined : "standalone",
+
   images: {
     remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
     /**
