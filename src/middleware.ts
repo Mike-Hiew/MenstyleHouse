@@ -11,7 +11,24 @@ import { getToken } from "next-auth/jwt";
 const STAFF = new Set(["STAFF", "WAREHOUSE", "ACCOUNTANT", "ADMIN"]);
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+  /*
+   * Tên cookie phiên đổi theo giao thức: chạy HTTPS thì Auth.js đặt
+   * `__Secure-authjs.session-token`, chạy HTTP thì `authjs.session-token`.
+   *
+   * `getToken` phải được khai đúng, vì nó không đoán ra: sau reverse proxy
+   * (Vercel, Caddy, nginx) thì chặng vào app vẫn là HTTP, nên nó mặc định đi
+   * tìm tên không có tiền tố, không thấy cookie nào, và kết luận là khách chưa
+   * đăng nhập. Triệu chứng: bấm vào `/admin` bị đá về `/dang-nhap`, trang đó
+   * thấy đã đăng nhập rồi nên đẩy ngược lại — quay vòng mà không báo lỗi gì.
+   *
+   * Đọc `x-forwarded-proto` thay vì tin `nextUrl.protocol`. Header này khách
+   * bịa được, nhưng bịa cũng chỉ khiến `getToken` tìm nhầm tên rồi trả `null`
+   * — tức là hỏng theo hướng khoá cửa, không phải mở cửa.
+   */
+  const secureCookie =
+    req.headers.get("x-forwarded-proto") === "https" || req.nextUrl.protocol === "https:";
+
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET, secureCookie });
   const role = typeof token?.role === "string" ? token.role : null;
 
   if (role && STAFF.has(role)) return NextResponse.next();

@@ -26,11 +26,12 @@ cp .env.production.example .env.production
 chmod 600 .env.production
 ```
 
-Điền theo hướng dẫn trong file. Ba chỗ hay sai:
+Điền theo hướng dẫn trong file. Bốn chỗ hay sai:
 
 | Biến | Sai thường gặp |
 |---|---|
 | `DATABASE_URL` | ghi `localhost` — trong mạng compose phải là `postgres` |
+| `DIRECT_URL` | bỏ trống → `prisma migrate` dừng với `P1012`; đặt đúng bằng `DATABASE_URL` |
 | `AUTH_URL` / `APP_URL` | không đổi khỏi localhost → link đặt lại mật khẩu trong mail trỏ về máy người nhận |
 | `TRUSTED_PROXY_HOPS` | xem mục dưới |
 
@@ -69,9 +70,13 @@ cùng một cơ sở dữ liệu.
 ### 3. Dữ liệu ban đầu — chỉ một lần
 
 ```sh
-SEED_PASSWORD='<mật khẩu mạnh>' docker compose --env-file .env.production \
-  run --rm migrate npm run db:seed
+docker compose --env-file .env.production \
+  run --rm -e SEED_PASSWORD='<mật khẩu mạnh>' migrate npm run db:seed
 ```
+
+**Phải là `-e`.** Viết `SEED_PASSWORD=... docker compose run ...` thì không ăn:
+compose không chuyển biến môi trường của shell vào trong container. Nó chẳng báo
+gì cả, chỉ lặng lẽ sinh một mật khẩu ngẫu nhiên rồi in ra đúng một lần.
 
 Xong thì đăng nhập và đổi mật khẩu quản trị ngay.
 
@@ -155,7 +160,7 @@ Khi nào mở bán thật thì thêm ba thứ, cả ba đều không phải sử
 | Triệu chứng | Nguyên nhân |
 |---|---|
 | `required variable POSTGRES_PASSWORD is missing` | quên `--env-file .env.production` |
-| `P1012 ... DIRECT_URL` | `schema.prisma` khai `directUrl` mà `.env.production` chưa đặt |
+| `P1012 ... DIRECT_URL` | chưa đặt `DIRECT_URL` — đặt đúng bằng `DATABASE_URL` |
 | Caddy không xin được chứng chỉ | Cloudflare đang ở mây cam, hoặc cổng 80 bị chặn |
 | `next start does not work with output: standalone` | chỉ là cảnh báo; trong container đã chạy đúng `node server.js` |
 | Ảnh Docker dựng lỗi ở `next build` | thiếu biến giả lúc dựng — `Dockerfile` đã đặt sẵn, đừng gỡ |

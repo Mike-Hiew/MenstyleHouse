@@ -9,8 +9,11 @@ const config: NextConfig = {
    *
    * `next start` sẽ cảnh báo là không dùng được với cấu hình này — vẫn chạy,
    * nhưng trong container đã gọi thẳng `node server.js` đúng như nó khuyên.
+   *
+   * Trên Vercel thì tắt: nền tảng tự cắt hàm từ output của Next theo cách riêng,
+   * bật `standalone` ở đó chỉ dựng thêm một bản `node_modules` không ai chạy.
    */
-  output: "standalone",
+  output: process.env.VERCEL ? undefined : "standalone",
 
   images: {
     remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
