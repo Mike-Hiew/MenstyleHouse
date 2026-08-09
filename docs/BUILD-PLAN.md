@@ -259,6 +259,31 @@ bấm "Giới thiệu" ra trang chủ · mọi link ở trang chủ đều mở 
 cho trang chủ (gồm quét 26 link tìm 404) và 16 kiểm tra cho khoảng cách lưới ở
 cả bốn chỗ tại 1440/390px, kèm ảnh chụp cả trang ở hai bề ngang.
 
+## M6.19 — Thanh bên quản trị: icon thật và hết tràn
+
+Người dùng báo "bấm icon trên thanh bên không ăn". Bấm thử thì **ăn** — nhưng
+đo ra hai chuyện khác.
+
+**Hàng đầu thanh bên tràn khỏi bề rộng thu gọn.** 64px mà nội dung cần 86px (ô
+vuông 18 + khoảng cách 10 + nút 26 + padding 2×16). `aside` đặt `overflow-y-auto`,
+mà theo CSS một trục khác `visible` thì trục kia tự thành `auto` — phần thừa bị
+cắt. Đo được: nút lòi 6px ra ngoài, logo và nút mở lại đều mất một góc, đáy thanh
+bên mọc thêm thanh cuộn ngang. Thu gọn thì xếp dọc là hết.
+
+**Thu gọn xong không đọc được gì.** Mockup để mỗi mục một chấm vuông cùng màu,
+nên 13 mục thành 13 chấm y hệt nhau. Đổi sang icon riêng cho từng mục — lệch
+mockup, và lệch có chủ ý.
+
+Đáng ghi lại về cách đo: bộ kiểm cũ dùng `el.click()` nên **báo xanh suốt** dù
+nút bị cắt. `.click()` bắn thẳng sự kiện vào phần tử, bỏ qua khâu dò xem điểm đó
+chạm vào cái gì. Phải `Input.dispatchMouseEvent` theo toạ độ thật cộng
+`elementFromPoint` mới thấy. Bộ `sidebar.js` giờ đo hình học (`loRaNgoai`,
+`cuonNgang`) thay vì chỉ hỏi "bấm có chạy không".
+
+Đã kiểm: `sidebar.js` 9 · `chuong.js` 14 · `chuong2.js` 29 (bấm chuột thật trên
+8 trang, 5 bề ngang) · `drawer.js` 7 — kèm bắt lỗi hydrate ở cả `next dev` lẫn
+bản build production.
+
 ## M6.18 — Bảng size quản lý được
 
 ### Vì sao phải làm

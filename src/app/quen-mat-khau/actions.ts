@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { docIpKhach } from "@/lib/client-ip";
 import { z } from "zod";
 import { yeuCauDatLai } from "@/server/password-reset";
 import { mailDatLaiMatKhau } from "@/server/mail-templates";
@@ -30,7 +31,7 @@ export async function quenMatKhauAction(_prev: QuenState, form: FormData): Promi
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." };
   }
 
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const ip = docIpKhach(await headers());
   /*
    * Giới hạn theo IP: form này gửi được mà không cần đăng nhập, và mỗi lượt là
    * một email rời khỏi hệ thống. Không chặn thì nó thành công cụ dội thư vào

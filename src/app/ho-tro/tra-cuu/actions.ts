@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { docIpKhach } from "@/lib/client-ip";
 import { revalidatePath } from "next/cache";
 import { traLoiSchema, traLoiTicket, TicketClosedError } from "@/server/tickets";
 import { rateLimit } from "@/server/rate-limit";
@@ -19,7 +20,7 @@ export async function traLoiAction(_prev: TraLoiState, form: FormData): Promise<
     return { ok: false, errors, message: "Kiểm tra lại các ô được đánh dấu." };
   }
 
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const ip = docIpKhach(await headers());
   if (!(await rateLimit("tra-loi-ho-tro:" + ip, 15, 60 * 60 * 1000)).ok) {
     return { ok: false, message: "Bạn gửi khá nhiều rồi. Thử lại sau một giờ nhé." };
   }

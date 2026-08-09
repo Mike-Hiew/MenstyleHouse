@@ -4,10 +4,29 @@ import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
+import {
+  BarChart3,
+  Boxes,
+  FolderTree,
+  LayoutDashboard,
+  LifeBuoy,
+  Menu,
+  PackagePlus,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ReceiptText,
+  Ruler,
+  Search,
+  Settings,
+  Shirt,
+  ShoppingBag,
+  TicketPercent,
+  Users,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useOverlay } from "@/components/ui/overlay";
-import type { AdminNavItem } from "./admin-nav";
+import type { AdminNavItem, IconKey } from "./admin-nav";
 import { AdminAccountMenu } from "./admin-account-menu";
 import { AlertBell, type Viec } from "./alert-bell";
 
@@ -20,6 +39,31 @@ import { AlertBell, type Viec } from "./alert-bell";
  */
 
 const SIDEBAR_KEY = "msh:admin-sidebar";
+
+/**
+ * Khoá icon → component. Tra ở phía client vì component không đi qua được ranh
+ * giới server/client.
+ *
+ * Thu gọn thì thanh bên chỉ còn cột icon này, nên mỗi icon phải **tự nói được
+ * nó là mục nào**. Bản trước để chấm vuông xám giống hệt nhau cho cả 13 mục:
+ * bấm vẫn đúng, nhưng nhìn thì không tài nào biết mục nào là mục nào, và thu
+ * gọn hoá ra chỉ tổ làm mất đường.
+ */
+const ICON: Record<IconKey, React.ComponentType<{ size?: number; className?: string }>> = {
+  "tong-quan": LayoutDashboard,
+  "san-pham": Shirt,
+  "danh-muc": FolderTree,
+  "bang-size": Ruler,
+  "don-hang": ShoppingBag,
+  "ton-kho": Boxes,
+  "nhap-kho": PackagePlus,
+  "hoa-don": ReceiptText,
+  "khach-hang": Users,
+  "khuyen-mai": TicketPercent,
+  "ho-tro": LifeBuoy,
+  "bao-cao": BarChart3,
+  "cai-dat": Settings,
+};
 
 export function AdminShell({
   nav,
@@ -121,7 +165,19 @@ function SidebarInner({
 }) {
   return (
     <>
-      <div className="flex items-center gap-2.5 border-b border-neutral-700 px-4 py-5">
+      {/*
+        Thu gọn thì **xếp dọc**. Xếp ngang trong 64px không đủ chỗ: ô vuông 18px
+        + khoảng cách 10px + nút 26px + padding 2×16px là 86px, thừa ra 22px.
+        `aside` đặt `overflow-y-auto`, mà theo CSS một trục khác `visible` thì
+        trục kia tự thành `auto` — nên phần thừa bị cắt, nút mở lại mất một góc
+        và đáy thanh bên mọc thêm thanh cuộn ngang.
+      */}
+      <div
+        className={cn(
+          "flex border-b border-neutral-700",
+          open ? "items-center gap-2.5 px-4 py-5" : "flex-col items-center gap-3 px-0 py-4",
+        )}
+      >
         <span className="block h-[18px] w-[18px] flex-none bg-accent" aria-hidden />
         {open ? (
           <span className="whitespace-nowrap text-[13px] font-extrabold uppercase tracking-[0.04em]">
@@ -133,7 +189,10 @@ function SidebarInner({
             type="button"
             onClick={onToggle}
             aria-label={open ? "Thu gọn thanh bên" : "Mở rộng thanh bên"}
-            className="ml-auto flex h-[26px] w-[26px] flex-none items-center justify-center border border-muted"
+            className={cn(
+              "flex h-[26px] w-[26px] flex-none items-center justify-center border border-muted",
+              open && "ml-auto",
+            )}
           >
             {open ? <PanelLeftClose size={13} /> : <PanelLeftOpen size={13} />}
           </button>
@@ -143,12 +202,14 @@ function SidebarInner({
       <nav className="flex flex-col py-2">
         {nav.map((n) => {
           const active = n.href === "/admin" ? pathname === "/admin" : pathname.startsWith(n.href);
+          const Icon = ICON[n.icon];
           const body = (
             <>
-              <span
+              <Icon
+                size={17}
                 className={cn(
-                  "block h-2 w-2 flex-none",
-                  active ? "bg-accent" : n.soon ? "bg-neutral-700" : "bg-muted",
+                  "flex-none",
+                  active ? "text-accent" : n.soon ? "text-neutral-600" : "text-muted",
                 )}
                 aria-hidden
               />
@@ -156,8 +217,14 @@ function SidebarInner({
             </>
           );
 
-          const base =
-            "flex items-center gap-3 overflow-hidden whitespace-nowrap border-l-[3px] px-3.5 py-3 text-left text-[13.5px]";
+          /*
+           * Thu gọn thì bỏ padding ngang và căn giữa: 64px trừ viền trái 3px
+           * còn 61px, để nguyên `px-3.5` là icon lệch hẳn sang trái.
+           */
+          const base = cn(
+            "flex items-center overflow-hidden whitespace-nowrap border-l-[3px] py-3 text-left text-[13.5px]",
+            open ? "gap-3 px-3.5" : "justify-center px-0",
+          );
 
           // Mục của milestone sau: hiện nhưng mờ và không bấm được.
           if (n.soon) {

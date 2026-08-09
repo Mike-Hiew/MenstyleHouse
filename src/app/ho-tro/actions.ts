@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { docIpKhach } from "@/lib/client-ip";
 import { createTicket, ticketSchema } from "@/server/tickets";
 import { rateLimit } from "@/server/rate-limit";
 
@@ -39,7 +40,7 @@ export async function submitTicketAction(
     return { ok: false, errors, message: "Kiểm tra lại các ô được đánh dấu.", values: daNhap(form) };
   }
 
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const ip = docIpKhach(await headers());
   if (!(await rateLimit("ticket:" + ip, 5, 60 * 60 * 1000)).ok) {
     return {
       ok: false,

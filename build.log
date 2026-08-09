@@ -1,0 +1,94 @@
+
+> menstylehouse@0.1.0 build
+> prisma generate && next build
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to .\node_modules\@prisma\client in 538ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+   ▲ Next.js 15.5.23
+   - Environments: .env
+   - Experiments (use with caution):
+     · serverActions
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 10.2s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/6) ...
+   Generating static pages (1/6) 
+   Generating static pages (2/6) 
+   Generating static pages (4/6) 
+ ✓ Generating static pages (6/6)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS  Revalidate  Expire
+┌ ƒ /                                    3.04 kB         133 kB
+├ ƒ /_not-found                            144 B         103 kB
+├ ƒ /admin                                 167 B         106 kB
+├ ƒ /admin/bang-size                     1.07 kB         107 kB
+├ ƒ /admin/bang-size/[id]                 3.4 kB         109 kB
+├ ƒ /admin/bao-cao                         914 B         124 kB
+├ ƒ /admin/cai-dat                       7.61 kB         115 kB
+├ ƒ /admin/danh-muc                       1.9 kB         125 kB
+├ ƒ /admin/don-hang                        197 B         126 kB
+├ ƒ /admin/don-hang/[code]               3.21 kB         114 kB
+├ ƒ /admin/don-hang/[code]/phieu-giao      334 B         103 kB
+├ ƒ /admin/ho-tro                          197 B         126 kB
+├ ƒ /admin/ho-tro/[code]                 2.14 kB         108 kB
+├ ƒ /admin/hoa-don                         197 B         126 kB
+├ ƒ /admin/hoa-don/[so]                  3.81 kB         110 kB
+├ ƒ /admin/khach-hang                      197 B         126 kB
+├ ƒ /admin/khach-hang/[id]                 167 B         106 kB
+├ ƒ /admin/khach-hang/moi                1.93 kB         108 kB
+├ ƒ /admin/khuyen-mai                      197 B         126 kB
+├ ƒ /admin/khuyen-mai/[id]               2.29 kB         108 kB
+├ ƒ /admin/khuyen-mai/moi                2.29 kB         108 kB
+├ ƒ /admin/nhap-kho                      1.44 kB         128 kB
+├ ƒ /admin/nhap-kho/[code]               2.77 kB         109 kB
+├ ƒ /admin/san-pham                        187 B         131 kB
+├ ƒ /admin/san-pham/[slug]               4.95 kB         116 kB
+├ ƒ /admin/san-pham/moi                  1.92 kB         108 kB
+├ ƒ /admin/ton-kho                       1.37 kB         128 kB
+├ ƒ /admin/ton-kho/[sku]                 1.64 kB         108 kB
+├ ƒ /api/anh/[key]                         144 B         103 kB
+├ ƒ /api/auth/[...nextauth]                144 B         103 kB
+├ ƒ /api/cron/huy-don-qua-han              144 B         103 kB
+├ ƒ /chinh-sach/[muc]                    1.07 kB         112 kB
+├ ƒ /dang-ky                             2.71 kB         114 kB
+├ ƒ /dang-nhap                           2.71 kB         114 kB
+├ ƒ /danh-muc/[slug]                       137 B         136 kB
+├ ƒ /dat-hang-thanh-cong/[code]          1.07 kB         112 kB
+├ ƒ /dat-lai-mat-khau/[token]            1.94 kB         113 kB
+├ ƒ /gio-hang                            3.02 kB         119 kB
+├ ƒ /ho-tro                              2.78 kB         114 kB
+├ ƒ /ho-tro/tra-cuu                      2.26 kB         113 kB
+├ ƒ /nhan-loi-moi/[token]                1.78 kB         113 kB
+├ ƒ /quen-mat-khau                        2.2 kB         113 kB
+├ ○ /robots.txt                            144 B         103 kB
+├ ƒ /san-pham                              136 B         136 kB
+├ ƒ /san-pham/[slug]                     7.27 kB         137 kB
+├ ○ /sitemap.xml                           144 B         103 kB          1h      1y
+├ ƒ /tai-khoan                           5.48 kB         135 kB
+├ ƒ /thanh-toan                          6.59 kB         123 kB
+└ ƒ /tra-cuu-don                         1.07 kB         117 kB
++ First Load JS shared by all             103 kB
+  ├ chunks/1255-a20f6c5e797a687b.js      46.4 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js  54.2 kB
+  └ other shared chunks (total)             2 kB
+
+
+ƒ Middleware                             44.9 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

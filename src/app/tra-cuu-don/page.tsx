@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { docIpKhach } from "@/lib/client-ip";
 import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { Container, Crumbs } from "@/components/storefront/shell";
@@ -28,7 +29,7 @@ export default async function TrackOrderPage({
 
   // Chặn dò mã hàng loạt: 10 lượt/IP/giờ theo `docs/API.md`.
   const h = await headers();
-  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "local";
+  const ip = docIpKhach(h);
   const limited = submitted && !(await limitOrderLookup(ip)).ok;
 
   const order = submitted && !limited ? await findOrderForLookup(code, tail) : null;

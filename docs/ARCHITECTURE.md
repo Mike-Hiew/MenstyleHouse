@@ -100,3 +100,40 @@ Middleware chặn `/admin/*` cho mọi role ngoài 4 role nội bộ. Kiểm quy
 - Mật khẩu: `argon2id`.
 - PII (SĐT, địa chỉ) chỉ hiện đầy đủ cho `STAFF` trở lên; log truy cập đơn hàng.
 - Xoá tài khoản: ẩn danh hoá khách nhưng giữ đơn hàng cho nghĩa vụ kế toán.
+
+### IP của khách — đừng lấy phần tử đầu của `X-Forwarded-For`
+
+Mọi giới hạn theo IP đều lấy khoá từ `docIpKhach()` trong `src/lib/client-ip.ts`.
+Không chỗ nào được đọc thẳng header nữa.
+
+`X-Forwarded-For` là **do khách gửi lên cũng được**, còn reverse proxy thì *nối
+thêm* vào cuối chứ không ghi đè. Khách gửi `X-Forwarded-For: 1.2.3.4` thì proxy
+biến nó thành `1.2.3.4, <ip-thật>` — lấy phần tử đầu là lấy đúng con số khách tự
+bịa, và đổi header mỗi lượt là bộ đếm về không. Bản trước đọc như vậy ở cả bảy
+chỗ: quên mật khẩu, tra cứu đơn khách vãng lai, gửi đánh giá, form hỗ trợ, đăng
+ký nhận tin.
+
+Nên đọc **từ phải sang**, bỏ đúng `TRUSTED_PROXY_HOPS` lớp:
+
+| `TRUSTED_PROXY_HOPS` | Khi nào |
+|---|---|
+| `0` *(mặc định)* | Chạy trần, không proxy. **Không tin header nào** — mọi khách chung một bộ đếm |
+| `1` | Sau đúng một reverse proxy (Caddy/nginx) |
+| `2` | Cloudflare rồi mới tới reverse proxy của mình |
+
+Mặc định 0 là cố ý: khai thiếu thì cùng lắm chặn nhầm, còn tin bừa là mất hẳn
+giới hạn. `TRUSTED_IP_HEADER` (ví dụ `cf-connecting-ip`) được ưu tiên hơn vì lớp
+biên **ghi đè** header đó.
+
+Hai điều kiện kèm theo, thiếu một là vá hụt:
+
+1. Proxy phải **ghi đè** chứ đừng nối, nếu ghi đè được: Caddy dùng
+   `header_up X-Forwarded-For {remote_host}`.
+2. App **không được vào thẳng từ Internet**. Còn vào thẳng được thì header nào
+   cũng bịa được, kể cả `CF-Connecting-IP`. Bind vào `127.0.0.1` hoặc chặn bằng
+   tường lửa.
+
+Kiểm bằng `tests/client-ip.test.ts` (15 bài) và `xff.js` chạy qua một proxy giả
+lập đúng cách Caddy nối header: qua proxy thì header bịa vô tác dụng và bị chặn
+đúng lúc hết suất, còn **đối chứng** vào thẳng không proxy thì 7/7 lượt đều lọt
+— hai cảnh cho kết quả khác nhau nên phép đo có phân biệt thật.

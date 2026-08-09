@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
+import { docIpKhach } from "@/lib/client-ip";
 import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { Container, Crumbs } from "@/components/storefront/shell";
@@ -42,7 +43,7 @@ export default async function TicketLookupPage({
   searchParams: Promise<{ ma?: string }>;
 }) {
   const ma = ((await searchParams).ma ?? "").trim();
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const ip = docIpKhach(await headers());
   const chan = ma !== "" && !(await rateLimit("tra-ho-tro:" + ip, 20, 60 * 60 * 1000)).ok;
 
   const yc = ma !== "" && !chan ? await getTicketByCode(ma) : null;

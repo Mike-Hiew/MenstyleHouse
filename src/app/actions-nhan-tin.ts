@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { docIpKhach } from "@/lib/client-ip";
 import { dangKyNhanTin, emailSchema } from "@/server/newsletter";
 import { rateLimit } from "@/server/rate-limit";
 
@@ -21,7 +22,7 @@ export async function dangKyNhanTinAction(
 
   // Ô này nằm ngay trang chủ và không cần đăng nhập — không chặn thì nó là chỗ
   // đổ rác vào danh sách gửi thư.
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const ip = docIpKhach(await headers());
   if (!(await rateLimit("nhan-tin:" + ip, 10, 60 * 60 * 1000)).ok) {
     return { ok: false, message: "Bạn thử khá nhiều lần rồi. Thử lại sau một giờ nhé." };
   }

@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { docIpKhach } from "@/lib/client-ip";
 import { revalidatePath } from "next/cache";
 import {
   AlreadyReviewedError,
@@ -39,7 +40,7 @@ export async function guiDanhGiaAction(
   }
 
   // Gửi được mà không cần đăng nhập nên phải chặn theo IP.
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const ip = docIpKhach(await headers());
   if (!(await rateLimit("danh-gia:" + ip, 10, 60 * 60 * 1000)).ok) {
     return { ok: false, message: "Bạn gửi khá nhiều rồi. Thử lại sau một giờ nhé." };
   }

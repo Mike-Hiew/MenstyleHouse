@@ -44,6 +44,10 @@ Mã lỗi dùng chung: `VALIDATION_ERROR` · `UNAUTHENTICATED` · `FORBIDDEN` ·
 |---|---|
 | Xem đơn (member) | `GET /api/orders` |
 | Xem đơn (mã) | `GET /api/orders/[code]?phone=<4 số cuối>` — rate limit 10/IP/giờ |
+
+> IP dùng làm khoá rate limit lấy từ `docIpKhach()`, **không** phải phần tử đầu
+> của `X-Forwarded-For` — xem `docs/ARCHITECTURE.md`. Chạy sau proxy thì phải
+> khai `TRUSTED_PROXY_HOPS`, không khai thì mọi khách chung một bộ đếm.
 | Huỷ đơn | `cancelOrder(code)` — chỉ khi `status ∈ {PENDING, CONFIRMED}`; hoàn tồn + hoàn điểm |
 | Sổ địa chỉ | `listAddresses()` `saveAddress()` `deleteAddress()` `setDefaultAddress()` |
 | Điểm thưởng | `GET /api/loyalty` → `{balance, entries[]}` |
