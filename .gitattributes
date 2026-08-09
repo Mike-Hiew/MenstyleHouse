@@ -1,0 +1,17 @@
+# Ép LF cho những file **chạy trên Linux**.
+#
+# Git trên Windows mặc định `core.autocrlf=true`, tức là checkout ra thì đổi
+# sang CRLF. Với một script shell thì đó là hỏng thật, không phải chuyện thẩm
+# mỹ: Linux đọc dòng `#!/bin/sh\r` và báo `bad interpreter: /bin/sh^M`. Docker
+# và Caddy cũng vấp ở chỗ tương tự.
+*.sh text eol=lf
+Dockerfile text eol=lf
+Caddyfile text eol=lf
+.dockerignore text eol=lf
+docker-compose.yml text eol=lf
+
+# Ảnh: đừng đụng vào.
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary

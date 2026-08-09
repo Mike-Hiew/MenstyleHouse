@@ -1,0 +1,45 @@
+# Caddy tự xin và tự gia hạn chứng chỉ Let's Encrypt cho {$DOMAIN}.
+#
+# Điều kiện: cổng 80 và 443 phải vào được từ Internet, và bản ghi DNS của
+# {$DOMAIN} phải trỏ đúng về máy này. Đứng sau Cloudflare ở chế độ proxy (mây
+# cam) thì ACME qua HTTP không đi lọt — để mây xám cho tới khi cấp xong.
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	reverse_proxy app:3000 {
+		# ═══ GHI ĐÈ, KHÔNG NỐI ═══════════════════════════════════════════════
+		#
+		# Mặc định Caddy **nối** IP người gửi vào cuối `X-Forwarded-For` và giữ
+		# nguyên phần khách tự gửi lên. Khách gửi `X-Forwarded-For: 1.2.3.4` thì
+		# app nhận `1.2.3.4, <ip-thật>`.
+		#
+		# `docIpKhach()` đọc từ phải sang nên vẫn đúng, nhưng ghi đè ở đây là
+		# lớp thứ hai: app không bao giờ nhìn thấy thứ khách bịa ra. Hai lớp,
+		# vì mọi giới hạn theo IP đều dựa vào đúng một con số này.
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	# Ảnh sản phẩm nằm trong Postgres, phục vụ qua URL có checksum: đổi ảnh là
+	# đổi URL. Nên bản đã tối ưu không bao giờ cần làm mới.
+	@anh path /api/anh/*
+	header @anh Cache-Control "public, max-age=31536000, immutable"
+
+	header {
+		# Chặn trình duyệt tự đoán kiểu nội dung, và chặn nhúng trang vào iframe
+		# của người khác (clickjacking lên form đăng nhập quản trị).
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Bỏ chữ ký máy chủ: không việc gì phải khai đang chạy cái gì.
+		-Server
+	}
+
+	log {
+		output file /data/truy-cap.log {
+			roll_size 20mb
+			roll_keep 5
+		}
+	}
+}

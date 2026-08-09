@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
+  /**
+   * Gói sẵn để chạy trong container: Next lần theo đúng những gì mã thật sự
+   * `import` rồi chép vào `.next/standalone`, nên ảnh Docker mang khoảng 420 MB
+   * thay vì kéo theo trọn `node_modules`. Ảnh nhỏ thì máy 2 GB kéo về và khởi
+   * động lại nhanh hơn hẳn.
+   *
+   * `next start` sẽ cảnh báo là không dùng được với cấu hình này — vẫn chạy,
+   * nhưng trong container đã gọi thẳng `node server.js` đúng như nó khuyên.
+   */
+  output: "standalone",
+
   images: {
     remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
     /**

@@ -1,0 +1,25 @@
+# Mọi thứ ở đây đều không cần cho việc dựng ảnh. Bỏ ra cho gọn context, và
+# quan trọng hơn: **không để bí mật lọt vào ảnh**.
+node_modules
+.next
+.git
+.github
+
+# Bí mật. `.env` là của máy dev, `.env.production` là của máy chủ — cả hai đều
+# nạp lúc chạy qua `env_file`, tuyệt đối không nướng vào ảnh.
+.env
+.env.*
+
+# Log và thứ sinh ra khi chạy
+*.log
+*.tsbuildinfo
+
+# Không liên quan tới bản chạy
+docs
+tests
+scripts/trich-mockup.mjs
+README.md
+DOC-NAY-DOC-TRUOC.md
+Dockerfile
+docker-compose.yml
+Caddyfile

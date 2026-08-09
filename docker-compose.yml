@@ -1,0 +1,97 @@
+# Toàn bộ cửa hàng trong một máy: Caddy → app → Postgres.
+#
+# Không có Redis, cố ý. `rateLimit` đếm trong RAM khi thiếu `REDIS_URL`, và bộ
+# đếm trong RAM **đúng** khi chỉ có một tiến trình app. Thêm Redis chỉ cần thiết
+# lúc chạy từ hai bản sao trở lên.
+#
+# LUÔN kèm `--env-file .env.production`. `env_file:` bên dưới chỉ nạp biến vào
+# trong container; còn `${...}` ngay trong file này thì compose nội suy từ môi
+# trường của shell hoặc từ `.env`, mà `.env` ở đây là của máy dev. Thiếu cờ đó
+# là compose dừng ngay với "required variable POSTGRES_PASSWORD is missing".
+#
+#   docker compose --env-file .env.production up -d      # dựng, migrate, chạy
+#   docker compose --env-file .env.production logs -f app
+#   docker compose --env-file .env.production down       # dừng, dữ liệu vẫn còn
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?chua dat POSTGRES_PASSWORD trong .env.production}
+      POSTGRES_DB: menstylehouse
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Không mở cổng ra ngoài máy chủ. Chỉ container trong mạng này gọi tới được.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d menstylehouse"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Chạy một lần rồi thoát, trước khi app khởi động.
+  #
+  # Dùng tầng `builder` vì nó có đủ `node_modules` để gọi Prisma CLI; ảnh chạy
+  # thật đã cắt hết những thứ đó đi. Tách hẳn ra khỏi app thay vì nhét vào lúc
+  # khởi động: lên nhiều bản sao thì mỗi bản sẽ tự chạy migration một lần, cùng
+  # lúc, trên cùng một cơ sở dữ liệu.
+  migrate:
+    build:
+      context: .
+      target: builder
+    env_file: .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npx prisma migrate deploy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    env_file: .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # KHÔNG khai `ports` ở đây, và đó là một quyết định bảo mật chứ không phải
+    # quên: vào thẳng được cổng 3000 là khách tự đặt được `X-Forwarded-For`,
+    # và bản vá đọc IP (`docs/ARCHITECTURE.md`) mất tác dụng hoàn toàn.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/suc-khoe').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?chua dat DOMAIN trong .env.production}
+    env_file: .env.production
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Giữ chứng chỉ đã cấp. Mất volume này là mỗi lần dựng lại phải xin
+      # chứng chỉ mới, mà Let's Encrypt có hạn mức theo tuần.
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - app
+
+volumes:
+  pgdata:
+  caddydata:
+  caddyconfig:
