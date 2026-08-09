@@ -178,6 +178,14 @@ export async function getInvoice(symbol: string, number: string) {
 export type InvoiceDetail = NonNullable<Awaited<ReturnType<typeof getInvoice>>>;
 
 /** Danh sách cho `DataTable`, tìm theo số hoá đơn / mã đơn / tên người mua. */
+/** Cột sắp xếp được. `number` là chuỗi 8 số nên sắp chữ cái cũng ra đúng thứ tự. */
+const SORTABLE: Record<string, "number" | "issuedAt" | "grossAmount" | "buyerName"> = {
+  number: "number",
+  issuedAt: "issuedAt",
+  gross: "grossAmount",
+  buyer: "buyerName",
+};
+
 export async function listInvoices(query: TableQuery) {
   const q = query.q.trim();
   const where: Prisma.InvoiceWhereInput = q
@@ -194,7 +202,7 @@ export async function listInvoices(query: TableQuery) {
   const [rows, total] = await Promise.all([
     db.invoice.findMany({
       where,
-      orderBy: { issuedAt: query.chieu },
+      orderBy: { [SORTABLE[query.sap] ?? "issuedAt"]: query.chieu },
       skip: (query.trang - 1) * TABLE_PAGE_SIZE,
       take: TABLE_PAGE_SIZE,
       select: { ...INVOICE_VIEW, order: { select: { code: true } } },

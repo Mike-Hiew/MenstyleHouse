@@ -21,13 +21,13 @@ import { formatVnd } from "@/lib/money";
 export const dynamic = "force-dynamic";
 
 const COLUMNS: ColumnMeta[] = [
-  { key: "code", label: "MÃ PHIẾU", card: "code" },
+  { key: "code", label: "MÃ PHIẾU", sortable: true, card: "code" },
   { key: "supplier", label: "NHÀ CUNG CẤP", card: "title" },
   { key: "warehouse", label: "KHO", card: "meta" },
-  { key: "status", label: "TRẠNG THÁI", card: "badge" },
+  { key: "status", label: "TRẠNG THÁI", sortable: true, card: "badge" },
   { key: "lines", label: "SỐ DÒNG", align: "right", card: "hide" },
   { key: "createdAt", label: "NGÀY TẠO", sortable: true, card: "foot" },
-  { key: "grossAmount", label: "TỔNG TIỀN", align: "right", card: "foot-end" },
+  { key: "grossAmount", label: "TỔNG TIỀN", align: "right", sortable: true, card: "foot-end" },
 ];
 
 export default async function ReceiptsPage({

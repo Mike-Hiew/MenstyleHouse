@@ -1,6 +1,8 @@
 import { DataTable, type ColumnMeta, type TableRow } from "@/components/admin/data-table";
 import { requirePermission } from "@/server/admin/guard";
-import { doanhThuTheoThang, tongQuanBaoCao, topSanPham } from "@/server/admin/reports";
+import { doanhThuTheoThang, laiGop, tongQuanBaoCao, topSanPham } from "@/server/admin/reports";
+import { docKhoang, KY, type KyKey } from "@/lib/ky-bao-cao";
+import { KyPicker } from "@/components/admin/ky-picker";
 import { parseTableQuery, serializeTableQuery, type RawParams } from "@/lib/table-params";
 import { formatVnd, formatVndPlain } from "@/lib/money";
 
@@ -15,6 +17,11 @@ const COLUMNS: ColumnMeta[] = [
   { key: "kenh", label: "KÊNH", card: "meta" },
 ];
 
+/** Query string có thể lặp khoá; lấy giá trị đầu. */
+function one(v: string | string[] | undefined): string | undefined {
+  return Array.isArray(v) ? v[0] : v;
+}
+
 export default async function AdminReportsPage({
   searchParams,
 }: {
@@ -23,10 +30,18 @@ export default async function AdminReportsPage({
   await requirePermission("bao-cao.xem");
 
   const query = parseTableQuery(await searchParams);
-  const [ky, tong, top] = await Promise.all([
-    doanhThuTheoThang(12),
-    tongQuanBaoCao(12),
+  /*
+   * Khoảng thời gian đọc từ URL nên chia sẻ link báo cáo là ra đúng khoảng đó,
+   * và bấm Back vẫn lùi đúng chỗ — cùng lối với bảng và bộ lọc catalog.
+   */
+  const raw = await searchParams;
+  const khoang = docKhoang({ ky: one(raw.ky), tu: one(raw.tu), den: one(raw.den) });
+
+  const [ky, tong, top, lai] = await Promise.all([
+    doanhThuTheoThang(khoang),
+    tongQuanBaoCao(khoang),
     topSanPham(10),
+    laiGop(khoang),
   ]);
 
   const tim = query.q.trim().toLowerCase();
@@ -62,8 +77,14 @@ export default async function AdminReportsPage({
 
   return (
     <div>
+      <KyPicker
+        ky={((Object.keys(KY) as KyKey[]).includes(one(raw.ky) as KyKey) ? one(raw.ky) : "12-thang") as KyKey}
+        tu={one(raw.tu) ?? ""}
+        den={one(raw.den) ?? ""}
+      />
+
       <dl className="mb-7 grid gap-px border-2 border-divider bg-divider sm:grid-cols-2 lg:grid-cols-4">
-        <Card label="Doanh thu 12 tháng" value={formatVnd(tong.doanhThu)} />
+        <Card label={"Doanh thu · " + khoang.nhan} value={formatVnd(tong.doanhThu)} />
         <Card label="Số đơn tính doanh thu" value={String(tong.soDon)} />
         <Card label="Giá trị đơn trung bình" value={formatVnd(tong.gtdh)} />
         <Card
@@ -72,6 +93,25 @@ export default async function AdminReportsPage({
           hint="Không tính vào doanh thu"
         />
       </dl>
+
+      {/*
+        Lãi gộp dùng `unitCost` của phiếu nhập — con số vẫn nhập vào mỗi lần nhập
+        hàng nhưng trước M6.16 không màn nào đọc tới, nên cửa hàng biết bán được
+        bao nhiêu mà không biết lời bao nhiêu.
+      */}
+      <dl className="mb-7 grid gap-px border-2 border-divider bg-divider sm:grid-cols-2 lg:grid-cols-4">
+        <Card label="Doanh thu (đã tính giá vốn)" value={formatVnd(lai.doanhThu)} />
+        <Card label="Giá vốn hàng bán" value={formatVnd(lai.giaVon)} hint="Bình quân gia quyền các phiếu nhập" />
+        <Card label={"Lãi gộp · " + khoang.nhan} value={formatVnd(lai.laiGop)} />
+        <Card label="Biên lãi gộp" value={lai.bienLai + "%"} />
+      </dl>
+
+      {lai.thieuGiaVon > 0 ? (
+        <p className="mb-7 border-2 border-accent bg-accent-100 px-4 py-3 text-[13.5px] font-semibold text-accent-800">
+          {lai.thieuGiaVon} dòng hàng đã bán chưa từng nhập qua hệ thống nên không có giá vốn —
+          lãi gộp ở trên đang tính thiếu phần đó. Nhập hàng qua màn Nhập kho để số này về 0.
+        </p>
+      ) : null}
 
       <DataTable
         basePath="/admin/bao-cao"

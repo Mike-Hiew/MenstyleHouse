@@ -42,6 +42,17 @@ const docTrangThaiPhien = cache(async (userId: string) =>
   }),
 );
 
+/*
+ * Không có `AUTH_SECRET` thì **dừng ngay lúc khởi động**, không chạy tiếp với
+ * một khoá mặc định. Chạy tiếp là mọi phiên đăng nhập ký bằng một khoá ai cũng
+ * đoán được, và không có gì báo cho ai biết.
+ */
+if (!process.env.AUTH_SECRET?.trim()) {
+  throw new Error(
+    "Thiếu AUTH_SECRET. Sinh bằng: node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
+  );
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/dang-nhap" },

@@ -27,6 +27,11 @@ const goc = {
   freeShipFrom: 500_000,
   vatRate: 8,
   holdMinutes: 120,
+  // Chương trình hạng đang bật; tắt thì ba ngưỡng dưới không còn bị kiểm.
+  tiersEnabled: true,
+  redeemEnabled: true,
+  pointValue: 1,
+  redeemMaxPct: 50,
   tierSilver: 800_000,
   tierGold: 2_000_000,
   tierDiamond: 4_000_000,

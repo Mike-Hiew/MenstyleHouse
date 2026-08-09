@@ -15,12 +15,12 @@ import { formatVnd } from "@/lib/money";
 export const dynamic = "force-dynamic";
 
 const COLUMNS: ColumnMeta[] = [
-  { key: "number", label: "SỐ HOÁ ĐƠN", card: "title" },
+  { key: "number", label: "SỐ HOÁ ĐƠN", sortable: true, card: "title" },
   { key: "order", label: "ĐƠN HÀNG", card: "meta" },
-  { key: "buyer", label: "NGƯỜI MUA", card: "meta" },
+  { key: "buyer", label: "NGƯỜI MUA", sortable: true, card: "meta" },
   { key: "tax", label: "MST", card: "hide" },
   { key: "issuedAt", label: "NGÀY PHÁT HÀNH", sortable: true, card: "foot" },
-  { key: "gross", label: "TỔNG TIỀN", align: "right", card: "foot-end" },
+  { key: "gross", label: "TỔNG TIỀN", align: "right", sortable: true, card: "foot-end" },
 ];
 
 export default async function AdminInvoicesPage({

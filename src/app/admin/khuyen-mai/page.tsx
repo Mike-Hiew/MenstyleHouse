@@ -17,12 +17,12 @@ export const dynamic = "force-dynamic";
 
 /** Bảy cột đúng màn `promos` trong mockup. */
 const COLUMNS: ColumnMeta[] = [
-  { key: "code", label: "MÃ", card: "title" },
-  { key: "type", label: "LOẠI", card: "meta" },
-  { key: "value", label: "GIÁ TRỊ", align: "right", card: "foot" },
-  { key: "min", label: "ĐƠN TỐI THIỂU", align: "right", card: "hide" },
-  { key: "uses", label: "LƯỢT DÙNG", align: "right", card: "foot-end" },
-  { key: "end", label: "HẠN DÙNG", card: "meta" },
+  { key: "code", label: "MÃ", sortable: true, card: "title" },
+  { key: "type", label: "LOẠI", sortable: true, card: "meta" },
+  { key: "value", label: "GIÁ TRỊ", align: "right", sortable: true, card: "foot" },
+  { key: "min", label: "ĐƠN TỐI THIỂU", align: "right", sortable: true, card: "hide" },
+  { key: "uses", label: "LƯỢT DÙNG", align: "right", sortable: true, card: "foot-end" },
+  { key: "end", label: "HẠN DÙNG", sortable: true, card: "meta" },
   { key: "status", label: "TRẠNG THÁI", card: "badge" },
 ];
 

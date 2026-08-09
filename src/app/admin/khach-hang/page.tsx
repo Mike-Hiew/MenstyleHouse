@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnMeta, type TableRow } from "@/components/admin/data-table";
 import { requirePermission } from "@/server/admin/guard";
 import { listCustomers } from "@/server/admin/customers";
+import { getSettings } from "@/server/settings";
 import { tierTone } from "@/lib/tiers";
 import {
   parseTableQuery,
@@ -15,14 +16,23 @@ import { formatVnd } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
-/** Năm cột đúng màn `customers` trong mockup. */
-const COLUMNS: ColumnMeta[] = [
-  { key: "name", label: "KHÁCH HÀNG", card: "title" },
-  { key: "phone", label: "SỐ ĐIỆN THOẠI", card: "meta" },
-  { key: "soDon", label: "SỐ ĐƠN", align: "right", card: "foot" },
-  { key: "chiTieu", label: "TỔNG CHI TIÊU", align: "right", card: "foot-end" },
-  { key: "hang", label: "HẠNG", card: "badge" },
-];
+/**
+ * Năm cột đúng màn `customers` trong mockup.
+ *
+ * Cột HẠNG biến mất khi cửa hàng tắt chương trình hạng trong Cài đặt — nhìn một
+ * cột luôn ghi "MỚI" cho mọi khách thì thà đừng bày.
+ */
+function cotCho(batHang: boolean): ColumnMeta[] {
+  return [
+    { key: "name", label: "KHÁCH HÀNG", sortable: true, card: "title" },
+    { key: "phone", label: "SỐ ĐIỆN THOẠI", sortable: true, card: "meta" },
+    { key: "soDon", label: "SỐ ĐƠN", align: "right", sortable: true, card: "foot" },
+    { key: "chiTieu", label: "TỔNG CHI TIÊU", align: "right", sortable: true, card: "foot-end" },
+    ...(batHang
+      ? ([{ key: "hang", label: "HẠNG", sortable: true, card: "badge" }] as ColumnMeta[])
+      : []),
+  ];
+}
 
 export default async function AdminCustomersPage({
   searchParams,
@@ -32,7 +42,8 @@ export default async function AdminCustomersPage({
   await requirePermission("khach-hang.xem");
 
   const query = parseTableQuery(await searchParams);
-  const { rows, total } = await listCustomers(query);
+  const [{ rows, total }, caiDat] = await Promise.all([listCustomers(query), getSettings()]);
+  const batHang = caiDat.tiersEnabled;
 
   const tableRows: TableRow[] = rows.map((c) => ({
     id: c.id,
@@ -41,7 +52,7 @@ export default async function AdminCustomersPage({
       phone: c.phone ?? "",
       soDon: c.soDon,
       chiTieu: c.chiTieu,
-      hang: c.hang,
+      ...(batHang ? { hang: c.hang } : {}),
     },
     cells: [
       <Link
@@ -60,9 +71,13 @@ export default async function AdminCustomersPage({
       <span key="ct" className="font-extrabold">
         {formatVnd(c.chiTieu)}
       </span>,
-      <Badge key="hg" tone={tierTone(c.hang)}>
-        {c.hang}
-      </Badge>,
+      ...(batHang
+        ? [
+            <Badge key="hg" tone={tierTone(c.hang)}>
+              {c.hang}
+            </Badge>,
+          ]
+        : []),
     ],
   }));
 
@@ -71,9 +86,13 @@ export default async function AdminCustomersPage({
       basePath="/admin/khach-hang"
       params={serializeTableQuery(query).toString()}
       title="Khách hàng"
-      subtitle={`${total} khách hàng · phân hạng theo tổng chi tiêu 12 tháng`}
+      subtitle={
+        batHang
+          ? `${total} khách hàng · phân hạng theo tổng chi tiêu 12 tháng`
+          : `${total} khách hàng`
+      }
       action={{ label: "+ THÊM KHÁCH HÀNG", href: "/admin/khach-hang/moi" }}
-      columns={COLUMNS}
+      columns={cotCho(batHang)}
       rows={tableRows}
       total={total}
       page={query.trang}

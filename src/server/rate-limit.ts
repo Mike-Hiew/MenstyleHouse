@@ -1,44 +1,104 @@
 import "server-only";
+import Redis from "ioredis";
 
 /**
- * Giới hạn tần suất trong bộ nhớ tiến trình. Đủ cho tra cứu đơn ở M2
- * (`docs/API.md`: 10 lượt/IP/giờ) và không thêm phụ thuộc nào.
+ * Giới hạn tần suất.
  *
- * Hạn chế phải biết: chạy nhiều instance thì mỗi instance đếm riêng. Khi lên
- * nhiều máy chủ phải đổi sang bộ đếm dùng chung (Redis) — ghi lại ở đây để
- * người sau không tưởng nhầm là đã an toàn tuyệt đối.
+ * **Dùng Redis khi có `REDIS_URL`, không có thì đếm trong RAM.** Bộ đếm trong
+ * RAM chỉ đúng khi chạy đúng một tiến trình: lên hai instance là mỗi bên đếm
+ * riêng và trần thật cao gấp đôi. Nhưng bắt buộc phải có Redis mới chạy được
+ * thì dựng máy dev cũng phải cài Redis — nên đường lui vào RAM giữ nguyên, và
+ * **nói rõ ra ở log lúc khởi động** thay vì im lặng.
+ *
+ * Redis chết giữa chừng thì rơi về RAM chứ không chặn người dùng: giới hạn tần
+ * suất là lớp bảo vệ, không phải cửa chính. Chặn hết vì Redis rớt là tự khoá
+ * cửa hàng.
  */
 
-type Bucket = { count: number; resetAt: number };
+export type KetQua = { ok: boolean; remaining: number; retryAfterSec: number };
 
-const buckets = new Map<string, Bucket>();
+/* ── Đường lui: đếm trong RAM ─────────────────────────────── */
 
-/** Dọn các ô đã hết hạn để Map không phình mãi. */
-function sweep(now: number) {
-  if (buckets.size < 5_000) return;
-  for (const [key, b] of buckets) if (b.resetAt <= now) buckets.delete(key);
+type O = { count: number; resetAt: number };
+const trongRam = new Map<string, O>();
+
+function don(now: number) {
+  if (trongRam.size < 5_000) return;
+  for (const [k, o] of trongRam) if (o.resetAt <= now) trongRam.delete(k);
 }
 
-export function rateLimit(
-  key: string,
-  limit: number,
-  windowMs: number,
-): { ok: boolean; remaining: number; retryAfterSec: number } {
+function demTrongRam(key: string, limit: number, windowMs: number): KetQua {
   const now = Date.now();
-  sweep(now);
+  don(now);
 
-  const found = buckets.get(key);
-  if (!found || found.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
+  const co = trongRam.get(key);
+  if (!co || co.resetAt <= now) {
+    trongRam.set(key, { count: 1, resetAt: now + windowMs });
     return { ok: true, remaining: limit - 1, retryAfterSec: 0 };
   }
-
-  if (found.count >= limit) {
-    return { ok: false, remaining: 0, retryAfterSec: Math.ceil((found.resetAt - now) / 1000) };
+  if (co.count >= limit) {
+    return { ok: false, remaining: 0, retryAfterSec: Math.ceil((co.resetAt - now) / 1000) };
   }
+  co.count += 1;
+  return { ok: true, remaining: limit - co.count, retryAfterSec: 0 };
+}
 
-  found.count += 1;
-  return { ok: true, remaining: limit - found.count, retryAfterSec: 0 };
+/* ── Redis ────────────────────────────────────────────────── */
+
+let redis: Redis | null = null;
+let daBao = false;
+
+function noi(): Redis | null {
+  const url = process.env.REDIS_URL?.trim();
+  if (!url) {
+    if (!daBao) {
+      daBao = true;
+      console.info("[rate-limit] Không có REDIS_URL — đếm trong RAM, chỉ đúng khi chạy 1 instance.");
+    }
+    return null;
+  }
+  if (redis) return redis;
+
+  redis = new Redis(url, {
+    maxRetriesPerRequest: 1,
+    // Không để kết nối hỏng làm treo request: thà rơi về RAM còn hơn chờ.
+    connectTimeout: 1000,
+    lazyConnect: false,
+  });
+  redis.on("error", (e) => console.error("[rate-limit] Redis lỗi:", e.message));
+  return redis;
+}
+
+export async function rateLimit(key: string, limit: number, windowMs: number): Promise<KetQua> {
+  const r = noi();
+  if (!r) return demTrongRam(key, limit, windowMs);
+
+  try {
+    const k = "rl:" + key;
+    /*
+     * `INCR` rồi đặt hạn cho lượt đầu. Hai lệnh trong một pipeline nên không có
+     * khoảng hở cho một request khác chen vào giữa và làm mất hạn.
+     */
+    const [[, dem], [, con]] = (await r
+      .multi()
+      .incr(k)
+      .pttl(k)
+      .exec()) as [[Error | null, number], [Error | null, number]];
+
+    if (con < 0) await r.pexpire(k, windowMs);
+
+    if (dem > limit) {
+      return {
+        ok: false,
+        remaining: 0,
+        retryAfterSec: Math.ceil((con > 0 ? con : windowMs) / 1000),
+      };
+    }
+    return { ok: true, remaining: limit - dem, retryAfterSec: 0 };
+  } catch (e) {
+    console.error("[rate-limit] Redis không trả lời, tạm đếm trong RAM:", (e as Error).message);
+    return demTrongRam(key, limit, windowMs);
+  }
 }
 
 /** 10 lượt tra cứu mỗi IP mỗi giờ. */

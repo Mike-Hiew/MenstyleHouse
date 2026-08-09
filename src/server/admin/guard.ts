@@ -23,7 +23,7 @@ import { getMatrix } from "@/server/admin/permissions";
 
 export { STAFF_ROLES, isStaff, ROLE_LABEL } from "@/lib/roles";
 
-export type AdminUser = { id: string; name: string; role: Role };
+export type AdminUser = { id: string; name: string; email: string | null; role: Role };
 
 export class ForbiddenError extends Error {
   constructor() {
@@ -46,11 +46,11 @@ const nhanVienHienTai = cache(async (): Promise<AdminUser | null> => {
 
   const u = await db.user.findUnique({
     where: { id },
-    select: { id: true, name: true, role: true, active: true },
+    select: { id: true, name: true, email: true, role: true, active: true },
   });
   if (!u || !u.active || !STAFF_ROLES.includes(u.role)) return null;
 
-  return { id: u.id, name: u.name, role: u.role };
+  return { id: u.id, name: u.name, email: u.email, role: u.role };
 });
 
 /**

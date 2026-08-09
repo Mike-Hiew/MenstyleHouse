@@ -1,0 +1,190 @@
+
+> menstylehouse@0.1.0 start
+> next start
+
+   ▲ Next.js 15.5.23
+   - Local:        http://localhost:3000
+   - Network:      http://172.28.0.1:3000
+
+ ✓ Starting...
+ ✓ Ready in 904ms
+[rate-limit] Không có REDIS_URL — đếm trong RAM, chỉ đúng khi chạy 1 instance.
+
+──────── MAIL (chưa gửi thật — MAIL_PROVIDER=console) ────────
+Loại:     dat-lai-mat-khau
+Tới:      thu5785984@vidu.vn
+Tiêu đề:  Đặt lại mật khẩu — Men Style House
+
+Chào Nguyễn Thử Mật Khẩu,
+
+Có người yêu cầu đặt lại mật khẩu cho tài khoản này. Mở đường dẫn sau để đặt mật khẩu mới:
+http://localhost:3000/dat-lai-mat-khau/dPLz4DJdu5KcgWpdR_6fiQrjnRtRJ0c-
+
+Đường dẫn dùng được **một lần** và hết hạn sau 1 giờ.
+
+Nếu không phải bạn yêu cầu, bỏ qua thư này — mật khẩu hiện tại vẫn nguyên và không ai vào được tài khoản của bạn bằng thư này.
+
+—
+Men Style House · 1900 6060
+Mail tự động, vui lòng không trả lời thư này.
+──────────────────────────────────────────────────────────────
+
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at fJ (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\1251.js:420:41160)
+    at async fS (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\1251.js:420:50758)
+    at async fU (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\1251.js:420:55010)
+    at async f4 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\1251.js:420:60317)
+    at async q (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\app\_not-found\page.js:2:8895)
+    at async t5 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:18:1716)
+    at async E:\Project\Khánh Web\Mens Style House\MenStyleHouse\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:18:533
+    at async t7 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:16:6988)
+    at async ic (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:22:23822)
+    at async m (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\app\dang-nhap\page.js:1:6915)
+
+──────── MAIL (chưa gửi thật — MAIL_PROVIDER=console) ────────
+Loại:     trang-thai-don
+Tới:      tv5092424@vidu.vn
+Tiêu đề:  Đơn MSH-2026-00400 đang trên đường tới bạn — Men Style House
+
+Chào Trần Thành Viên,
+
+Đơn của bạn đã rời cửa hàng.
+
+Mã vận đơn: GHN123456789 (Giao Hàng Nhanh)
+
+Bạn kiểm hàng trước khi thanh toán giúp nhé. Sai mẫu hay thiếu hàng thì từ chối nhận và gọi cửa hàng ngay.
+
+Theo dõi đơn tại:
+http://localhost:3000/tra-cuu-don
+
+—
+Men Style House · 1900 6060
+Mail tự động, vui lòng không trả lời thư này.
+──────────────────────────────────────────────────────────────
+
+
+──────── MAIL (chưa gửi thật — MAIL_PROVIDER=console) ────────
+Loại:     hoa-don
+Tới:      tv4950306@vidu.vn
+Tiêu đề:  Hoá đơn GTGT 00000008 — Men Style House
+
+Chào Trần Thành Viên,
+
+Cửa hàng đã phát hành hoá đơn GTGT cho đơn MSH-2026-00399.
+
+Ký hiệu: 1C26TMS
+Số:      00000008
+Tổng:    580.000 ₫
+
+Cần bản in, liên hệ cửa hàng theo số bên dưới.
+
+—
+Men Style House · 1900 6060
+Mail tự động, vui lòng không trả lời thư này.
+──────────────────────────────────────────────────────────────
+
+[rate-limit] Không có REDIS_URL — đếm trong RAM, chỉ đúng khi chạy 1 instance.
+[31m[auth][error][0m JWTSessionError: Read more at https://errors.authjs.dev#jwtsessionerror
+[31m[auth][cause][0m: Error: no matching decryption secret
+    at b1.clockTolerance (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:66004)
+    at async b$ (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:59284)
+    at async b1 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:60804)
+    at async Object.cg [as decode] (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:65844)
+    at async fL (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:43738)
+    at async fS (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:50476)
+    at async fU (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:55010)
+    at async p (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:3709)
+    at async l (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:916)
+    at async m (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:1181)
+[31m[auth][details][0m: {}
+[31m[auth][error][0m JWTSessionError: Read more at https://errors.authjs.dev#jwtsessionerror
+[31m[auth][cause][0m: Error: no matching decryption secret
+    at b1.clockTolerance (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:66004)
+    at async b$ (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:59284)
+    at async b1 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:60804)
+    at async Object.cg [as decode] (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:65844)
+    at async fL (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:43738)
+    at async fS (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:50476)
+    at async fU (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:55010)
+    at async p (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:3709)
+    at async Promise.all (index 2)
+    at async m (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\5431.js:1:7711)
+[31m[auth][details][0m: {}
+[31m[auth][error][0m JWTSessionError: Read more at https://errors.authjs.dev#jwtsessionerror
+[31m[auth][cause][0m: Error: no matching decryption secret
+    at b1.clockTolerance (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:66004)
+    at async b$ (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:59284)
+    at async b1 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:60804)
+    at async Object.cg [as decode] (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:65844)
+    at async fL (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:43738)
+    at async fS (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:50476)
+    at async fU (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:55010)
+    at async E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\5431.js:1:2466
+    at async Promise.all (index 3)
+    at async m (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\5431.js:1:7711)
+[31m[auth][details][0m: {}
+[31m[auth][error][0m JWTSessionError: Read more at https://errors.authjs.dev#jwtsessionerror
+[31m[auth][cause][0m: Error: no matching decryption secret
+    at b1.clockTolerance (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:66004)
+    at async b$ (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:59284)
+    at async b1 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:60804)
+    at async Object.cg [as decode] (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:65844)
+    at async fL (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:43738)
+    at async fS (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:50476)
+    at async fU (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:55010)
+    at async p (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:3709)
+    at async l (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:916)
+    at async m (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:1181)
+[31m[auth][details][0m: {}
+[31m[auth][error][0m JWTSessionError: Read more at https://errors.authjs.dev#jwtsessionerror
+[31m[auth][cause][0m: Error: no matching decryption secret
+    at b1.clockTolerance (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:66004)
+    at async b$ (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:59284)
+    at async b1 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:60804)
+    at async Object.cg [as decode] (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:65844)
+    at async fL (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:43738)
+    at async fS (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:50476)
+    at async fU (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:55010)
+    at async p (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:3709)
+    at async Promise.all (index 2)
+    at async m (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\5431.js:1:7711)
+[31m[auth][details][0m: {}
+[31m[auth][error][0m JWTSessionError: Read more at https://errors.authjs.dev#jwtsessionerror
+[31m[auth][cause][0m: Error: no matching decryption secret
+    at b1.clockTolerance (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:66004)
+    at async b$ (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:59284)
+    at async b1 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:60804)
+    at async Object.cg [as decode] (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:65844)
+    at async fL (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:43738)
+    at async fS (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:50476)
+    at async fU (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:55010)
+    at async E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\5431.js:1:2466
+    at async Promise.all (index 3)
+    at async m (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\5431.js:1:7711)
+[31m[auth][details][0m: {}
+[31m[auth][error][0m JWTSessionError: Read more at https://errors.authjs.dev#jwtsessionerror
+[31m[auth][cause][0m: Error: no matching decryption secret
+    at b1.clockTolerance (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:66004)
+    at async b$ (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:59284)
+    at async b1 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:60804)
+    at async Object.cg [as decode] (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:65844)
+    at async fL (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:43738)
+    at async fS (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:50476)
+    at async fU (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:55010)
+    at async p (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:3709)
+    at async l (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:916)
+    at async m (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:1181)
+[31m[auth][details][0m: {}
+[31m[auth][error][0m JWTSessionError: Read more at https://errors.authjs.dev#jwtsessionerror
+[31m[auth][cause][0m: Error: no matching decryption secret
+    at b1.clockTolerance (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:66004)
+    at async b$ (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:59284)
+    at async b1 (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:60804)
+    at async Object.cg [as decode] (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:1:65844)
+    at async fL (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:43738)
+    at async fS (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:50476)
+    at async fU (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\3640.js:404:55010)
+    at async p (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\8290.js:1:3709)
+    at async Promise.all (index 2)
+    at async m (E:\Project\Khánh Web\Mens Style House\MenStyleHouse\.next\server\chunks\5431.js:1:7711)
+[31m[auth][details][0m: {}

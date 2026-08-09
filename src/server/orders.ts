@@ -3,10 +3,11 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { moveStock } from "@/lib/inventory";
+import { tinhGiamTheoDiem } from "@/lib/points";
 import { nextCode } from "@/lib/codes";
 import { findQuote } from "@/lib/shipping";
 import { getSettings } from "@/server/settings";
-import { pointsFor } from "@/lib/money";
+
 import { getOrCreateCart, clearCart, readCartCoupon } from "./cart";
 import { consumeCoupon } from "./coupons";
 
@@ -44,6 +45,8 @@ export const checkoutSchema = z.object({
     .optional(),
   vatAddress: z.string().trim().max(200).optional(),
   vatEmail: z.union([z.string().trim().email("Email nhận hoá đơn không hợp lệ"), z.literal("")]).optional(),
+  /** Số điểm khách xin dùng; server tự cắt về mức cho phép. */
+  pointsToUse: z.coerce.number().int().min(0).max(10_000_000).optional(),
   /** Gọi lại cùng key trả về đúng đơn cũ — `docs/API.md`. */
   idempotencyKey: z.string().trim().min(8).max(64),
 }).superRefine((v, ctx) => {
@@ -123,7 +126,27 @@ export async function placeOrder(input: CheckoutInput): Promise<{ code: string }
   const caiDat = await getSettings();
   const quote = findQuote(input.province, subtotal, input.carrier, caiDat);
   const shippingFee = quote?.fee ?? 0;
-  const total = Math.max(0, subtotal - discount) + shippingFee;
+
+  /*
+   * Điểm **tính lại ở server** từ số dư thật, y như tiền giảm của mã. Số client
+   * gửi lên chỉ là ý muốn; tin nó là mở đường lấy hàng bằng điểm không có.
+   *
+   * Chỉ member mới có điểm, và điểm trừ vào **tiền hàng sau giảm giá**, không
+   * trừ vào phí ship.
+   */
+  const tienHang = Math.max(0, subtotal - discount);
+  const soDiem = userId
+    ? ((await db.user.findUnique({ where: { id: userId }, select: { pointBalance: true } }))
+        ?.pointBalance ?? 0)
+    : 0;
+  const { diemDung, tienGiam: giamTheoDiem } = tinhGiamTheoDiem({
+    xinDung: input.pointsToUse ?? 0,
+    soDiem,
+    tienHang,
+    luat: caiDat,
+  });
+
+  const total = Math.max(0, tienHang - giamTheoDiem) + shippingFee;
 
   const code = await db.$transaction(async (tx) => {
     const orderCode = await nextCode(tx, "MSH");
@@ -157,7 +180,7 @@ export async function placeOrder(input: CheckoutInput): Promise<{ code: string }
         vatEmail: input.vatRequested ? (input.vatEmail || null) : null,
         // Điểm chỉ ghi nhận khi đơn PAID *và* DELIVERED — đây mới là dự kiến.
         pointsEarned: 0,
-        pointsUsed: 0,
+        pointsUsed: diemDung,
         items: {
           create: lines.map((l) => ({
             variantId: l.variantId,
@@ -192,6 +215,26 @@ export async function placeOrder(input: CheckoutInput): Promise<{ code: string }
     }
 
     if (applied) await consumeCoupon(tx, applied.code);
+
+    /*
+     * Trừ điểm **ngay khi đặt**, không đợi giao xong: khách đã được giảm tiền
+     * rồi. Đơn huỷ hay trả hàng thì `cancelOrder`/`returnOrder` trả lại đủ.
+     */
+    if (userId && diemDung > 0) {
+      await tx.pointEntry.create({
+        data: {
+          userId,
+          delta: -diemDung,
+          reason: "REDEEM_ORDER",
+          orderId: order.id,
+          note: "Dùng cho đơn " + order.code,
+        },
+      });
+      await tx.user.update({
+        where: { id: userId },
+        data: { pointBalance: { decrement: diemDung } },
+      });
+    }
 
     await tx.payment.create({
       data: {
@@ -240,10 +283,6 @@ export async function getOrderByCode(code: string): Promise<OrderDetail | null> 
   return db.order.findUnique({ where: { code }, include: orderInclude });
 }
 
-/** Điểm dự kiến nhận được khi đơn hoàn tất — hiện ở trang cảm ơn. */
-export function expectedPoints(total: number): number {
-  return pointsFor(total);
-}
 
 /** Đơn của một thành viên, mới nhất trước. */
 export async function listOrdersForUser(userId: string) {
@@ -322,6 +361,26 @@ export async function cancelOrder(
       });
     }
 
+    /*
+     * Trả lại điểm khách đã **tiêu** vào đơn. Không trả là khách mất trắng
+     * điểm cho một đơn không bao giờ tới — và họ đếm từng điểm.
+     */
+    if (order.userId && order.pointsUsed > 0) {
+      await tx.pointEntry.create({
+        data: {
+          userId: order.userId,
+          delta: order.pointsUsed,
+          reason: "REFUND",
+          orderId: order.id,
+          note: "Hoàn điểm đã dùng cho đơn huỷ " + order.code,
+        },
+      });
+      await tx.user.update({
+        where: { id: order.userId },
+        data: { pointBalance: { increment: order.pointsUsed } },
+      });
+    }
+
     await tx.order.update({
       where: { id: order.id },
       data: { status: "CANCELLED", pointsEarned: 0 },
@@ -329,6 +388,112 @@ export async function cancelOrder(
 
     await tx.orderEvent.create({
       data: { orderId: order.id, status: "CANCELLED", note: reason, actorName },
+    });
+  });
+}
+
+export class CannotReturnError extends Error {
+  constructor(status: string) {
+    super(`Đơn đang ở trạng thái "${status}" nên không ghi nhận trả hàng được.`);
+    this.name = "CannotReturnError";
+  }
+}
+
+/** Chỉ đơn đã rời kho mới có gì để trả lại. */
+const RETURNABLE = ["SHIPPING", "DELIVERED"];
+
+/**
+ * Ghi nhận khách trả hàng.
+ *
+ * Trước M6.16, chuyển sang "Đã trả hàng" **chỉ đổi mỗi chữ trên màn hình**:
+ * `MovementType.RETURN` có trong schema nhưng chưa bao giờ được dùng. Hàng thật
+ * đã nằm lại trong kho mà hệ thống vẫn coi là đã bán, nên cửa hàng không bán
+ * lại được chính số hàng đang cầm trong tay — và không có gì đỏ để ai kịp nhận
+ * ra, vì bất biến `stock === Σ(movements.delta)` vẫn đúng.
+ *
+ * Bốn việc phải làm cùng lúc, trong một transaction:
+ *   1. hàng về kho qua `moveStock` (điểm vào duy nhất, luôn sinh dòng sổ);
+ *   2. thu hồi điểm đã cộng khi đơn giao xong;
+ *   3. trả lại điểm khách đã tiêu vào đơn;
+ *   4. đánh dấu đã hoàn tiền.
+ *
+ * **Không** trả lại lượt dùng mã giảm giá: khách đã mua thật rồi mới trả, khác
+ * hẳn đơn huỷ trước khi giao. Trả lượt là mở đường lấy mã dùng vô hạn bằng cách
+ * mua rồi trả.
+ */
+export async function returnOrder(
+  code: string,
+  actorName = "Nhân viên",
+  reason = "Khách trả hàng",
+): Promise<void> {
+  const order = await db.order.findUnique({ where: { code }, include: { items: true } });
+  if (!order) throw new Error("Không tìm thấy đơn " + code);
+  if (!RETURNABLE.includes(order.status)) throw new CannotReturnError(order.status);
+
+  await db.$transaction(async (tx) => {
+    for (const it of order.items) {
+      await moveStock(tx, {
+        variantId: it.variantId,
+        delta: it.qty,
+        type: "RETURN",
+        refType: "Order",
+        refId: order.id,
+        note: "Trả hàng đơn " + order.code,
+        actorName,
+      });
+    }
+
+    if (order.userId && order.pointsEarned > 0) {
+      await tx.pointEntry.create({
+        data: {
+          userId: order.userId,
+          delta: -order.pointsEarned,
+          reason: "REFUND",
+          orderId: order.id,
+          note: "Trả hàng đơn " + order.code,
+        },
+      });
+      await tx.user.update({
+        where: { id: order.userId },
+        data: { pointBalance: { decrement: order.pointsEarned } },
+      });
+    }
+
+    if (order.userId && order.pointsUsed > 0) {
+      await tx.pointEntry.create({
+        data: {
+          userId: order.userId,
+          delta: order.pointsUsed,
+          reason: "REFUND",
+          orderId: order.id,
+          note: "Hoàn điểm đã dùng cho đơn trả " + order.code,
+        },
+      });
+      await tx.user.update({
+        where: { id: order.userId },
+        data: { pointBalance: { increment: order.pointsUsed } },
+      });
+    }
+
+    await tx.order.update({
+      where: { id: order.id },
+      data: {
+        status: "RETURNED",
+        pointsEarned: 0,
+        // Đơn đã thu tiền thì trả hàng là phải hoàn; đơn chưa thu thì thôi.
+        ...(order.paymentStatus === "PAID" ? { paymentStatus: "REFUNDED" as const } : {}),
+      },
+    });
+
+    if (order.paymentStatus === "PAID") {
+      await tx.payment.updateMany({
+        where: { orderId: order.id, status: "PAID" },
+        data: { status: "REFUNDED" },
+      });
+    }
+
+    await tx.orderEvent.create({
+      data: { orderId: order.id, status: "RETURNED", note: reason, actorName },
     });
   });
 }

@@ -21,6 +21,10 @@ export type SettingsFormData = {
   freeShipFrom: number;
   vatRate: number;
   holdMinutes: number;
+  tiersEnabled: boolean;
+  redeemEnabled: boolean;
+  pointValue: number;
+  redeemMaxPct: number;
   tierSilver: number;
   tierGold: number;
   tierDiamond: number;
@@ -45,6 +49,10 @@ export function SettingsForm({ data }: { data: SettingsFormData }) {
     {},
   );
 
+  const [batHang, setBatHang] = React.useState(data.tiersEnabled);
+  const [batDiem, setBatDiem] = React.useState(data.redeemEnabled);
+  const [diemGiaTri, setDiemGiaTri] = React.useState(data.pointValue);
+  const [tranPct, setTranPct] = React.useState(data.redeemMaxPct);
   const [bac, setBac] = React.useState(data.tierSilver);
   const [vang, setVang] = React.useState(data.tierGold);
   const [kim, setKim] = React.useState(data.tierDiamond);
@@ -106,26 +114,76 @@ export function SettingsForm({ data }: { data: SettingsFormData }) {
       </div>
 
       <div className="flex flex-col gap-8">
+        <Nhom title="Điểm thưởng">
+          <label className="flex min-h-11 items-center gap-2.5 border-2 border-divider px-3.5 text-[13.5px] font-semibold">
+            <input
+              type="checkbox"
+              name="redeemEnabled"
+              checked={batDiem}
+              onChange={(e) => setBatDiem(e.target.checked)}
+              className="h-[18px] w-[18px] accent-accent"
+            />
+            Cho khách dùng điểm trừ vào tiền đơn
+          </label>
+
+          <p className="text-[13px] leading-[1.7] text-muted">
+            Khách tích 1 điểm cho mỗi 1.000 ₫ đã thanh toán. Tắt ô trên thì điểm vẫn cộng nhưng
+            không tiêu được — chỉ dùng để xét hạng.
+          </p>
+
+          <div className={"grid gap-4 sm:grid-cols-2" + (batDiem ? "" : " pointer-events-none opacity-40")}>
+            <O label="1 điểm đổi được (₫)" name="pointValue" value={diemGiaTri} onChange={setDiemGiaTri} so />
+            <O label="Trần % tiền hàng trả bằng điểm" name="redeemMaxPct" value={tranPct} onChange={setTranPct} so />
+          </div>
+
+          <p className="text-[12.5px] leading-[1.7] text-faint">
+            Trần phần trăm là chốt an toàn: không có nó thì một tài khoản tích lâu năm lấy được
+            gần như cả đơn bằng điểm. Điểm chỉ trừ vào tiền hàng, **không** trừ phí giao.
+          </p>
+        </Nhom>
+
         <Nhom title="Phân hạng khách hàng">
+          {/*
+            Bật/tắt cả chương trình. Cửa hàng không chạy hạng thì tắt đi, chứ
+            không phải nhìn một cột luôn ghi "MỚI" ở mọi màn.
+          */}
+          <label className="flex min-h-11 items-center gap-2.5 border-2 border-divider px-3.5 text-[13.5px] font-semibold">
+            <input
+              type="checkbox"
+              name="tiersEnabled"
+              checked={batHang}
+              onChange={(e) => setBatHang(e.target.checked)}
+              className="h-[18px] w-[18px] accent-accent"
+            />
+            Bật chương trình hạng thành viên
+          </label>
+
+          {!batHang ? (
+            <p className="border border-dashed border-border-soft bg-subtle px-3.5 py-3 text-[13px] leading-[1.7] text-muted">
+              Đang tắt. Hạng không hiện ở trang tài khoản, menu tài khoản và bảng khách hàng.
+              Chi tiêu vẫn được ghi nhận như thường, nên bật lại lúc nào cũng có sẵn số.
+            </p>
+          ) : null}
+
           <p className="text-[13px] leading-[1.7] text-muted">
             Hạng tính theo tổng chi tiêu 12 tháng gần nhất, chỉ đếm đơn chưa huỷ. So sánh bằng dấu{" "}
             <strong>lớn hơn</strong>: tiêu đúng bằng ngưỡng thì chưa lên hạng.
           </p>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className={"grid gap-4 sm:grid-cols-3" + (batHang ? "" : " pointer-events-none opacity-40")}>
             <O label="Lên BẠC khi vượt (₫)" name="tierSilver" value={bac} onChange={setBac} so />
             <O label="Lên VÀNG khi vượt (₫)" name="tierGold" value={vang} onChange={setVang} so />
             <O label="Lên KIM CƯƠNG khi vượt (₫)" name="tierDiamond" value={kim} onChange={setKim} so />
           </div>
 
-          {!thuTu ? (
+          {batHang && !thuTu ? (
             <p className="border-2 border-accent bg-accent-100 px-3.5 py-2.5 text-[13px] font-semibold text-accent-800">
               Ngưỡng phải tăng dần: BẠC &lt; VÀNG &lt; KIM CƯƠNG. Đặt ngược thì có hạng không bao
               giờ với tới được.
             </p>
           ) : null}
 
-          <div className="border-2 border-border-soft bg-subtle p-4">
+          <div className={"border-2 border-border-soft bg-subtle p-4" + (batHang ? "" : " opacity-40")}>
             <p className="label-tech mb-3 font-bold">THỬ NGAY</p>
             <label className="mb-3 block">
               <span className="mb-1.5 block text-[12px] font-semibold">Khách tiêu (₫)</span>

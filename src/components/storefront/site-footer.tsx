@@ -20,6 +20,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Chính sách đổi trả", href: "/chinh-sach/doi-tra" },
       { label: "Chính sách bảo mật", href: "/chinh-sach/bao-mat" },
       { label: "Liên hệ & FAQ", href: "/ho-tro" },
+      { label: "Tra cứu yêu cầu hỗ trợ", href: "/ho-tro/tra-cuu" },
     ],
   },
   {

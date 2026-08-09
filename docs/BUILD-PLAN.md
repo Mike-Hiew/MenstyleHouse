@@ -259,6 +259,334 @@ bấm "Giới thiệu" ra trang chủ · mọi link ở trang chủ đều mở 
 cho trang chủ (gồm quét 26 link tìm 404) và 16 kiểm tra cho khoảng cách lưới ở
 cả bốn chỗ tại 1440/390px, kèm ảnh chụp cả trang ở hai bề ngang.
 
+## M6.18 — Bảng size quản lý được
+
+### Vì sao phải làm
+
+Bảng size trước đây **viết cứng trong mã**: ba bảng (áo · quần dài · quần short)
+nằm trong `src/lib/size-chart.ts`, ánh xạ sang danh mục bằng một object
+`BY_CATEGORY`. Cửa hàng nhập một dòng áo khoác dày có số đo khác là phải sửa mã
+rồi build lại. Nó cũng khoá cứng giả định "mỗi danh mục một bảng", trong khi
+thực tế cùng một danh mục có thể có hàng form ôm và hàng form rộng.
+
+### Dữ liệu
+
+Hai bảng mới, và **hai chỗ trỏ tới** chúng:
+
+```
+SizeChart(id, name, slug, fit, howTo[], columns[])
+SizeChartRow(id, chartId, size, values[], sort)
+
+Category.sizeChartId  → SizeChart   (onDelete: SetNull)
+Product.sizeChartId   → SizeChart   (onDelete: SetNull)
+```
+
+`columns` và `values` để mảng chuỗi chứ không phải cột cố định: mỗi ngành hàng
+đo một kiểu, quần cần "dài quần / vòng đùi", áo cần "rộng vai / dài tay". Cột
+`Size` không nằm trong `columns` — nó luôn có, `bangSizeCho` tự chèn vào đầu.
+
+**Sản phẩm đè lên danh mục.** Bỏ trống ở sản phẩm nghĩa là "theo danh mục", nên
+mặc định vẫn là cách cũ và chỉ những sản phẩm lạ mới phải khai riêng.
+
+### Chuyển dữ liệu cũ
+
+Đây là phần đáng lo nhất: làm hụt một chỗ là **mọi trang sản phẩm lặng lẽ mất
+bảng size mà không có lỗi nào**. Nên có hẳn một migration nạp dữ liệu riêng
+(`20260809070000_nap_bang_size`) chép nguyên ba bảng viết cứng vào DB với id cố
+định `sc_ao` · `sc_quan_dai` · `sc_quan_short`, rồi dựng lại đúng ánh xạ
+`BY_CATEGORY` cũ. `tests/bang-size.test.ts` canh lại từng con số một
+(`M = 100 / 45 / 70 / 20`), không chỉ đếm số dòng.
+
+### Chặn xoá bảng đang dùng
+
+Quan hệ khai `SetNull`, nên xoá một bảng đang có 5 danh mục dùng thì DB **không
+báo gì cả** — nó chỉ xoá và set null, và 5 danh mục mất bảng size trong im lặng.
+`deleteSizeChart` đếm trước rồi ném `ChartInUseError` kèm tên danh mục cụ thể.
+
+### Màn quản trị
+
+`/admin/bang-size` (quyền `bang-size.quan-ly`): danh sách bảng · số dòng · số
+danh mục đang dùng, kèm cảnh báo danh mục nào **chưa có** bảng nào. Màn sửa cho
+đổi tên/cột/ghi chú, thêm–sửa–xoá từng dòng, và gán bảng cho danh mục ngay tại
+chỗ. Dòng nào số giá trị lệch với số cột thì đánh dấu "lệch cột" — báo chứ không
+chặn, vì nhập dở dang là chuyện bình thường.
+
+Xoá xong thì `redirect` về danh sách. Ở lại là đứng trên trang của một bảng
+không còn tồn tại: màn hình vẫn hiện đủ dữ liệu như thường, bấm gì cũng lỗi.
+
+### Đã kiểm
+
+`tests/bang-size.test.ts` (17 bài) và `bang-size.js` chạy trình duyệt thật
+(33 kiểm tra): dữ liệu cũ còn nguyên → tạo bảng mới → thêm/sửa/xoá dòng → gán
+danh mục → **trang sản phẩm đổi sang bảng mới** → chặn xoá khi đang dùng → gỡ
+rồi xoá được → trang sản phẩm trở lại bảng gốc → ô chọn bảng riêng ở màn sửa sản
+phẩm → không tràn ngang ở 1440 và 390px.
+
+## M6.17 — Chín khuyến nghị sau lượt chấm điểm
+
+### Tồn kho theo từng kho (khuyến nghị lớn nhất)
+
+Ba kho trong dữ liệu nhưng tồn chỉ là **một con số chung** — không trả lời được
+"kho Hà Nội còn mấy cái", và `MovementType.TRANSFER` chưa bao giờ dùng.
+
+Thêm `StockLevel(variantId, warehouseId, qty)`, **giữ nguyên `Variant.stock`
+làm tổng của mọi kho**. Quyết định này là chỗ đáng cân nhất: mọi nơi đang đọc
+`stock` (giỏ hàng, đặt đơn, trang sản phẩm, bất biến
+`stock === Σ(movements.delta)`) không phải sửa một dòng nào, và cửa hàng một kho
+vẫn chạy y như cũ. `moveStock` nhận thêm `warehouseId` **không bắt buộc** — bỏ
+trống thì vào kho chính, nên mọi lối gọi cũ giữ nguyên.
+
+Migration **tự chuyển tồn hiện có** vào kho chính. Không có bước đó thì tổng
+theo kho bằng 0 trong khi `Variant.stock` khác 0: màn tồn kho hiện đúng, màn
+theo kho hiện rỗng, và không có gì báo lệch.
+
+`chuyenKho()` sinh **hai dòng sổ** `TRANSFER` — âm ở kho đi, dương ở kho đến —
+nên tổng không đổi và bất biến cũ vẫn đúng. Một dòng duy nhất thì sổ của từng
+kho không đọc được hàng đi đâu về đâu.
+
+Thêm bất biến thứ hai `auditWarehouse()`: `Variant.stock` phải bằng tổng mọi kho.
+Tách khỏi `auditStock()` vì hỏng theo hai kiểu khác nhau — sổ lệch là ai đó ghi
+thẳng vào `stock`, tổng kho lệch là một lối gọi `moveStock` quên cập nhật
+`StockLevel`.
+
+### Tám khuyến nghị còn lại
+
+1. **Thông báo mã giảm giá đảo màu.** Thành công tô đỏ nổi bật, lỗi tô
+   `text-muted` — màu nhạt nhất trang. Gõ sai mã thì gần như không thấy gì. Nay
+   lỗi có viền + nền và `role="alert"`, thành công lùi về chữ xám.
+2. **Đích chạm ở quản trị mobile.** 21–41 liên kết cao 15–20px. Vá bằng **một
+   quy tắc CSS** cho `.bang-quan-tri a` thay vì sửa tám trang — trang mới thêm
+   sau cũng được hưởng mà không phải nhớ.
+3. **Bí mật.** `AUTH_SECRET` sinh ngẫu nhiên thật; **thiếu là `auth.ts` ném lỗi
+   ngay lúc khởi động** chứ không chạy tiếp với khoá mặc định. Mật khẩu seed đổi
+   từ `admin123456` viết cứng sang `SEED_PASSWORD`, không đặt thì **sinh ngẫu
+   nhiên và in ra đúng một lần**.
+4. **Cache tầng dữ liệu catalog.** Không dùng ISR vì trang vẫn phải động —
+   header đọc cookie giỏ hàng và phiên. Bọc `unstable_cache` theo nhãn quanh
+   đúng chỗ tốn thời gian (truy vấn DB), và `revalidateTag` ở sáu chỗ admin ghi.
+   Đo ở **production**: 30–60ms, so với 300–690ms ở dev.
+5. **Rate limit dùng Redis khi có `REDIS_URL`**, không có thì đếm trong RAM và
+   **nói rõ ở log**. Redis chết giữa chừng thì rơi về RAM chứ không chặn người
+   dùng — giới hạn tần suất là lớp bảo vệ, không phải cửa chính.
+6. *(tồn kho theo kho — ở trên)*
+7. **Nhắn tiếp trong cùng yêu cầu hỗ trợ.** Yêu cầu đã `CLOSED` thì không cho
+   nối thêm: mở lại một việc đã kết luận bằng một dòng nhắn là cách nhanh nhất
+   để nó rơi khỏi tầm mắt. Khách nhắn thì việc **quay lại `OPEN`**.
+8. **Thao tác hàng loạt trên bảng đơn.** Chạy tuần tự và **bỏ qua đơn không hợp
+   lệ thay vì dừng cả mẻ** — chọn 20 đơn thì thường vài đơn đã được người khác
+   xử lý; ném lỗi ở đơn thứ ba và bỏ dở 17 đơn còn lại là bắt họ dò xem cái nào
+   đã chạy. Câu tổng kết ghi rõ **bao nhiêu xong, bao nhiêu bỏ qua và vì sao**.
+9. **Báo cáo chọn khoảng ngày.** Sáu lựa chọn + tự chọn, ghi vào URL nên gửi
+   link "quý này" cho người khác mở ra vẫn đúng quý đó.
+
+### Bốn lần phép đo lại hỏng
+
+- **`text-transform` lần thứ ba.** Nhãn thẻ dùng `label-tech` nên `innerText`
+  trả "DOANH THU · 12 THÁNG…" viết hoa, regex phân biệt hoa thường đỏ nhầm hai
+  lượt liền. Bài kiểm giờ đọc theo **cấu trúc DOM** (`<dt>` → `<dd>`) chứ không
+  dò chữ.
+- **Đo cache ở `next dev`** — thời gian bị chi phối bởi biên dịch lại, đo ở đó
+  là đo nhầm thứ. Chuyển sang đo bản production bằng `curl`.
+- **Bộ kiểm đọc `dev.log`** trong khi máy chủ production ghi vào `prod.log`, và
+  lỗi báo ra ("không thấy ô input") chẳng liên quan gì tới nguyên nhân. Nay có
+  `docLog()` đọc cả hai.
+- **Rate limit thật chặn chính bộ kiểm**: chạy quá 5 lượt "quên mật khẩu" trong
+  một giờ từ cùng IP. Không phải lỗi — đúng là tính năng đang làm việc của nó.
+
+**Xong khi:** chuyển kho xong **tổng tồn không đổi** và sổ có hai dòng TRANSFER ·
+mã sai hiện nổi bật · 0 đích chạm dưới 44px ở quản trị mobile · trang sản phẩm
+production dưới 100ms · nhắn tiếp nằm trong cùng yêu cầu · chọn 2 đơn rồi xác
+nhận hàng loạt ra câu tổng kết · đổi kỳ báo cáo thì số liệu đổi theo.
+
+`tests/tra-hang-diem.test.ts` thêm 5 bài chuyển kho, `tests/inventory.test.ts`
+thêm bất biến tổng-theo-kho, tổng **334 bài đơn vị**. Chạy tay: 39 kiểm tra cho
+chín khuyến nghị, và **chạy lại toàn bộ 13 bộ cũ trên bản production**.
+
+## M6.16 — Vá nốt sau lượt quét toàn bộ chức năng
+
+Quét bằng ba lối: đối chiếu mockup (đối chứng đạt), **rà mọi hàm `export` trong
+`src/server` xem có ai gọi không**, và kiểm chứng bằng SQL. Lối thứ hai là lối
+đã bắt được ba lỗi ở M6.13 và lần này bắt tiếp bốn.
+
+### Trả hàng không hoàn tồn kho — lỗi nặng nhất
+
+`MovementType.RETURN` có trong schema nhưng `moveStock` **chưa bao giờ** được
+gọi với nó. Ba lối kiểm chứng độc lập cùng chỉ một chỗ: `advanceOrderStatus` chỉ
+rẽ nhánh riêng cho `CANCELLED`, `grep type:"RETURN"` trong toàn bộ `src/` ra 0
+kết quả, và DB có 4 đơn `RETURNED` với **0 dòng sổ** kiểu RETURN.
+
+Kiểu hỏng này im lặng tuyệt đối: bất biến `stock === Σ(movements.delta)` vẫn
+đúng (vì không sinh dòng nào), đơn vẫn đổi trạng thái, báo cáo vẫn loại RETURNED
+khỏi doanh thu. Chỉ có kho thật là lệch — cửa hàng cầm hàng trong tay mà hệ
+thống bảo đã bán, nên không bán lại được.
+
+`returnOrder()` làm bốn việc trong một transaction: hàng về kho qua `moveStock`,
+thu hồi điểm đã cộng, **trả lại điểm khách đã tiêu**, và đánh dấu đã hoàn tiền.
+**Không** trả lại lượt dùng mã giảm giá — khác đơn huỷ: khách đã mua thật rồi
+mới trả, trả lượt là mở đường dùng một mã vô hạn bằng cách mua rồi trả.
+
+Vá kèm: `cancelOrder` cũng chưa trả lại `pointsUsed`. Chưa lộ ra vì lúc đó chưa
+tiêu điểm được, nhưng sẽ thành lỗi ngay khi mở tính năng dùng điểm.
+
+### Điểm thưởng: mở đường tiêu
+
+Mockup ghi thẳng trong `welcomePerks`: *"Tích 1 điểm cho mỗi 1.000 ₫ — **đổi
+thẳng thành tiền ở lần mua sau**"*, và storefront nhắc lại lời hứa đó. Nhưng
+`PointReason.REDEEM_ORDER` chưa ai dùng: chương trình tích điểm đang một chiều.
+
+Ba chốt trong `src/lib/points.ts`, lấy cái nhỏ nhất: số điểm đang có · trần phần
+trăm tiền hàng (mặc định 50%) · và chính tiền hàng. **Điểm không trừ vào phí
+ship** — đó là tiền cửa hàng trả cho bên thứ ba. Trần phần trăm là chốt an toàn:
+không có nó thì một tài khoản tích lâu năm lấy gần như cả đơn bằng điểm.
+
+Server **tính lại** từ số dư thật, y như tiền giảm của mã; số client gửi chỉ là
+ý muốn. Và xin quá thì **cắt về mức cho phép chứ không ném lỗi**: khách để giỏ
+vài ngày rồi quay lại, điểm có thể đã đổi vì một đơn khác vừa giao — chặn cả đơn
+vì chuyện đó là phạt nhầm người.
+
+### Bốn thứ có tầng server mà không màn nào gọi tới
+
+| Hàm chết | Đã nối vào |
+|---|---|
+| `updateVariant` | Sửa biến thể ngay trong bảng — trước đó chỉ thêm/xoá, mà xoá bị chặn khi đã có tồn, nên gõ sai chênh giá là không sửa lại được. **Không cho sửa tồn ở đây**: tồn chỉ đổi qua `moveStock`. |
+| `listMovements` | Sổ kho từng biến thể, cột "còn lại" cộng dồn từ dưới lên. Có cảnh báo khi sổ và tồn lệch nhau thay vì giấu. |
+| `getTicketByCode` | `/ho-tro/tra-cuu` — khách nhận mã `TIC-…` rồi trước đó không có trang nào xem lại. Chặn 20 lượt/IP/giờ vì mã chạy tuần tự, không chặn là ai cũng dò được trao đổi của người khác bằng cách đếm lên. |
+| `ReceiptLine.unitCost` | Lãi gộp trong báo cáo. Giá vốn là **bình quân gia quyền mọi phiếu đã ghi sổ** — không lấy giá nhập gần nhất vì một lô nhỏ mua đắt kéo lệch cả tháng. Hàng bán ra chưa từng nhập thì **không đoán giá vốn**, đếm riêng và báo lên màn hình. |
+
+### Nút chuông: từ nói dối thành có ích
+
+Nút "Thông báo" ở khu quản trị **không có `onClick`** mà vẫn đeo chấm đỏ báo có
+thông báo mới. Nút không làm gì đã tệ; đeo chấm đỏ là nói dối.
+
+Nay là "việc cần làm", đếm thẳng từ dữ liệu thật (đơn chờ xác nhận · yêu cầu hỗ
+trợ chưa xong · biến thể hết/sắp hết · phiếu nhập còn nháp) nên không bao giờ
+lệch với màn tương ứng và không cần ai đánh dấu đã đọc. Mục nào bằng 0 thì
+không bày, và không có việc gì thì **không có chấm đỏ**. Lọc theo quyền như sidebar.
+
+### Bốn lần phép đo lại hỏng
+
+- `innerText` **tôn trọng `text-transform`**: `Badge` viết hoa bằng CSS nên chuỗi
+  trả về là "KHÁCH TRẢ", regex phân biệt hoa thường thì đỏ trong khi sổ hoàn toàn
+  đúng — DB đã xác nhận có dòng RETURN.
+- Chọn dòng đầu bảng tồn kho → trúng biến thể chưa nhập hàng bao giờ, sổ hiện
+  trạng thái rỗng.
+- Chọn sản phẩm đầu danh sách → trúng hàng rác do chính test E2E các lượt trước
+  tạo ra, không có biến thể nào. (Đã dọn 6 sản phẩm rác đó khỏi DB.)
+- `updateSettings` trải `...input` thẳng vào Prisma nên ô tick bỏ chọn thành
+  `undefined` và **Prisma bỏ qua** — đã ép `Boolean()` cho cả `redeemEnabled`.
+
+**Xong khi:** ghi nhận trả hàng thì **tồn kho đọc lại từ màn tồn kho phải tăng**
+và sổ có dòng "Khách trả" · khách kéo thanh điểm thì tổng tiền giảm và số gửi
+lên server nằm trong ô ẩn · sửa được biến thể · mở được sổ kho · tra được yêu
+cầu hỗ trợ bằng mã · nút chuông hiện việc thật · báo cáo có lãi gộp.
+
+`tests/tra-hang-diem.test.ts` (16 bài) và hai lượt chạy tay: 37 kiểm tra cho các
+bổ sung, 12 kiểm tra riêng cho luồng trả hàng đầu-cuối. Rà lại lần cuối: **không
+còn hàm `export` nào trong `src/server` mà không ai gọi**.
+
+## M6.15 — Menu tài khoản cho quản trị · bật/tắt hạng · sắp xếp từng cột
+
+### Menu tài khoản trong khu quản trị
+
+Cụm tài khoản góc phải khu quản trị vốn là một khối chữ trơ — nhân viên muốn
+đăng xuất phải sang `/tai-khoan` ngoài cửa hàng rồi tìm nút ở đó, việc cuối ca
+ai cũng làm. Nay bấm vào xổ xuống: tên · vai trò · email · lối về cửa hàng ·
+hồ sơ & mật khẩu · đăng xuất.
+
+Cùng cách dựng với menu ngoài cửa hàng (không `useOverlay`, `<button>` có
+`aria-haspopup`, đóng khi đổi trang) nhưng **nội dung khác**: người trong khu
+quản trị cần vai trò và lối quay về cửa hàng, không cần điểm thưởng.
+
+### Bật/tắt chương trình hạng thành viên
+
+Thêm `StoreSetting.tiersEnabled`. Tắt thì hạng biến mất khỏi **bốn chỗ**: trang
+tài khoản, menu tài khoản, bảng khách hàng (mất luôn cả cột) và hồ sơ khách ở
+quản trị. Cửa hàng không chạy chương trình hạng thì không phải nhìn một cột luôn
+ghi "MỚI" ở mọi màn.
+
+**Tắt là ngừng hiển thị, không phải ngừng ghi nhận.** Chi tiêu vẫn tính như
+thường nên bật lại lúc nào cũng có sẵn số, không mất lịch sử — có test khoá điều
+này. Và khi tắt thì **bỏ luôn phép kiểm ba ngưỡng phải tăng dần**: chúng không
+còn ý nghĩa gì, bắt kiểm lúc đó chỉ chặn người ta lưu cài đặt vì một lỗi không
+tồn tại.
+
+**Một lỗi thật lộ ra ngay khi viết:** `updateSettings` trải `...input` thẳng vào
+Prisma. Bỏ tick thì trường vắng mặt trong FormData → Zod cho `undefined` →
+**Prisma bỏ qua field `undefined`** → cờ giữ nguyên giá trị cũ, người dùng tắt
+mãi không được và không có lỗi nào hiện ra. `payCod`/`payBank` đã ép `Boolean()`
+đúng vì lý do này; `tiersEnabled` giờ cũng vậy. Bài kiểm cũ trong
+`tests/settings.test.ts` là thứ bắt được thay đổi hành vi này.
+
+### Sắp xếp theo từng cột
+
+Trước đó tám bảng quản trị chỉ có 2–3 cột sắp được, ba bảng không có cột nào.
+Nay mọi cột **đáng sắp** đều sắp được, chia làm ba loại:
+
+1. **Cột thật trong bảng** — để Postgres sắp, như cũ.
+2. **Cột qua quan hệ** — `{ product: { name } }` cho Tồn kho, `{ category: { name } }`
+   và `{ variants: { _count } }` cho Sản phẩm. Mỗi cột giữ một mệnh đề `orderBy`
+   trọn vẹn chứ không chỉ tên trường, vì "MÀU · SIZE" phải sắp theo màu rồi tới size.
+3. **Cột tính ra** — chi tiêu / số đơn / hạng của khách, và tồn của sản phẩm
+   (tổng tồn mọi biến thể). Những cột này **lấy hết rồi tính rồi sắp rồi mới cắt
+   trang**. Cách rẻ hơn — cắt trang trước rồi sắp trong 20 dòng đang hiện — cho
+   ra bảng trông đúng nhưng **không đưa khách chi nhiều nhất lên đầu**, mà nhìn
+   thì không phân biệt được. `tests/admin-sort.test.ts` khoá đúng điểm đó: so
+   dòng cuối trang 1 với dòng đầu trang 2.
+
+Hai cột sắp theo **thứ bậc chứ không theo bảng chữ cái**: trạng thái đơn đi theo
+vòng đời (chờ → xác nhận → đóng gói → giao → xong), và hạng khách đi theo
+MỚI → BẠC → VÀNG → KIM CƯƠNG. Theo chữ cái thì "Đã giao" nằm cạnh "Đã huỷ", và
+"BẠC" đứng trước "KIM CƯƠNG" đứng trước "MỚI" — bảng mất hết ý nghĩa.
+
+### Ba lần phép đo lại hỏng
+
+- `giamDan([])` là `true` vì `[].every()` là `true` — mọi bài kiểm sắp xếp sẽ
+  **xanh trên bảng rỗng**, chứng minh đúng bằng không. Hàm giờ trả `false` khi rỗng.
+- So thứ tự của Postgres với `localeCompare("vi")` của JS: hai bảng đối chiếu
+  khác nhau, bài kiểm đỏ vì collation chứ không vì mã sai. Đổi sang phép so
+  không phụ thuộc collation.
+- So "trang 1 chiều xuôi đảo ngược" với "trang 1 chiều ngược": chỉ đúng khi cả
+  tập nằm gọn một trang.
+
+**Xong khi:** bấm ô tài khoản trong quản trị thấy vai trò và đăng xuất được ·
+tắt hạng thì cột HẠNG biến mất ở cả quản trị lẫn cửa hàng rồi bật lại trở về ·
+mọi bảng quản trị sắp được theo từng cột và bấm lần hai thì đảo chiều.
+`tests/admin-sort.test.ts` (20 bài) và 35 kiểm tra qua trình duyệt.
+
+## M6.14 — Menu tài khoản xổ xuống ngay trên header
+
+Ô tài khoản ở header vốn là một liên kết thẳng sang `/tai-khoan`. Muốn xem còn
+bao nhiêu điểm, hay chỉ để đăng xuất, cũng phải **rời trang đang xem** rồi bấm
+quay lại — trong khi đó là hai thao tác lặp nhiều nhất của người đã đăng nhập.
+
+Nay bấm vào là xổ xuống: tên · hạng · số điểm · còn thiếu bao nhiêu để lên hạng
+kế tiếp · bốn lối tắt sang từng tab tài khoản · lối vào khu quản trị nếu là nhân
+viên · và **nút đăng xuất ngay tại đó**.
+
+Ba chi tiết đáng ghi:
+
+1. **Không dùng `useOverlay`.** Hook đó khoá cuộn trang và bẫy Tab, đúng cho
+   drawer toàn màn hình nhưng sai ở đây: menu nằm trong header dính, khoá cuộn
+   là trang đứng im khi menu mở. Chỉ cần đóng khi bấm ra ngoài hoặc bấm Esc.
+2. **Là `<button>` chứ không phải `<a>`**, có `aria-haspopup="menu"` và
+   `aria-expanded`. Thứ xổ xuống một panel không phải là liên kết, và trình đọc
+   màn hình cần biết trạng thái đóng/mở.
+3. **Đóng khi đổi trang** (`useEffect` theo `pathname`) — không thì menu treo
+   lại trên trang vừa điều hướng tới.
+
+**Vá kèm một lỗi lộ ra khi làm:** đáy drawer mobile **luôn** hiện "Đăng nhập /
+Đăng ký", kể cả khi đang đăng nhập. Trên điện thoại không có đường nào đăng xuất
+ngoài việc vào hẳn trang tài khoản. Nay đã đăng nhập thì đáy drawer là khối
+thông tin tài khoản + nút đăng xuất.
+
+Header lấy thêm hạng qua `hangCuaToi()` — cùng hàm với trang tài khoản, nên hai
+chỗ không thể hiện hai hạng khác nhau.
+
+**Xong khi:** bấm ô tài khoản thấy điểm và hạng mà **không rời trang đang xem** ·
+đăng xuất được ngay trên menu · Esc và bấm ra ngoài đều đóng · mobile có đăng
+xuất trong drawer. 27 kiểm tra qua trình duyệt, và chạy lại toàn bộ các bộ cũ
+(header nằm trên mọi trang nên phải kiểm hồi quy).
+
 ## M6.13 — Vá và bù sau lượt đóng vai người dùng thật
 
 Chạy trọn bốn kịch bản qua trình duyệt ở mọi vai (khách vãng lai · thành viên ·

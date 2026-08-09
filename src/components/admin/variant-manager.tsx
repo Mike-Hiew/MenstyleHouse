@@ -1,9 +1,15 @@
 "use client";
 
+import * as React from "react";
 import { useActionState } from "react";
 import { cn } from "@/lib/cn";
 import { formatVnd } from "@/lib/money";
-import { addVariantAction, deleteVariantAction, type AdminActionState } from "@/app/admin/actions";
+import {
+  addVariantAction,
+  deleteVariantAction,
+  updateVariantAction,
+  type AdminActionState,
+} from "@/app/admin/actions";
 
 export type VariantRow = {
   id: string;
@@ -40,9 +46,17 @@ export function VariantManager({
 }) {
   const [addState, add, adding] = useActionState<AdminActionState, FormData>(addVariantAction, {});
   const [delState, remove] = useActionState<AdminActionState, FormData>(deleteVariantAction, {});
+  const [suaState, sua] = useActionState<AdminActionState, FormData>(updateVariantAction, {});
 
-  const notice = addState.message ?? delState.message;
-  const noticeOk = addState.message ? addState.ok : delState.ok;
+  /*
+   * Sửa từng dòng một. Trước đây chỉ có thêm và xoá, mà xoá bị chặn khi biến
+   * thể đã có tồn hoặc đã nằm trong đơn — nên chênh giá theo size và ngưỡng
+   * cảnh báo, một khi gõ sai, là không sửa lại được nữa.
+   */
+  const [dangSua, setDangSua] = React.useState<string | null>(null);
+
+  const notice = addState.message ?? delState.message ?? suaState.message;
+  const noticeOk = addState.message ? addState.ok : delState.message ? delState.ok : suaState.ok;
 
   return (
     <section>
@@ -72,7 +86,7 @@ export function VariantManager({
           <table className="w-full border-collapse text-[13px]">
             <thead>
               <tr>
-                {["SKU", "MÀU", "SIZE", "CHÊNH GIÁ", "TỒN", ""].map((h, i) => (
+                {["SKU", "MÀU", "SIZE", "CHÊNH GIÁ", "NGƯỠNG", "TỒN", ""].map((h, i) => (
                   <th
                     key={h || i}
                     className={cn(
@@ -103,9 +117,34 @@ export function VariantManager({
                   </td>
                   <td className="border-b border-hairline py-2 pr-3">{v.size}</td>
                   <td className="border-b border-hairline py-2 pr-3 text-right font-mono">
-                    {v.priceDelta === 0
-                      ? "—"
-                      : (v.priceDelta > 0 ? "+" : "−") + formatVnd(Math.abs(v.priceDelta))}
+                    {dangSua === v.id ? (
+                      <input
+                        form={"sua-" + v.id}
+                        name="priceDelta"
+                        inputMode="numeric"
+                        defaultValue={v.priceDelta}
+                        aria-label="Chênh giá"
+                        className="h-9 w-[110px] border border-border-soft bg-surface px-2 text-right text-[13px]"
+                      />
+                    ) : v.priceDelta === 0 ? (
+                      "—"
+                    ) : (
+                      (v.priceDelta > 0 ? "+" : "−") + formatVnd(Math.abs(v.priceDelta))
+                    )}
+                  </td>
+                  <td className="border-b border-hairline py-2 pr-3 text-right font-mono">
+                    {dangSua === v.id ? (
+                      <input
+                        form={"sua-" + v.id}
+                        name="lowStockAt"
+                        inputMode="numeric"
+                        defaultValue={v.lowStockAt}
+                        aria-label="Ngưỡng cảnh báo tồn"
+                        className="h-9 w-[70px] border border-border-soft bg-surface px-2 text-right text-[13px]"
+                      />
+                    ) : (
+                      v.lowStockAt
+                    )}
                   </td>
                   <td
                     className={cn(
@@ -117,20 +156,54 @@ export function VariantManager({
                     {v.stock}
                   </td>
                   <td className="border-b border-hairline py-2 text-right">
-                    {v.khoaXoa ? (
-                      <span className="text-[12px] text-faint">đã có lịch sử</span>
-                    ) : (
-                      <form action={remove}>
-                        <input type="hidden" name="slug" value={slug} />
-                        <input type="hidden" name="variantId" value={v.id} />
+                    <div className="flex items-center justify-end gap-3">
+                      {dangSua === v.id ? (
+                        <>
+                          {/* Form nằm ngoài <tr> để HTML hợp lệ; các ô nối vào
+                              bằng thuộc tính `form`. */}
+                          <form id={"sua-" + v.id} action={sua} onSubmit={() => setDangSua(null)}>
+                            <input type="hidden" name="slug" value={slug} />
+                            <input type="hidden" name="variantId" value={v.id} />
+                            <button
+                              type="submit"
+                              className="flex min-h-11 items-center text-[12px] font-extrabold text-accent-700 underline"
+                            >
+                              Lưu
+                            </button>
+                          </form>
+                          <button
+                            type="button"
+                            onClick={() => setDangSua(null)}
+                            className="flex min-h-11 items-center text-[12px] text-faint underline"
+                          >
+                            Thôi
+                          </button>
+                        </>
+                      ) : (
                         <button
-                          type="submit"
-                          className="flex min-h-11 items-center text-[12px] text-faint underline"
+                          type="button"
+                          onClick={() => setDangSua(v.id)}
+                          className="flex min-h-11 items-center text-[12px] underline"
                         >
-                          Xoá
+                          Sửa
                         </button>
-                      </form>
-                    )}
+                      )}
+
+                      {v.khoaXoa ? (
+                        <span className="text-[12px] text-faint">đã có lịch sử</span>
+                      ) : (
+                        <form action={remove}>
+                          <input type="hidden" name="slug" value={slug} />
+                          <input type="hidden" name="variantId" value={v.id} />
+                          <button
+                            type="submit"
+                            className="flex min-h-11 items-center text-[12px] text-faint underline"
+                          >
+                            Xoá
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

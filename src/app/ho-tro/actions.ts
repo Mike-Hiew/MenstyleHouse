@@ -40,7 +40,7 @@ export async function submitTicketAction(
   }
 
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  if (!rateLimit("ticket:" + ip, 5, 60 * 60 * 1000).ok) {
+  if (!(await rateLimit("ticket:" + ip, 5, 60 * 60 * 1000)).ok) {
     return {
       ok: false,
       message: "Bạn đã gửi khá nhiều yêu cầu. Thử lại sau một giờ hoặc gọi 1900 6060.",

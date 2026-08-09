@@ -58,6 +58,7 @@ type PayValue = (typeof PAY_OPTIONS)[number]["value"];
 export function CheckoutForm({
   subtotal,
   discount,
+  diem,
   couponCode,
   quotesByProvince,
   isMember,
@@ -67,6 +68,8 @@ export function CheckoutForm({
 }: {
   subtotal: number;
   discount: number;
+  /** Điểm của thành viên và luật đổi điểm; `null` khi khách vãng lai hoặc tắt. */
+  diem: { soDiem: number; pointValue: number; toiDa: number } | null;
   couponCode: string | null;
   quotesByProvince: Record<string, ShippingQuote[]>;
   isMember: boolean;
@@ -97,8 +100,18 @@ export function CheckoutForm({
   );
 
   const payable = Math.max(0, subtotal - discount);
+
+  /*
+   * Số điểm dùng là trạng thái client để con số nhảy ngay khi kéo, nhưng
+   * **server tính lại** trong `placeOrder` từ số dư thật. Ở đây chỉ để khách
+   * nhìn thấy tiền giảm trước khi bấm đặt.
+   */
+  const [dungDiem, setDungDiem] = React.useState(0);
+  const diemDung = diem ? Math.min(dungDiem, diem.toiDa) : 0;
+  const giamDiem = diem ? diemDung * diem.pointValue : 0;
+
   const fee = quotesByProvince[province]?.find((q) => q.carrier === carrier)?.fee ?? 0;
-  const total = payable + fee;
+  const total = Math.max(0, payable - giamDiem) + fee;
 
   /*
    * Nhảy về bước 1 khi lỗi nằm ở bước 1.
@@ -562,8 +575,46 @@ export function CheckoutForm({
               label={couponCode ? "Giảm giá · " + couponCode : "Giảm giá"}
               value={"−" + formatVnd(discount)}
             />
+            {giamDiem > 0 ? (
+              <Row label={`Dùng ${diemDung} điểm`} value={"−" + formatVnd(giamDiem)} />
+            ) : null}
             <Row label="Phí vận chuyển" value={fee === 0 ? "Miễn phí" : formatVnd(fee)} />
           </dl>
+
+          {/* Ô dùng điểm nằm ngay cạnh tổng tiền, chỗ khách đang nhìn. */}
+          {diem && diem.toiDa > 0 ? (
+            <div className="border-t border-hairline py-3.5">
+              <input type="hidden" name="pointsToUse" value={diemDung} />
+              <div className="mb-2 flex items-baseline justify-between gap-3">
+                <span className="label-tech font-bold">DÙNG ĐIỂM THƯỞNG</span>
+                <span className="font-mono text-[12px] text-muted">
+                  còn {diem.soDiem} điểm
+                </span>
+              </div>
+              <input
+                type="range"
+                aria-label="Số điểm dùng cho đơn này"
+                min={0}
+                max={diem.toiDa}
+                step={1}
+                value={diemDung}
+                onChange={(e) => setDungDiem(Number(e.target.value))}
+                className="h-11 w-full accent-accent"
+              />
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px]">
+                  {diemDung > 0 ? `Dùng ${diemDung} điểm — giảm ${formatVnd(giamDiem)}` : "Chưa dùng điểm"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setDungDiem(diemDung > 0 ? 0 : diem.toiDa)}
+                  className="min-h-11 text-[12.5px] font-extrabold text-accent-700 underline"
+                >
+                  {diemDung > 0 ? "Bỏ dùng" : "Dùng tối đa"}
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div className="flex items-baseline justify-between border-t-2 border-divider py-4">
             <span className="text-[14px] font-extrabold">TỔNG CỘNG</span>
             <span className="text-[24px] font-extrabold tracking-[-0.02em]">

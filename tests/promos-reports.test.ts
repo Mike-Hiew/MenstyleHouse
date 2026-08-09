@@ -12,6 +12,15 @@ import {
 import { doanhThuTheoThang, tongQuanBaoCao, topSanPham } from "../src/server/admin/reports";
 import { applyCoupon } from "../src/server/coupons";
 import { db } from "../src/lib/db";
+import { docKhoang } from "../src/lib/ky-bao-cao";
+
+/** Khoảng mặc định 12 tháng — đúng khoảng các bài kiểm này vốn giả định. */
+const KY12 = docKhoang({});
+
+/** `YYYY-MM-DD` theo giờ địa phương — `toISOString()` lệch múi giờ. */
+function ngayISO(d: Date): string {
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-");
+}
 
 /**
  * Nghiệm thu M6 phần mã giảm giá và báo cáo.
@@ -200,22 +209,22 @@ async function donMau(total: number, status: "DELIVERED" | "CANCELLED", lechThan
 
 describe("báo cáo doanh thu", () => {
   it("đơn đã huỷ KHÔNG tính vào doanh thu", async () => {
-    const truoc = await tongQuanBaoCao();
+    const truoc = await tongQuanBaoCao(KY12);
     await donMau(1_000_000, "DELIVERED");
     await donMau(9_000_000, "CANCELLED");
 
-    const sau = await tongQuanBaoCao();
+    const sau = await tongQuanBaoCao(KY12);
     expect(sau.doanhThu - truoc.doanhThu).toBe(1_000_000);
     expect(sau.soDon - truoc.soDon).toBe(1);
     expect(sau.soDonHuy - truoc.soDonHuy).toBe(1);
   });
 
   it("giá trị đơn trung bình là số nguyên đồng", async () => {
-    const truoc = await tongQuanBaoCao();
+    const truoc = await tongQuanBaoCao(KY12);
     await donMau(1_000_000, "DELIVERED");
     await donMau(1_000_001, "DELIVERED");
 
-    const sau = await tongQuanBaoCao();
+    const sau = await tongQuanBaoCao(KY12);
     expect(Number.isInteger(sau.gtdh)).toBe(true);
     expect(sau.gtdh).toBe(Math.round(sau.doanhThu / sau.soDon));
     expect(truoc.gtdh).toBeGreaterThanOrEqual(0);
@@ -224,7 +233,13 @@ describe("báo cáo doanh thu", () => {
   it("xếp đơn vào đúng tháng đặt, và trả đủ số kỳ đã hỏi", async () => {
     await donMau(500_000, "DELIVERED", 2);
 
-    const ky = await doanhThuTheoThang(6);
+    // Khoảng 6 tháng gần nhất — dựng bằng chính hàm đọc khoảng, để bài kiểm
+    // không tự tính ngày theo một luật khác với sản phẩm.
+    const sauThang = new Date();
+    sauThang.setMonth(sauThang.getMonth() - 5, 1);
+    const ky = await doanhThuTheoThang(
+      docKhoang({ ky: "tuy", tu: ngayISO(sauThang), den: ngayISO(new Date()) }),
+    );
     expect(ky).toHaveLength(6);
     // Mới nhất đứng đầu.
     expect(ky[0].nam * 12 + ky[0].thang).toBeGreaterThan(ky[5].nam * 12 + ky[5].thang);
@@ -236,7 +251,7 @@ describe("báo cáo doanh thu", () => {
   });
 
   it("tháng không có đơn thì ra 0 chứ không biến mất khỏi bảng", async () => {
-    const ky = await doanhThuTheoThang(12);
+    const ky = await doanhThuTheoThang(KY12);
     expect(ky).toHaveLength(12);
     expect(ky.every((k) => Number.isInteger(k.doanhThu) && k.doanhThu >= 0)).toBe(true);
     expect(ky.every((k) => (k.soDon === 0 ? k.gtdh === 0 : true))).toBe(true);

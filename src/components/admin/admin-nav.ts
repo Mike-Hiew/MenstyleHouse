@@ -29,6 +29,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Tổng quan", href: "/admin" },
   { label: "Sản phẩm", href: "/admin/san-pham", can: "san-pham.xem" },
   { label: "Danh mục & thương hiệu", href: "/admin/danh-muc", can: "danh-muc.quan-ly" },
+  { label: "Bảng size", href: "/admin/bang-size", can: "bang-size.quan-ly" },
   { label: "Đơn hàng", href: "/admin/don-hang", can: "don.xem" },
   /**
    * Mockup gộp một mục "Kho"; ở đây tách hai vì là hai màn khác hẳn nhau và

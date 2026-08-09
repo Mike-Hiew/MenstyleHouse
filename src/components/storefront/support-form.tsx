@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useActionState } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { cn } from "@/lib/cn";
 import { submitTicketAction, type SupportState } from "@/app/ho-tro/actions";
 
@@ -41,6 +42,13 @@ export function SupportForm() {
           gọi <strong className="text-text">1900 6060</strong>.
         </p>
         <div className="flex flex-wrap gap-3">
+          {/* Đưa thẳng khách tới trang tra cứu kèm mã — không bắt họ tự chép. */}
+          <Link
+            href={("/ho-tro/tra-cuu?ma=" + state.code) as Route}
+            className="flex min-h-12 items-center bg-accent px-6 text-[14px] font-extrabold text-bg"
+          >
+            THEO DÕI YÊU CẦU
+          </Link>
           <Link
             href={{ pathname: "/san-pham" }}
             className="flex min-h-12 items-center bg-neutral-900 px-6 text-[14px] font-extrabold text-bg"

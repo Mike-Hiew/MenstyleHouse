@@ -14,9 +14,11 @@ export function ProductEditForm({
   product,
   categories,
   brands,
+  bangSize,
 }: {
   categories: Picker[];
   brands: Picker[];
+  bangSize: { id: string; name: string }[];
   product: {
     slug: string;
     name: string;
@@ -24,6 +26,7 @@ export function ProductEditForm({
     basePrice: number;
     salePrice: number | null;
     status: string;
+    sizeChartId: string | null;
     material: string | null;
     careNote: string | null;
     code: string;
@@ -110,6 +113,20 @@ export function ProductEditForm({
             <option value="DRAFT">Nháp</option>
             <option value="ACTIVE">Đang bán</option>
             <option value="ARCHIVED">Lưu trữ</option>
+          </select>
+        </Row>
+        {/*
+          Bỏ trống là theo danh mục — mặc định đúng cho gần hết sản phẩm. Chỉ
+          chọn riêng khi một mẫu có số đo khác hẳn phần còn lại của danh mục.
+        */}
+        <Row label="Bảng size" hint="Để trống thì dùng bảng của danh mục">
+          <select name="sizeChartId" defaultValue={product.sizeChartId ?? ""} className={input}>
+            <option value="">— Theo danh mục —</option>
+            {bangSize.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
           </select>
         </Row>
       </div>

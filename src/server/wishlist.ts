@@ -45,6 +45,3 @@ export async function listWishlist(userId: string): Promise<ProductCardData[]> {
   return rows.map((r) => r.product).filter((p) => p.status === "ACTIVE");
 }
 
-export async function countWishlist(userId: string): Promise<number> {
-  return db.wishlist.count({ where: { userId } });
-}

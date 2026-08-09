@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requirePermission } from "@/server/admin/guard";
+import { doiTrangThaiHangLoatAction } from "@/app/admin/actions";
 import type { Route } from "next";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnMeta, type TableRow } from "@/components/admin/data-table";
@@ -18,10 +19,10 @@ export const dynamic = "force-dynamic";
 /** Cột chỉ mang metadata — ô được render sẵn ở server rồi truyền xuống. */
 const COLUMNS: ColumnMeta[] = [
   { key: "code", label: "MÃ ĐƠN", sortable: true, card: "code" },
-  { key: "receiver", label: "KHÁCH", card: "title" },
-  { key: "province", label: "NƠI NHẬN", card: "meta" },
-  { key: "status", label: "TRẠNG THÁI", card: "badge" },
-  { key: "paymentStatus", label: "THANH TOÁN", card: "hide" },
+  { key: "receiver", label: "KHÁCH", sortable: true, card: "title" },
+  { key: "province", label: "NƠI NHẬN", sortable: true, card: "meta" },
+  { key: "status", label: "TRẠNG THÁI", sortable: true, card: "badge" },
+  { key: "paymentStatus", label: "THANH TOÁN", sortable: true, card: "hide" },
   { key: "createdAt", label: "NGÀY ĐẶT", sortable: true, card: "foot" },
   { key: "total", label: "TỔNG TIỀN", align: "right", sortable: true, card: "foot-end" },
 ];
@@ -93,6 +94,16 @@ export default async function AdminOrdersPage({
       pageSize={TABLE_PAGE_SIZE}
       searchPlaceholder="Tìm mã đơn, tên hoặc SĐT…"
       csvName="don-hang"
+      hangLoat={[
+        { key: "xac-nhan", label: "Xác nhận" },
+        { key: "dong-goi", label: "Chuyển đóng gói" },
+        {
+          key: "huy",
+          label: "Huỷ đơn",
+          hoiLai: "Huỷ {n} đơn? Hàng trả lại kho, điểm và lượt mã giảm giá hoàn về. Không lùi được.",
+        },
+      ]}
+      onHangLoat={doiTrangThaiHangLoatAction}
     />
   );
 }

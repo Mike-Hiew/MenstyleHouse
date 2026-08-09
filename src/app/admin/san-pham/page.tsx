@@ -24,10 +24,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 const COLUMNS: ColumnMeta[] = [
   { key: "name", label: "SẢN PHẨM", sortable: true, card: "title" },
-  { key: "category", label: "DANH MỤC", card: "meta" },
-  { key: "status", label: "TRẠNG THÁI", card: "badge" },
-  { key: "variants", label: "BIẾN THỂ", align: "right", card: "hide" },
-  { key: "stock", label: "TỒN", align: "right", card: "foot" },
+  { key: "category", label: "DANH MỤC", sortable: true, card: "meta" },
+  { key: "status", label: "TRẠNG THÁI", sortable: true, card: "badge" },
+  { key: "variants", label: "BIẾN THỂ", align: "right", sortable: true, card: "hide" },
+  { key: "stock", label: "TỒN", align: "right", sortable: true, card: "foot" },
   { key: "basePrice", label: "GIÁ", align: "right", sortable: true, card: "foot-end" },
 ];
 

@@ -36,6 +36,13 @@ export type TableRow = {
 
 export type Tab = { key: string; label: string; count?: number };
 
+export type HangLoat = {
+  key: string;
+  label: string;
+  /** Hỏi lại trước khi chạy — dùng cho việc không lùi được. */
+  hoiLai?: string;
+};
+
 export type Filter = {
   key: string;
   label: string;
@@ -57,6 +64,8 @@ export function DataTable({
   pageSize,
   searchPlaceholder = "Tìm…",
   csvName,
+  hangLoat,
+  onHangLoat,
 }: {
   basePath: string;
   /** Query string hiện tại, không có dấu `?`. */
@@ -73,6 +82,10 @@ export function DataTable({
   pageSize: number;
   searchPlaceholder?: string;
   csvName: string;
+  /** Các thao tác chạy trên nhiều dòng cùng lúc. */
+  hangLoat?: HangLoat[];
+  /** Server Action nhận khoá thao tác và danh sách id, trả về câu báo kết quả. */
+  onHangLoat?: (key: string, ids: string[]) => Promise<string>;
 }) {
   const router = useRouter();
   const [, startTransition] = React.useTransition();
@@ -80,9 +93,14 @@ export function DataTable({
 
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
   const [csvOpen, setCsvOpen] = React.useState(false);
+  const [baoHangLoat, setBaoHangLoat] = React.useState<string | null>(null);
+  const [dangChay, batDau] = React.useTransition();
 
   // Đổi bộ lọc thì bỏ chọn — giữ lại sẽ thao tác nhầm lên dòng không còn thấy.
-  React.useEffect(() => setPicked(new Set()), [params]);
+  React.useEffect(() => {
+    setPicked(new Set());
+    setBaoHangLoat(null);
+  }, [params]);
 
   const go = (next: URLSearchParams) =>
     startTransition(() => router.push((basePath + qs(next)) as Route, { scroll: false }));
@@ -203,6 +221,56 @@ export function DataTable({
         </button>
       </div>
 
+      {/*
+        Thanh hành động hàng loạt chỉ hiện khi **đã chọn dòng**. Bày sẵn khi chưa
+        chọn gì thì nó là một dãy nút bấm vào không có tác dụng, và người dùng
+        học được rằng nút ở đây không đáng tin.
+      */}
+      {hangLoat && hangLoat.length > 0 && picked.size > 0 ? (
+        <div
+          role="group"
+          aria-label="Thao tác hàng loạt"
+          className="mb-3.5 flex flex-wrap items-center gap-2 border-2 border-divider bg-subtle px-3.5 py-2.5"
+        >
+          <span className="text-[13px] font-extrabold">Đã chọn {picked.size} dòng</span>
+          {hangLoat.map((h) => (
+            <button
+              key={h.key}
+              type="button"
+              disabled={dangChay}
+              onClick={() => {
+                if (h.hoiLai && !confirm(h.hoiLai.replace("{n}", String(picked.size)))) return;
+                batDau(async () => {
+                  const ket = await onHangLoat!(h.key, [...picked]);
+                  setPicked(new Set());
+                  setBaoHangLoat(ket);
+                  router.refresh();
+                });
+              }}
+              className="min-h-11 border border-border-soft bg-bg px-3.5 text-[12.5px] font-extrabold disabled:opacity-60"
+            >
+              {h.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setPicked(new Set())}
+            className="ml-auto min-h-11 px-2 text-[12.5px] underline"
+          >
+            Bỏ chọn
+          </button>
+        </div>
+      ) : null}
+
+      {baoHangLoat ? (
+        <p
+          role="status"
+          className="mb-3.5 border-2 border-divider bg-surface px-3.5 py-2.5 text-[13px] font-semibold"
+        >
+          {baoHangLoat}
+        </p>
+      ) : null}
+
       {rows.length === 0 ? (
         <div className="border border-dashed border-border-soft bg-subtle px-5 py-12 lg:px-8 lg:py-14">
           <h2 className="mb-2 text-[20px]">Không có dòng nào khớp</h2>
@@ -224,7 +292,7 @@ export function DataTable({
       ) : (
         <>
           <div className="lg:overflow-x-auto">
-            <table className="w-full border-collapse max-lg:block max-lg:space-y-2.5 lg:min-w-[760px]">
+            <table className="bang-quan-tri w-full border-collapse max-lg:block max-lg:space-y-2.5 lg:min-w-[760px]">
               <thead className="max-lg:hidden">
                 <tr>
                   <th className="w-[34px] border-b-2 border-border-soft py-2.5 pr-3">

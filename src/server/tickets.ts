@@ -90,3 +90,56 @@ export async function getTicketByCode(code: string) {
     },
   });
 }
+
+export const traLoiSchema = z.object({
+  code: z.string().trim().min(3).max(40),
+  authorName: z.string().trim().min(2, "Nhập tên của bạn").max(60),
+  body: z.string().trim().min(5, "Viết vài dòng cho cửa hàng hiểu").max(2000),
+});
+
+export class TicketClosedError extends Error {
+  constructor() {
+    super("Yêu cầu này đã đóng. Bạn gửi yêu cầu mới giúp, ghi kèm mã cũ.");
+    this.name = "TicketClosedError";
+  }
+}
+
+/**
+ * Khách trả lời tiếp trong **cùng** yêu cầu.
+ *
+ * Trước M6.17 khách chỉ gửi được yêu cầu mới: cửa hàng trả lời qua email, khách
+ * muốn nói thêm thì phải mở một yêu cầu khác và chép lại mã cũ — mạch hội thoại
+ * đứt, và nhân viên phải tự nối hai yêu cầu với nhau.
+ *
+ * Yêu cầu đã đóng thì **không cho nối thêm**: mở lại một việc đã kết luận bằng
+ * một dòng nhắn là cách nhanh nhất để nó rơi khỏi tầm mắt. Gửi yêu cầu mới thì
+ * nó lên đầu hàng chờ.
+ */
+export async function traLoiTicket(input: z.infer<typeof traLoiSchema>) {
+  const yc = await db.ticket.findUnique({
+    where: { code: input.code.trim().toUpperCase() },
+    select: { id: true, status: true },
+  });
+  if (!yc) return null;
+  if (yc.status === "CLOSED") throw new TicketClosedError();
+
+  await db.$transaction(async (tx) => {
+    await tx.ticketMessage.create({
+      data: {
+        ticketId: yc.id,
+        authorName: input.authorName,
+        isStaff: false,
+        body: input.body,
+      },
+    });
+    /*
+     * Khách nhắn tiếp thì việc quay lại hàng chờ. Để nguyên `RESOLVED` là câu
+     * hỏi mới nằm im dưới một yêu cầu đã đánh dấu xong, không ai mở ra nữa.
+     */
+    if (yc.status !== "OPEN") {
+      await tx.ticket.update({ where: { id: yc.id }, data: { status: "OPEN" } });
+    }
+  });
+
+  return { ok: true as const };
+}

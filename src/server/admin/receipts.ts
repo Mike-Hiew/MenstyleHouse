@@ -56,6 +56,13 @@ export type ReceiptDetail = Prisma.GoodsReceiptGetPayload<{ include: typeof deta
 
 /* ── Danh sách ────────────────────────────────────────────── */
 
+const SORTABLE: Record<string, "code" | "status" | "createdAt" | "grossAmount"> = {
+  code: "code",
+  status: "status",
+  createdAt: "createdAt",
+  grossAmount: "grossAmount",
+};
+
 export async function listReceipts(q: TableQuery) {
   const tab = RECEIPT_TABS.find((t) => t.key === q.tab);
   const and: Prisma.GoodsReceiptWhereInput[] = [];
@@ -75,7 +82,7 @@ export async function listReceipts(q: TableQuery) {
     db.goodsReceipt.count({ where }),
     db.goodsReceipt.findMany({
       where,
-      orderBy: { createdAt: q.sap === "createdAt" ? q.chieu : "desc" },
+      orderBy: SORTABLE[q.sap] ? { [SORTABLE[q.sap]]: q.chieu } : { createdAt: "desc" },
       skip: (q.trang - 1) * TABLE_PAGE_SIZE,
       take: TABLE_PAGE_SIZE,
       select: {
@@ -257,6 +264,9 @@ export async function postReceipt(code: string, actorName: string): Promise<void
         refId: receipt.id,
         note: "Nhập kho " + receipt.code,
         actorName,
+        // Phiếu đã ghi rõ nhập về kho nào — hàng phải vào đúng kho đó, không
+        // rơi hết về kho chính như trước khi tách kho.
+        warehouseId: receipt.warehouseId,
       });
     }
 

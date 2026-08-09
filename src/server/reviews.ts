@@ -76,10 +76,6 @@ async function donDaMua(productId: string, phone: string) {
   });
 }
 
-/** Khách có được phép đánh giá sản phẩm này không — dùng để dựng form. */
-export async function coTheDanhGia(productId: string, phone: string): Promise<boolean> {
-  return Boolean(await donDaMua(productId, phone));
-}
 
 export async function createReview(input: ReviewInput): Promise<{ id: string }> {
   const don = await donDaMua(input.productId, input.phone);

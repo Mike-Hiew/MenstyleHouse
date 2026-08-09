@@ -9,6 +9,7 @@ import { listAddresses } from "@/server/addresses";
 import { currentUserId } from "@/auth";
 import { quoteShipping, type ShippingQuote } from "@/lib/shipping";
 import { PROVINCES } from "@/lib/dia-gioi";
+import { diemToiDa } from "@/lib/points";
 import { db } from "@/lib/db";
 
 import { getSettings } from "@/server/settings";
@@ -33,6 +34,16 @@ export default async function CheckoutPage() {
    * Điền sẵn tên/SĐT/email của thành viên khi sổ địa chỉ còn trống. Bắt người
    * đã đăng nhập gõ lại từ đầu mọi lần mua là chỗ rơi khách rõ nhất ở bước cuối.
    */
+  const soDiem = userId
+    ? ((await db.user.findUnique({ where: { id: userId }, select: { pointBalance: true } }))
+        ?.pointBalance ?? 0)
+    : 0;
+  const diemToiDaDung = diemToiDa({
+    soDiem,
+    tienHang: Math.max(0, subtotal - discount),
+    luat: caiDat,
+  });
+
   const toi = userId
     ? await db.user.findUnique({
         where: { id: userId },
@@ -81,6 +92,11 @@ export default async function CheckoutPage() {
               isMember={Boolean(userId)}
               addresses={addresses}
               toi={toi ? { name: toi.name, phone: toi.phone ?? "", email: toi.email ?? "" } : null}
+              diem={
+                diemToiDaDung > 0
+                  ? { soDiem, pointValue: caiDat.pointValue, toiDa: diemToiDaDung }
+                  : null
+              }
             />
           )}
         </Container>

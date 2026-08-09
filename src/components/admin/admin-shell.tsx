@@ -4,10 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import { Bell, Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
+import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useOverlay } from "@/components/ui/overlay";
 import type { AdminNavItem } from "./admin-nav";
+import { AdminAccountMenu } from "./admin-account-menu";
+import { AlertBell, type Viec } from "./alert-bell";
 
 /**
  * Khung quản trị theo mockup: sidebar đen thu gọn được, header dính trên có
@@ -22,11 +24,14 @@ const SIDEBAR_KEY = "msh:admin-sidebar";
 export function AdminShell({
   nav,
   user,
+  viec,
   crumb,
   children,
 }: {
   nav: AdminNavItem[];
-  user: { name: string; roleLabel: string };
+  user: { name: string; roleLabel: string; email: string | null };
+  /** Việc đang chờ, hiện ở nút chuông. */
+  viec: Viec[];
   crumb: string;
   children: React.ReactNode;
 }) {
@@ -87,24 +92,9 @@ export function AdminShell({
               />
             </form>
 
-            <button
-              type="button"
-              aria-label="Thông báo"
-              className="relative hidden h-[38px] w-[38px] items-center justify-center border border-border-soft sm:flex"
-            >
-              <Bell size={16} />
-              <span className="absolute -right-px -top-px block h-2 w-2 bg-accent" aria-hidden />
-            </button>
+            <AlertBell viec={viec} />
 
-            <div className="flex items-center gap-2.5 border-hairline pl-3 sm:border-l">
-              <span className="grid h-8 w-8 flex-none place-items-center bg-neutral-900 font-heading text-[12px] font-extrabold text-bg">
-                {initials(user.name)}
-              </span>
-              <div className="hidden sm:block">
-                <p className="text-[13px] font-extrabold leading-[1.2]">{user.name}</p>
-                <p className="label-tech">{user.roleLabel}</p>
-              </div>
-            </div>
+            <AdminAccountMenu user={user} />
           </div>
         </header>
 
@@ -241,9 +231,3 @@ function MobileDrawer({
   );
 }
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return (
-    ((parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase() || "MSH"
-  );
-}

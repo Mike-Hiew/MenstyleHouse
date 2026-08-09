@@ -29,7 +29,7 @@ export default async function TrackOrderPage({
   // Chặn dò mã hàng loạt: 10 lượt/IP/giờ theo `docs/API.md`.
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "local";
-  const limited = submitted && !limitOrderLookup(ip).ok;
+  const limited = submitted && !(await limitOrderLookup(ip)).ok;
 
   const order = submitted && !limited ? await findOrderForLookup(code, tail) : null;
 

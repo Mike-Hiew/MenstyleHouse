@@ -172,12 +172,29 @@ const TABS = [
   { key: "het-han", label: "Hết hạn" },
 ] as const;
 
+const SORTABLE: Record<string, "code" | "type" | "value" | "minSubtotal" | "usedCount" | "endsAt"> = {
+  code: "code",
+  type: "type",
+  value: "value",
+  min: "minSubtotal",
+  uses: "usedCount",
+  end: "endsAt",
+};
+
 export async function listCoupons(q: TableQuery) {
   const where: Prisma.CouponWhereInput = q.q
     ? { code: { contains: q.q.trim(), mode: "insensitive" } }
     : {};
 
-  const all = await db.coupon.findMany({ where, orderBy: { endsAt: "desc" } });
+  /*
+   * Lọc theo tab ("đang chạy" / "hết hạn") phải so ngày trong bộ nhớ nên danh
+   * sách vốn đã lấy hết rồi mới cắt trang — sắp xếp bằng SQL ở đây cũng chỉ là
+   * sắp trước khi lọc, nên cứ để Postgres sắp và giữ nguyên thứ tự sau khi lọc.
+   */
+  const all = await db.coupon.findMany({
+    where,
+    orderBy: { [SORTABLE[q.sap] ?? "endsAt"]: SORTABLE[q.sap] ? q.chieu : "desc" },
+  });
   const now = new Date();
 
   const loc =

@@ -2,6 +2,7 @@ import { getNavCategories } from "@/server/navigation";
 import { getCartCount } from "@/server/cart";
 import { currentUserId } from "@/auth";
 import { getPointSummary } from "@/server/accounts";
+import { hangCuaToi } from "@/server/membership";
 import { currentStaff } from "@/server/admin/guard";
 import { ROLE_LABEL } from "@/lib/roles";
 import { SiteHeader } from "./site-header";
@@ -18,13 +19,26 @@ export async function Header() {
     currentStaff(),
   ]);
 
-  const member = userId ? await getPointSummary(userId) : null;
+  // Menu tài khoản xổ xuống cần cả hạng và mức còn thiếu để lên hạng kế tiếp.
+  const [member, hang] = userId
+    ? await Promise.all([getPointSummary(userId), hangCuaToi(userId)])
+    : [null, null];
 
   return (
     <SiteHeader
       categories={categories}
       cartCount={cartCount}
-      member={member ? { name: member.name, points: member.balance } : null}
+      member={
+        member && hang
+          ? {
+              name: member.name,
+              points: member.balance,
+              // Tắt chương trình hạng thì menu không hiện dòng hạng nào.
+              hang: hang.bat ? hang.hang : null,
+              thieu: hang.bat ? hang.tiep : null,
+            }
+          : null
+      }
       staffRole={staff ? ROLE_LABEL[staff.role] : null}
     />
   );

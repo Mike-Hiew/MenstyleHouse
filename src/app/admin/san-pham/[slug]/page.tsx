@@ -8,6 +8,7 @@ import { VariantManager } from "@/components/admin/variant-manager";
 import { getProductForAdmin } from "@/server/admin/products";
 import { listPickers, suggestVariantOptions } from "@/server/admin/catalog-admin";
 import { formatVnd } from "@/lib/money";
+import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,10 @@ export default async function AdminProductEditPage({ params }: Params) {
   if (!product) notFound();
 
   const totalStock = product.variants.reduce((n, v) => n + v.stock, 0);
-  const [goiY, pickers] = await Promise.all([
+  const [goiY, pickers, bangSize] = await Promise.all([
     suggestVariantOptions(product.slug),
     listPickers(),
+    db.sizeChart.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   return (
@@ -69,6 +71,7 @@ export default async function AdminProductEditPage({ params }: Params) {
             key={"sp-" + product.variants.length}
             categories={pickers.categories}
             brands={pickers.brands}
+            bangSize={bangSize}
             product={{
               slug: product.slug,
               name: product.name,
@@ -76,6 +79,7 @@ export default async function AdminProductEditPage({ params }: Params) {
               basePrice: product.basePrice,
               salePrice: product.salePrice,
               status: product.status,
+              sizeChartId: product.sizeChartId,
               material: product.material,
               careNote: product.careNote,
               code: product.code,

@@ -118,3 +118,21 @@
   text-transform: uppercase;
   color: var(--color-faint);
 }
+
+/*
+ * Đích chạm trong bảng quản trị trên điện thoại.
+ *
+ * Dưới `lg:` mỗi hàng thu thành một thẻ, và các liên kết trong ô (mã đơn, SKU,
+ * tên sản phẩm) là chữ inline cao 15–20px — bấm bằng ngón tay là trượt. Đặt ở
+ * đây thay vì sửa từng trang: tám màn dùng chung một bảng, và trang mới thêm
+ * sau cũng được hưởng mà không phải nhớ.
+ *
+ * Chỉ áp cho `<a>`: nút bấm trong bảng đã có `min-h-11` sẵn.
+ */
+@media (max-width: 1023px) {
+  .bang-quan-tri a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

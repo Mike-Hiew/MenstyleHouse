@@ -31,5 +31,15 @@ export async function hangCuaToi(userId: string) {
   };
   const chiTieu = gom[0]?._sum.total ?? 0;
 
-  return { chiTieu, hang: tierFor(chiTieu, nguong), tiep: conThieuLenHang(chiTieu, nguong) };
+  /*
+   * `bat = false` thì nơi gọi **ẩn hạng đi**, nhưng `chiTieu` vẫn tính như
+   * thường: tắt chương trình là ngừng hiển thị, không phải ngừng ghi nhận. Bật
+   * lại lúc nào cũng có sẵn số, không mất lịch sử.
+   */
+  return {
+    bat: caiDat.tiersEnabled,
+    chiTieu,
+    hang: tierFor(chiTieu, nguong),
+    tiep: conThieuLenHang(chiTieu, nguong),
+  };
 }

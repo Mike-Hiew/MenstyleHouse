@@ -17,11 +17,11 @@ export const dynamic = "force-dynamic";
 
 /** Năm cột đúng màn `support` trong mockup. */
 const COLUMNS: ColumnMeta[] = [
-  { key: "code", label: "MÃ YC", card: "title" },
+  { key: "code", label: "MÃ YC", sortable: true, card: "title" },
   { key: "khach", label: "KHÁCH HÀNG", card: "meta" },
-  { key: "subject", label: "NỘI DUNG", card: "meta" },
-  { key: "date", label: "NGÀY GỬI", card: "foot" },
-  { key: "status", label: "TRẠNG THÁI", card: "badge" },
+  { key: "subject", label: "NỘI DUNG", sortable: true, card: "meta" },
+  { key: "date", label: "NGÀY GỬI", sortable: true, card: "foot" },
+  { key: "status", label: "TRẠNG THÁI", sortable: true, card: "badge" },
 ];
 
 const TONE: Record<string, "ok" | "warn" | "neutral"> = {

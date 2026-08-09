@@ -169,6 +169,31 @@ còn `WHERE` vẫn là nguồn sự thật duy nhất.
       giá trị đơn trung bình, bán chạy nhất), `/admin/ho-tro` (hộp thư và
       trả lời khách). Storefront có `/ho-tro` — form liên hệ tự thiết kế,
       sửa luôn ba link chết ở footer từ M1.
+- [x] **M6.17 — Chín khuyến nghị sau lượt chấm điểm.** **Tồn kho tách theo
+      từng kho** (`StockLevel` + chuyển kho, giữ `Variant.stock` làm tổng nên
+      không nơi nào đang đọc nó phải sửa). Cache tầng dữ liệu catalog theo nhãn
+      — production 30–60ms so với 300–690ms ở dev. Rate limit dùng Redis khi có
+      `REDIS_URL`. `AUTH_SECRET` thật và **thiếu là dừng ngay lúc khởi động**;
+      mật khẩu seed sinh ngẫu nhiên, in một lần. Thêm: nhắn tiếp trong cùng yêu
+      cầu hỗ trợ · thao tác hàng loạt trên bảng đơn · báo cáo chọn khoảng ngày ·
+      đích chạm ≥44px ở quản trị mobile · thông báo mã giảm giá thôi đảo màu.
+- [x] **M6.16 — Vá nốt sau lượt quét toàn bộ chức năng.** Sửa lỗi nặng nhất:
+      **trả hàng không hoàn tồn kho** (`MovementType.RETURN` có trong schema mà
+      chưa bao giờ được dùng). Mở đường **tiêu điểm thưởng** đúng như mockup
+      hứa. Nối dây cho bốn thứ đã có tầng server mà không màn nào gọi: sửa biến
+      thể · sổ kho từng biến thể · khách tra cứu yêu cầu hỗ trợ · lãi gộp từ
+      `unitCost`. Nút chuông từ nút chết thành "việc cần làm" đếm từ dữ liệu thật.
+- [x] **M6.15 — Quản trị: menu tài khoản, bật/tắt hạng, sắp xếp từng cột.**
+      Cụm tài khoản trong khu quản trị xổ xuống (vai trò · về cửa hàng · hồ sơ ·
+      đăng xuất). Cài đặt có công tắc **bật/tắt chương trình hạng thành viên** —
+      tắt thì hạng biến mất khỏi bốn màn nhưng chi tiêu vẫn ghi nhận. Tám bảng
+      quản trị sắp xếp được theo **từng cột**, kể cả cột qua quan hệ và cột tính
+      ra (chi tiêu, tồn) — sắp trên toàn bộ dữ liệu chứ không phải trong trang.
+- [x] **M6.14 — Menu tài khoản xổ xuống.** Bấm ô tài khoản trên header là thấy
+      ngay điểm, hạng, mức còn thiếu để lên hạng, bốn lối tắt và **nút đăng
+      xuất** — không phải rời trang đang xem. Mobile: đáy drawer trước đây luôn
+      hiện "Đăng nhập / Đăng ký" kể cả khi đã đăng nhập, nay là thông tin tài
+      khoản + đăng xuất.
 - [x] **M6.13 — Vá và bù sau lượt đóng vai người dùng thật.** Chạy trọn bốn
       kịch bản qua trình duyệt ở mọi vai. Vá **lỗi mất sạch giỏ hàng khi đăng
       nhập**; nối dây cho ba thứ đã có đủ tầng server mà không màn nào gọi tới
@@ -410,6 +435,83 @@ thái client: gửi link cho người khác vẫn mở đúng tab, và bấm Bac
   nên mọi thiết bị khác bị đăng xuất.
 - **Sổ địa chỉ** dùng chung danh sách tỉnh với bước thanh toán (`lib/dia-gioi`),
   để địa chỉ đã lưu không mang tên tỉnh mà ô ở thanh toán không có.
+
+## Tồn kho theo từng kho
+
+`StockLevel(variantId, warehouseId, qty)` giữ tồn từng kho, còn **`Variant.stock`
+vẫn là tổng của mọi kho**. Nhờ vậy mọi nơi đang đọc `stock` — giỏ hàng, đặt đơn,
+trang sản phẩm, bất biến `stock === Σ(movements.delta)` — không phải sửa một dòng
+nào, và cửa hàng chỉ có một kho chạy y như cũ.
+
+`moveStock` nhận thêm `warehouseId` **không bắt buộc**: bỏ trống thì vào kho
+chính. Chuyển kho sinh **hai dòng sổ** `TRANSFER` (âm ở kho đi, dương ở kho đến)
+nên tổng không đổi; một dòng duy nhất thì sổ từng kho không đọc được hàng đi đâu.
+
+Bất biến thứ hai `auditWarehouse()`: `Variant.stock` phải bằng tổng mọi kho.
+Tách khỏi `auditStock()` vì hai kiểu hỏng khác nhau — sổ lệch là ai đó ghi thẳng
+vào `stock`, tổng kho lệch là một lối gọi `moveStock` quên cập nhật `StockLevel`.
+
+## Bí mật và mật khẩu
+
+`AUTH_SECRET` **thiếu là `auth.ts` ném lỗi ngay lúc khởi động** — chạy tiếp với
+khoá mặc định nghĩa là mọi phiên ký bằng một khoá ai cũng đoán được, và không có
+gì báo cho ai biết.
+
+Mật khẩu bốn tài khoản seed lấy từ `SEED_PASSWORD`; không đặt thì **sinh ngẫu
+nhiên và in ra đúng một lần** rồi thôi. Bản trước viết cứng `admin123456` trong
+mã, tức mọi bản triển khai đều có bốn tài khoản quản trị dùng chung một mật khẩu
+ai đọc repo cũng biết.
+
+## Rate limit
+
+Dùng Redis khi có `REDIS_URL`, không có thì đếm trong RAM và **nói rõ ở log lúc
+khởi động**. Bắt buộc phải có Redis mới chạy được thì dựng máy dev cũng phải cài
+Redis; nên giữ đường lui, chỉ không giữ im lặng.
+
+Redis chết giữa chừng thì rơi về RAM chứ **không chặn người dùng** — giới hạn tần
+suất là lớp bảo vệ, không phải cửa chính. Chặn hết vì Redis rớt là tự khoá cửa hàng.
+
+## Trả hàng
+
+Ghi nhận trả hàng làm **bốn việc trong một transaction**: hàng về kho qua
+`moveStock` (kiểu `RETURN`), thu hồi điểm đã cộng, trả lại điểm khách đã tiêu,
+và đánh dấu đã hoàn tiền.
+
+**Không trả lại lượt dùng mã giảm giá** — khác đơn huỷ: khách đã mua thật rồi
+mới trả, trả lượt là mở đường dùng một mã vô hạn bằng cách mua rồi trả.
+
+## Dùng điểm trừ vào tiền đơn
+
+Ba chốt, lấy cái nhỏ nhất: số điểm đang có · trần phần trăm tiền hàng (đặt trong
+Cài đặt, mặc định 50%) · và chính tiền hàng. **Điểm không trừ vào phí giao** —
+đó là tiền cửa hàng trả cho bên thứ ba.
+
+Server tính lại từ số dư thật; số client gửi chỉ là ý muốn. Xin quá thì **cắt về
+mức cho phép chứ không báo lỗi**: khách để giỏ vài ngày rồi quay lại, điểm có thể
+đã đổi vì một đơn khác vừa giao xong.
+
+## Sắp xếp bảng quản trị
+
+Ba loại cột, ba cách xử lý:
+
+- **Cột thật** — Postgres sắp, cắt trang trong SQL.
+- **Cột qua quan hệ** — `{ product: { name } }`, `{ category: { name } }`,
+  `{ variants: { _count } }`. Mỗi cột giữ một mệnh đề `orderBy` trọn vẹn chứ
+  không chỉ tên trường, vì "MÀU · SIZE" phải sắp theo màu rồi tới size.
+- **Cột tính ra** (chi tiêu / số đơn / hạng khách, tồn của sản phẩm) — **lấy hết,
+  tính, sắp, rồi mới cắt trang**. Cắt trang trước rồi sắp trong 20 dòng đang hiện
+  cho ra bảng trông đúng nhưng không đưa khách chi nhiều nhất lên đầu, mà nhìn
+  thì không phân biệt được.
+
+Trạng thái đơn và hạng khách sắp theo **thứ bậc**, không theo bảng chữ cái: theo
+chữ cái thì "Đã giao" nằm cạnh "Đã huỷ" và "BẠC" đứng trước "MỚI".
+
+## Bật/tắt hạng thành viên
+
+Công tắc trong `/admin/cai-dat`. Tắt thì hạng biến mất khỏi trang tài khoản, menu
+tài khoản, bảng khách hàng (mất cả cột) và hồ sơ khách. **Chi tiêu vẫn được ghi
+nhận** — tắt là ngừng hiển thị, không phải ngừng đếm, nên bật lại lúc nào cũng có
+sẵn số. Khi tắt thì ba ngưỡng cũng thôi bị bắt tăng dần, vì chúng không còn nghĩa.
 
 ## Đánh giá: chỉ người đã mua
 

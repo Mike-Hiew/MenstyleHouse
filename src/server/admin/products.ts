@@ -12,11 +12,23 @@ export const PRODUCT_TABS = [
   { key: "luu-tru", label: "Lưu trữ", status: "ARCHIVED" as const },
 ];
 
-const SORTABLE: Record<string, keyof Prisma.ProductOrderByWithRelationInput> = {
-  name: "name",
-  basePrice: "basePrice",
-  createdAt: "createdAt",
+/** Cột sắp được thẳng bằng SQL — kể cả qua quan hệ và qua số đếm biến thể. */
+const SORTABLE: Record<string, (c: "asc" | "desc") => Prisma.ProductOrderByWithRelationInput> = {
+  name: (c) => ({ name: c }),
+  basePrice: (c) => ({ basePrice: c }),
+  status: (c) => ({ status: c }),
+  createdAt: (c) => ({ createdAt: c }),
+  category: (c) => ({ category: { name: c } }),
+  variants: (c) => ({ variants: { _count: c } }),
 };
+
+/**
+ * "TỒN" là **tổng tồn của mọi biến thể**, không phải một cột trong `Product`,
+ * nên Prisma không sắp được. Giống bảng khách hàng: lấy hết rồi tính rồi sắp
+ * rồi mới cắt trang. Cắt trang trước rồi sắp trong 20 dòng đang hiện là bảng
+ * trông đúng nhưng không đưa hàng sắp hết lên đầu — đúng thứ chủ kho cần.
+ */
+const TINH_TRONG_BO_NHO = "stock";
 
 /**
  * Bảng sản phẩm. Hai bộ lọc "Danh mục" và "Thương hiệu" đúng như mockup; giá
@@ -41,13 +53,19 @@ export async function listAdminProducts(q: TableQuery, loc: { danhMuc?: string; 
   }
   const where = and.length ? { AND: and } : {};
 
+  const theoTon = q.sap === TINH_TRONG_BO_NHO;
+
   const [total, rows, counts] = await Promise.all([
     db.product.count({ where }),
     db.product.findMany({
       where,
-      orderBy: { [SORTABLE[q.sap] ?? "createdAt"]: q.chieu },
-      skip: (q.trang - 1) * TABLE_PAGE_SIZE,
-      take: TABLE_PAGE_SIZE,
+      ...(theoTon
+        ? {}
+        : {
+            orderBy: (SORTABLE[q.sap] ?? SORTABLE.createdAt)(q.chieu),
+            skip: (q.trang - 1) * TABLE_PAGE_SIZE,
+            take: TABLE_PAGE_SIZE,
+          }),
       select: {
         id: true,
         name: true,
@@ -68,12 +86,20 @@ export async function listAdminProducts(q: TableQuery, loc: { danhMuc?: string; 
   const byStatus = new Map(counts.map((c) => [c.status, c._count._all]));
   const all = counts.reduce((n, c) => n + c._count._all, 0);
 
+  let danhSach = rows.map((p) => ({
+    ...p,
+    stock: p.variants.reduce((n, v) => n + v.stock, 0),
+    variantCount: p.variants.length,
+  }));
+
+  if (theoTon) {
+    const dau = q.chieu === "asc" ? 1 : -1;
+    danhSach.sort((a, b) => dau * (a.stock - b.stock));
+    danhSach = danhSach.slice((q.trang - 1) * TABLE_PAGE_SIZE, q.trang * TABLE_PAGE_SIZE);
+  }
+
   return {
-    rows: rows.map((p) => ({
-      ...p,
-      stock: p.variants.reduce((n, v) => n + v.stock, 0),
-      variantCount: p.variants.length,
-    })),
+    rows: danhSach,
     total,
     tabs: PRODUCT_TABS.map((t) => ({
       key: t.key,

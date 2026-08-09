@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "StoreSetting" ADD COLUMN     "pointValue" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "redeemEnabled" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "redeemMaxPct" INTEGER NOT NULL DEFAULT 50;

@@ -1,12 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { TAG } from "@/lib/cache-tags";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import type { Route } from "next";
 import type { Carrier, OrderStatus, Role } from "@prisma/client";
-import { assertPermission, ForbiddenError } from "@/server/admin/guard";
+import { assertPermission, currentStaff, ForbiddenError } from "@/server/admin/guard";
 import {
   advanceOrderStatus,
   InvalidTransitionError,
@@ -55,6 +56,7 @@ import {
 import { CannotEditAdminError, setRolePermissions } from "@/server/admin/permissions";
 import {
   addVariant,
+  updateVariant,
   CategoryInUseError,
   createBrand,
   createCategory,
@@ -113,6 +115,8 @@ const productSchema = z.object({
   brandId: z.string().trim().optional(),
   seoTitle: z.string().trim().max(70).optional(),
   seoDescription: z.string().trim().max(200).optional(),
+  /** Đè bảng size của danh mục; rỗng là dùng theo danh mục. */
+  sizeChartId: z.string().trim().optional(),
 });
 
 /**
@@ -166,6 +170,8 @@ export async function saveProductAction(
         brandId: rest.brandId || null,
         seoTitle: rest.seoTitle || null,
         seoDescription: rest.seoDescription || null,
+        // Rỗng = dùng bảng size của danh mục, không phải "không có bảng nào".
+        sizeChartId: rest.sizeChartId || null,
       },
     });
   } catch (e) {
@@ -224,6 +230,7 @@ export async function uploadImageAction(
 
   revalidatePath("/admin/san-pham/" + slug);
   revalidatePath("/san-pham/" + slug);
+  revalidateTag(TAG.catalog);
   return { ok: true, message: "Đã thêm ảnh." };
 }
 
@@ -245,6 +252,7 @@ export async function deleteImageAction(
 
   revalidatePath("/admin/san-pham/" + slug);
   revalidatePath("/san-pham/" + slug);
+  revalidateTag(TAG.catalog);
   return { ok: true, message: "Đã xoá ảnh." };
 }
 
@@ -370,6 +378,12 @@ export async function createProductAction(
   redirect(("/admin/san-pham/" + slug) as Route);
 }
 
+/** Sửa biến thể: chỉ hai con số đổi được. Màu/size đổi là một biến thể khác. */
+const suaBienTheSchema = z.object({
+  priceDelta: z.coerce.number().int().min(-10_000_000).max(10_000_000),
+  lowStockAt: z.coerce.number().int().min(0).max(1000),
+});
+
 const variantSchema = z.object({
   slug: z.string().trim().min(1),
   color: z.string().trim().min(1, "Nhập tên màu").max(40),
@@ -394,12 +408,45 @@ export async function addVariantAction(
     const v = await addVariant({ productSlug: slug, ...rest });
     revalidatePath("/admin/san-pham/" + slug);
     revalidatePath("/san-pham/" + slug);
+    revalidateTag(TAG.catalog);
     return { ok: true, message: `Đã thêm biến thể ${v.sku}. Tồn bắt đầu ở 0, nhập hàng qua phiếu nhập kho.` };
   } catch (e) {
     if (e instanceof ForbiddenError) return { ok: false, message: e.message };
     if (e instanceof DuplicateVariantError) return { ok: false, message: e.message };
     console.error(e);
     return { ok: false, message: "Không thêm được biến thể." };
+  }
+}
+
+/**
+ * Sửa biến thể: chênh giá theo size và ngưỡng cảnh báo tồn.
+ *
+ * **Không cho sửa tồn ở đây.** Tồn chỉ đổi qua `moveStock` — sửa thẳng là sinh
+ * ra hàng mà sổ kho không có dòng nào giải thích nó ở đâu ra. Muốn chỉnh tồn
+ * thì dùng màn kiểm kê.
+ */
+export async function updateVariantAction(
+  _prev: AdminActionState,
+  form: FormData,
+): Promise<AdminActionState> {
+  const slug = String(form.get("slug") ?? "");
+  const id = String(form.get("variantId") ?? "");
+  const parsed = suaBienTheSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." };
+  }
+
+  try {
+    await assertPermission("san-pham.sua");
+    await updateVariant(id, parsed.data);
+    revalidatePath("/admin/san-pham/" + slug);
+    revalidatePath("/san-pham/" + slug);
+    revalidateTag(TAG.catalog);
+    return { ok: true, message: "Đã lưu biến thể." };
+  } catch (e) {
+    if (e instanceof ForbiddenError) return { ok: false, message: e.message };
+    console.error(e);
+    return { ok: false, message: "Không lưu được biến thể." };
   }
 }
 
@@ -415,6 +462,7 @@ export async function deleteVariantAction(
     await deleteVariant(id);
     revalidatePath("/admin/san-pham/" + slug);
     revalidatePath("/san-pham/" + slug);
+    revalidateTag(TAG.catalog);
     return { ok: true, message: "Đã xoá biến thể." };
   } catch (e) {
     if (e instanceof ForbiddenError) return { ok: false, message: e.message };
@@ -471,6 +519,8 @@ export async function catalogMetaAction(
 
   revalidatePath("/admin/danh-muc");
   revalidatePath("/admin/san-pham");
+  // Danh mục nằm trong thanh điều hướng của mọi trang cửa hàng.
+  revalidateTag(TAG.catalog);
   return { ok: true, message: "Đã cập nhật." };
 }
 
@@ -974,4 +1024,56 @@ export async function staffAction(
 
   revalidatePath("/", "layout");
   return { ok: true, message: "Đã cập nhật." };
+}
+
+/* ── Thao tác hàng loạt trên bảng đơn ─────────────────────── */
+
+const HANH_DONG_HANG_LOAT: Record<string, OrderStatus> = {
+  "xac-nhan": "CONFIRMED",
+  "dong-goi": "PACKING",
+  huy: "CANCELLED",
+};
+
+/**
+ * Chuyển trạng thái nhiều đơn cùng lúc.
+ *
+ * **Chạy tuần tự và bỏ qua đơn không hợp lệ**, không dừng cả mẻ. Nhân viên chọn
+ * 20 đơn thì thường có vài đơn đã được người khác xử lý xong; ném lỗi ở đơn thứ
+ * ba và bỏ dở 17 đơn còn lại là bắt họ dò xem cái nào đã chạy.
+ *
+ * Trả về câu tổng kết ghi rõ **bao nhiêu xong, bao nhiêu bỏ qua và vì sao** —
+ * "đã cập nhật" trơn thì không ai biết có bị sót gì không.
+ */
+export async function doiTrangThaiHangLoatAction(key: string, ids: string[]): Promise<string> {
+  const to = HANH_DONG_HANG_LOAT[key];
+  if (!to) return "Thao tác không hợp lệ.";
+
+  try {
+    await assertPermission("don.doi-trang-thai");
+  } catch (e) {
+    if (e instanceof ForbiddenError) return e.message;
+    throw e;
+  }
+
+  const actor = await currentStaff();
+  const don = await db.order.findMany({
+    where: { id: { in: ids } },
+    select: { code: true },
+  });
+
+  let xong = 0;
+  const boQua: string[] = [];
+
+  for (const d of don) {
+    try {
+      await advanceOrderStatus(d.code, to, actor?.name ?? "Nhân viên", "Xử lý hàng loạt");
+      xong += 1;
+    } catch (e) {
+      boQua.push(d.code + " (" + (e instanceof Error ? e.message.split(".")[0] : "lỗi") + ")");
+    }
+  }
+
+  revalidatePath("/admin/don-hang");
+  if (boQua.length === 0) return `Đã cập nhật ${xong} đơn.`;
+  return `Đã cập nhật ${xong} đơn. Bỏ qua ${boQua.length}: ${boQua.slice(0, 3).join(", ")}${boQua.length > 3 ? "…" : ""}`;
 }

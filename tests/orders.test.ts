@@ -122,20 +122,32 @@ describe("huỷ đơn", () => {
 });
 
 describe("giới hạn tần suất", () => {
-  it("cho qua đúng số lượt rồi chặn", () => {
+  /*
+   * Chạy trên đường lui trong RAM (test không đặt `REDIS_URL`). Lượt gọi phải
+   * **tuần tự**: bắn 12 lượt song song thì thứ tự tăng bộ đếm không xác định và
+   * bài kiểm chập chờn.
+   */
+  it("cho qua đúng số lượt rồi chặn", async () => {
     const key = "test:" + Math.random();
-    const results = Array.from({ length: 12 }, () => rateLimit(key, 10, 60_000).ok);
-    expect(results.filter(Boolean).length).toBe(10);
-    expect(results.slice(10)).toEqual([false, false]);
+    const ket: boolean[] = [];
+    for (let i = 0; i < 12; i++) ket.push((await rateLimit(key, 10, 60_000)).ok);
+    expect(ket.filter(Boolean).length).toBe(10);
+    expect(ket.slice(10)).toEqual([false, false]);
   });
 
   it("hết cửa sổ thì mở lại", async () => {
     const key = "test:" + Math.random();
     // Cửa sổ 60ms: đủ dài để hai lượt đầu chắc chắn nằm trong cùng chu kỳ,
     // đủ ngắn để test không chậm. Cửa sổ 1ms làm test chập chờn.
-    expect(rateLimit(key, 1, 60).ok).toBe(true);
-    expect(rateLimit(key, 1, 60).ok).toBe(false);
+    expect((await rateLimit(key, 1, 60)).ok).toBe(true);
+    expect((await rateLimit(key, 1, 60)).ok).toBe(false);
     await new Promise((r) => setTimeout(r, 90));
-    expect(rateLimit(key, 1, 60).ok).toBe(true);
+    expect((await rateLimit(key, 1, 60)).ok).toBe(true);
+  });
+
+  it("không có REDIS_URL thì vẫn chạy, không nổ", async () => {
+    // Máy dev không cài Redis vẫn phải dựng được cửa hàng.
+    expect(process.env.REDIS_URL ?? "").toBe("");
+    expect((await rateLimit("test:" + Math.random(), 3, 1000)).ok).toBe(true);
   });
 });

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { visibleNav } from "@/components/admin/admin-nav";
 import { myPermissions, requireStaff, ROLE_LABEL } from "@/server/admin/guard";
+import { vieccanLam } from "@/server/admin/alerts";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +18,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // cùng ngôn ngữ với chốt chặn ở từng trang.
   const { can } = await myPermissions();
 
+  // Nút chuông chỉ hiện việc người này có quyền xử lý — đúng như sidebar.
+  const viec = (await vieccanLam()).filter((v) => can(v.can));
+
   return (
     <AdminShell
       nav={visibleNav(can)}
-      user={{ name: user.name, roleLabel: ROLE_LABEL[user.role] }}
+      user={{ name: user.name, roleLabel: ROLE_LABEL[user.role], email: user.email ?? null }}
+      viec={viec.map(({ key, nhan, so, href }) => ({ key, nhan, so, href }))}
       crumb="MSH ADMIN"
     >
       {children}

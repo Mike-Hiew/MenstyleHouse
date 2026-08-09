@@ -16,10 +16,10 @@ export const dynamic = "force-dynamic";
 
 const COLUMNS: ColumnMeta[] = [
   { key: "sku", label: "SKU", sortable: true, card: "code" },
-  { key: "product", label: "SẢN PHẨM", card: "title" },
-  { key: "variant", label: "MÀU · SIZE", card: "meta" },
+  { key: "product", label: "SẢN PHẨM", sortable: true, card: "title" },
+  { key: "variant", label: "MÀU · SIZE", sortable: true, card: "meta" },
   { key: "state", label: "TÌNH TRẠNG", card: "badge" },
-  { key: "lowStockAt", label: "NGƯỠNG", align: "right", card: "foot" },
+  { key: "lowStockAt", label: "NGƯỠNG", align: "right", sortable: true, card: "foot" },
   { key: "stock", label: "TỒN", align: "right", sortable: true, card: "foot-end" },
 ];
 
@@ -47,9 +47,15 @@ export default async function AdminStockPage({
         stock: v.stock,
       },
       cells: [
-        <span key="sku" className="font-mono font-bold">
+        // SKU dẫn thẳng vào sổ kho của biến thể — chỗ trả lời "vì sao tồn ra
+        // con số này".
+        <Link
+          key="sku"
+          href={("/admin/ton-kho/" + encodeURIComponent(v.sku)) as Route}
+          className="font-mono font-bold underline"
+        >
           {v.sku}
-        </span>,
+        </Link>,
         <Link
           key="p"
           href={("/admin/san-pham/" + v.product.slug) as Route}

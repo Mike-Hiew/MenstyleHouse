@@ -10,7 +10,7 @@ import { ReviewSection, Stars } from "@/components/storefront/review-list";
 import { ReviewForm } from "@/components/storefront/review-form";
 import { WishlistButton } from "@/components/storefront/wishlist-button";
 import { getProductBySlug, getRelated, type ProductDetail } from "@/server/catalog";
-import { sizeChartFor } from "@/lib/size-chart";
+import { bangSizeCho } from "@/server/size-charts";
 import { effectivePrice } from "@/lib/catalog";
 import { formatVnd } from "@/lib/money";
 import { Photo } from "@/components/ui/photo";
@@ -63,7 +63,19 @@ export default async function ProductPage({ params }: Params) {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const [related, userId] = await Promise.all([getRelated(product), currentUserId()]);
+  const [related, userId, bangSize] = await Promise.all([
+    getRelated(product),
+    currentUserId(),
+    /*
+     * Bảng size lấy từ DB, quản lý ở `/admin/bang-size`. Sản phẩm có bảng riêng
+     * thì đè bảng của danh mục — một mẫu oversize không nên phải tách hẳn một
+     * danh mục chỉ vì số đo khác.
+     */
+    bangSizeCho({
+      productSizeChartId: product.sizeChartId,
+      categorySizeChartId: product.category.sizeChartId,
+    }),
+  ]);
   const daThich = userId ? await isWished(userId, product.id) : false;
 
   const conHang = product.variants.some((v) => v.stock > 0);
@@ -136,7 +148,7 @@ export default async function ProductPage({ params }: Params) {
                 }))}
                 basePrice={product.basePrice}
                 salePrice={product.salePrice}
-                sizeChart={sizeChartFor(product.category.slug)}
+                sizeChart={bangSize}
                 accordions={accordionsFor(product)}
               />
 

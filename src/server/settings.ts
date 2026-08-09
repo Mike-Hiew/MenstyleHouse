@@ -61,6 +61,10 @@ export const settingsSchema = z
       .min(15, "Giữ đơn tối thiểu 15 phút")
       .max(60 * 24 * 7, "Giữ đơn tối đa 7 ngày"),
 
+    redeemEnabled: z.coerce.boolean().optional(),
+    pointValue: z.coerce.number().int().min(1, "1 điểm phải đổi được ít nhất 1 ₫").max(100_000),
+    redeemMaxPct: z.coerce.number().int().min(1, "Trần tối thiểu 1%").max(100, "Trần tối đa 100%"),
+    tiersEnabled: z.coerce.boolean().optional(),
     tierSilver: tien(),
     tierGold: tien(),
     tierDiamond: tien(),
@@ -74,6 +78,10 @@ export const settingsSchema = z
      * nhưng hạng VÀNG không bao giờ với tới được — hỏng im lặng, và chỉ lộ ra
      * khi khách gọi lên hỏi vì sao mãi không lên hạng.
      */
+    // Tắt chương trình hạng thì ba con số kia không còn ý nghĩa gì; bắt chúng
+    // tăng dần lúc đó chỉ chặn người ta lưu cài đặt vì một lỗi không tồn tại.
+    if (!v.tiersEnabled) return kiemThanhToan(v, ctx);
+
     if (v.tierGold <= v.tierSilver) {
       ctx.addIssue({
         code: "custom",
@@ -88,15 +96,22 @@ export const settingsSchema = z
         message: "Ngưỡng KIM CƯƠNG phải cao hơn ngưỡng VÀNG.",
       });
     }
-    // Tắt hết phương thức thanh toán là khoá luôn cửa hàng.
-    if (!v.payCod && !v.payBank) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["payCod"],
-        message: "Phải bật ít nhất một phương thức thanh toán, nếu không khách không đặt được đơn.",
-      });
-    }
+    kiemThanhToan(v, ctx);
   });
+
+/** Tắt hết phương thức thanh toán là khoá luôn cửa hàng. */
+function kiemThanhToan(
+  v: { payCod?: boolean; payBank?: boolean },
+  ctx: z.RefinementCtx,
+) {
+  if (!v.payCod && !v.payBank) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["payCod"],
+      message: "Phải bật ít nhất một phương thức thanh toán, nếu không khách không đặt được đơn.",
+    });
+  }
+}
 
 export type SettingsInput = z.infer<typeof settingsSchema>;
 
@@ -105,6 +120,14 @@ export async function updateSettings(input: SettingsInput) {
     where: { id: ID },
     data: {
       ...input,
+      /*
+       * Ba ô tick phải ép về boolean **rõ ràng**. Bỏ tick thì trường vắng mặt
+       * trong FormData nên Zod cho ra `undefined`, mà Prisma **bỏ qua** field
+       * `undefined` — cờ giữ nguyên giá trị cũ và người dùng tắt mãi không được,
+       * không có lỗi nào hiện ra.
+       */
+      tiersEnabled: Boolean(input.tiersEnabled),
+      redeemEnabled: Boolean(input.redeemEnabled),
       payCod: Boolean(input.payCod),
       payBank: Boolean(input.payBank),
     },

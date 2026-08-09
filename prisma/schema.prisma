@@ -88,6 +88,10 @@ model Category {
   name     String
   slug     String    @unique
   sort     Int       @default(0)
+  /// Bảng size mặc định cho mọi sản phẩm trong danh mục. `null` = không có
+  /// bảng size (phụ kiện chỉ có Freesize thì bày bảng đo làm gì).
+  sizeChartId String?
+  sizeChart   SizeChart? @relation(fields: [sizeChartId], references: [id], onDelete: SetNull)
   products Product[]
 }
 
@@ -115,6 +119,10 @@ model Product {
   /// Thẻ tiêu đề và mô tả cho máy tìm kiếm; bỏ trống thì dùng tên và mô tả.
   seoTitle       String?
   seoDescription String?
+  /// Đè bảng size của danh mục cho riêng sản phẩm này — một mẫu oversize nằm
+  /// trong danh mục áo phông cần bảng riêng, không nên vì thế mà tách danh mục.
+  sizeChartId    String?
+  sizeChart      SizeChart? @relation(fields: [sizeChartId], references: [id], onDelete: SetNull)
   categoryId     String
   category       Category       @relation(fields: [categoryId], references: [id])
   brandId        String?
@@ -184,6 +192,7 @@ model Variant {
   priceDelta Int                 @default(0)
   barcode    String?
   movements  InventoryMovement[]
+  levels     StockLevel[]
   cartItems  CartItem[]
 
   @@unique([productId, color, size])
@@ -370,7 +379,29 @@ model Warehouse {
   id       String         @id @default(cuid())
   name     String
   address  String
+  /// Kho nhận hàng khi không chỉ định — đúng một kho được đánh dấu.
+  isMain   Boolean        @default(false)
   receipts GoodsReceipt[]
+  levels   StockLevel[]
+  movements InventoryMovement[]
+}
+
+/// Tồn của một biến thể **tại một kho**.
+///
+/// `Variant.stock` vẫn giữ nguyên làm **tổng của mọi kho** — mọi chỗ đang đọc
+/// nó (giỏ hàng, đặt đơn, trang sản phẩm) không phải đổi, và bất biến
+/// `stock === Σ(movements.delta)` vẫn kiểm được như cũ. Bảng này trả lời thêm
+/// câu "kho Hà Nội còn mấy cái", thứ mà một con số chung không nói được.
+model StockLevel {
+  id          String    @id @default(cuid())
+  variantId   String
+  variant     Variant   @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  qty         Int       @default(0)
+
+  @@unique([variantId, warehouseId])
+  @@index([warehouseId])
 }
 
 model Supplier {
@@ -441,6 +472,9 @@ model InventoryMovement {
   id         String       @id @default(cuid())
   variantId  String
   variant    Variant      @relation(fields: [variantId], references: [id])
+  /// Kho mà dòng này tác động. Cũ (trước khi tách kho) để `null`.
+  warehouseId String?
+  warehouse   Warehouse?  @relation(fields: [warehouseId], references: [id])
   type       MovementType
   delta      Int
   stockAfter Int
@@ -592,6 +626,18 @@ model StoreSetting {
   holdMinutes Int
 
   /// Ngưỡng phân hạng theo chi tiêu 12 tháng. So sánh bằng dấu lớn hơn **chặt**.
+  /// Bật/tắt việc khách dùng điểm trừ thẳng vào tiền đơn.
+  redeemEnabled Boolean @default(true)
+  /// Một điểm đổi được bao nhiêu đồng. Mặc định 1 — tích 1 điểm mỗi 1.000 ₫
+  /// nên mỗi 1.000 ₫ mua hàng hoàn lại 1 ₫, tức khoảng 0,1%.
+  pointValue    Int     @default(1)
+  /// Trần phần trăm tiền hàng được trả bằng điểm. Không có trần thì một tài
+  /// khoản tích lâu năm có thể lấy hàng gần như miễn phí trong một đơn.
+  redeemMaxPct  Int     @default(50)
+  /// Bật/tắt cả tính năng hạng thành viên. Tắt thì hạng biến mất khỏi trang
+  /// tài khoản, menu tài khoản và bảng khách hàng — cửa hàng nào không chạy
+  /// chương trình hạng thì không phải nhìn một cột luôn ghi "MỚI".
+  tiersEnabled Boolean @default(true)
   tierSilver  Int
   tierGold    Int
   tierDiamond Int
@@ -691,4 +737,41 @@ model Wishlist {
   /// Một người thích một sản phẩm đúng một lần; bấm lại là bỏ thích.
   @@unique([userId, productId])
   @@index([userId])
+}
+
+/// Bảng size cho một nhóm hàng.
+///
+/// Trước M6.18 ba bảng này viết cứng trong `src/lib/size-chart.ts` và ánh xạ
+/// theo slug danh mục — thêm một nhóm hàng mới là phải sửa mã và triển khai lại,
+/// còn cửa hàng thì không tự đổi được một con số nào.
+model SizeChart {
+  id     String @id @default(cuid())
+  name   String
+  slug   String @unique
+  /// Ghi chú về form, hiện ngay dưới tiêu đề bảng.
+  fit    String @default("")
+  /// Hướng dẫn cách đo, mỗi phần tử một dòng.
+  howTo  String[]
+  /// Tên các cột **sau cột Size**: ["Vòng ngực", "Rộng vai", …].
+  columns String[]
+  rows   SizeChartRow[]
+
+  categories Category[]
+  products   Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SizeChartRow {
+  id      String    @id @default(cuid())
+  chartId String
+  chart   SizeChart @relation(fields: [chartId], references: [id], onDelete: Cascade)
+  /// Nhãn size: "M", "32", "Freesize".
+  size    String
+  /// Giá trị từng cột, xếp đúng thứ tự `SizeChart.columns`.
+  values  String[]
+  sort    Int       @default(0)
+
+  @@index([chartId, sort])
 }

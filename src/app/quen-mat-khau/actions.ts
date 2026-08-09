@@ -36,7 +36,7 @@ export async function quenMatKhauAction(_prev: QuenState, form: FormData): Promi
    * một email rời khỏi hệ thống. Không chặn thì nó thành công cụ dội thư vào
    * hộp thư người khác.
    */
-  if (!rateLimit("quen-mk:" + ip, 5, 60 * 60 * 1000).ok) {
+  if (!(await rateLimit("quen-mk:" + ip, 5, 60 * 60 * 1000)).ok) {
     return { ok: false, message: "Bạn đã thử khá nhiều lần. Thử lại sau một giờ hoặc gọi 1900 6060." };
   }
 

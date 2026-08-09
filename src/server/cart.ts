@@ -164,9 +164,6 @@ export async function getOrCreateCart(): Promise<CartData> {
   return cart;
 }
 
-export async function getCartView(): Promise<CartView> {
-  return toView(await getOrCreateCart());
-}
 
 /** Thêm vào giỏ; đã có biến thể đó thì cộng dồn, không tạo dòng mới. */
 export async function addToCart(variantId: string, qty: number): Promise<CartView> {

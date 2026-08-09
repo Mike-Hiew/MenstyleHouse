@@ -409,6 +409,28 @@ model Setting {
   key   String @id
   value Json
 }
+
+model SizeChart {
+  id      String   @id @default(cuid())
+  name    String
+  slug    String   @unique
+  fit     String   @default("")   // ghi chú form: "Form vừa, lên một size nếu thích rộng"
+  howTo   String[]                 // hướng dẫn đo, mỗi bước một dòng
+  columns String[]                 // KHÔNG chứa cột "Size" — chèn tự động khi hiện
+  rows       SizeChartRow[]
+  categories Category[]
+  products   Product[]
+}
+
+model SizeChartRow {
+  id      String   @id @default(cuid())
+  chartId String
+  chart   SizeChart @relation(fields: [chartId], references: [id], onDelete: Cascade)
+  size    String                    // S · M · L · 29 · 30
+  values  String[]                  // xếp đúng thứ tự `chart.columns`
+  sort    Int      @default(0)
+  @@index([chartId, sort])
+}
 ```
 
 ## Quy tắc nghiệp vụ bắt buộc
@@ -424,3 +446,5 @@ model Setting {
 5. **Guest tra cứu đơn** bằng `code` + 4 số cuối `phone`. Rate limit 10 lần/IP/giờ.
 
 6. **Coupon** kiểm tại thời điểm đặt: còn hạn, `active`, `usedCount < usageLimit`, `subtotal >= minSubtotal`, và nếu `memberOnly` thì đơn phải có `userId`. `usedCount` tăng trong transaction tạo đơn.
+
+7. **Bảng size: sản phẩm đè lên danh mục.** `Product.sizeChartId` bỏ trống nghĩa là "theo danh mục", không phải "không có bảng". Cả hai quan hệ khai `onDelete: SetNull`, nên **DB không chặn** việc xoá một bảng đang có người dùng — phải chặn ở tầng nghiệp vụ (`deleteSizeChart` ném `ChartInUseError`), nếu không hàng loạt danh mục mất bảng size trong im lặng.

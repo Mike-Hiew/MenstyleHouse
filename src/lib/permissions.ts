@@ -19,6 +19,7 @@ export const PERMISSIONS = [
   { key: "san-pham.xem", group: "Sản phẩm", label: "Xem sản phẩm" },
   { key: "san-pham.sua", group: "Sản phẩm", label: "Thêm và sửa sản phẩm" },
   { key: "danh-muc.quan-ly", group: "Sản phẩm", label: "Quản lý danh mục & thương hiệu" },
+  { key: "bang-size.quan-ly", group: "Sản phẩm", label: "Quản lý bảng size" },
 
   { key: "kho.xem", group: "Kho", label: "Xem tồn kho" },
   { key: "kho.ghi-so", group: "Kho", label: "Ghi sổ phiếu nhập & điều chỉnh" },

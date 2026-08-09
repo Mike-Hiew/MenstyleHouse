@@ -79,6 +79,10 @@ export function mailTraLoiHoTro(input: {
       `Chào bạn,\n\n` +
       `Cửa hàng đã phản hồi yêu cầu "${input.tieuDe}" (mã ${input.maYeuCau}):\n\n` +
       `${input.noiDung}\n\n` +
+      `Xem lại toàn bộ trao đổi tại:
+${appUrl()}/ho-tro/tra-cuu?ma=${input.maYeuCau}
+
+` +
       `Cần trao đổi tiếp thì gửi yêu cầu mới tại ${appUrl()}/ho-tro, ` +
       `ghi kèm mã ${input.maYeuCau}.` +
       CHAN(input.hotline),

@@ -14,10 +14,35 @@ export const STOCK_TABS = [
   { key: "het", label: "Hết hàng" },
 ];
 
-const SORTABLE: Record<string, keyof Prisma.VariantOrderByWithRelationInput> = {
-  sku: "sku",
-  stock: "stock",
+/**
+ * Mỗi cột một mệnh đề `orderBy` trọn vẹn, không chỉ tên trường: "SẢN PHẨM" sắp
+ * theo tên qua quan hệ, "MÀU · SIZE" sắp theo màu rồi tới size.
+ */
+const SORTABLE: Record<string, Prisma.VariantOrderByWithRelationInput[]> = {
+  sku: [{ sku: "asc" }],
+  stock: [{ stock: "asc" }],
+  lowStockAt: [{ lowStockAt: "asc" }],
+  product: [{ product: { name: "asc" } }, { color: "asc" }, { size: "asc" }],
+  variant: [{ color: "asc" }, { size: "asc" }],
 };
+
+/**
+ * Đổi chiều cho cả danh sách mệnh đề, kể cả mệnh đề lồng qua quan hệ
+ * (`{ product: { name: "asc" } }`).
+ */
+function theoChieu(
+  ds: Prisma.VariantOrderByWithRelationInput[],
+  chieu: "asc" | "desc",
+): Prisma.VariantOrderByWithRelationInput[] {
+  const doi = (o: Record<string, unknown>): Record<string, unknown> =>
+    Object.fromEntries(
+      Object.entries(o).map(([k, v]) => [
+        k,
+        v !== null && typeof v === "object" ? doi(v as Record<string, unknown>) : chieu,
+      ]),
+    );
+  return ds.map((o) => doi(o as Record<string, unknown>) as Prisma.VariantOrderByWithRelationInput);
+}
 
 function whereFor(q: TableQuery): Prisma.VariantWhereInput {
   const and: Prisma.VariantWhereInput[] = [];
@@ -46,7 +71,7 @@ export async function listStock(q: TableQuery) {
     db.variant.count({ where }),
     db.variant.findMany({
       where,
-      orderBy: { [SORTABLE[q.sap] ?? "stock"]: q.sap ? q.chieu : "asc" },
+      orderBy: theoChieu(SORTABLE[q.sap] ?? [{ stock: "asc" }], q.sap ? q.chieu : "asc"),
       skip: (q.trang - 1) * TABLE_PAGE_SIZE,
       take: TABLE_PAGE_SIZE,
       select: {
@@ -99,5 +124,22 @@ export async function listMovements(variantId: string, take = 50) {
     where: { variantId },
     orderBy: { createdAt: "desc" },
     take,
+  });
+}
+
+/** Tồn của một biến thể tách theo từng kho, kèm kho chưa có dòng nào. */
+export async function tonTheoKho(variantId: string) {
+  const [kho, muc] = await Promise.all([
+    db.warehouse.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, isMain: true } }),
+    db.stockLevel.findMany({ where: { variantId }, select: { warehouseId: true, qty: true } }),
+  ]);
+  const theo = new Map(muc.map((m) => [m.warehouseId, m.qty]));
+  return kho.map((k) => ({ ...k, qty: theo.get(k.id) ?? 0 }));
+}
+
+export async function danhSachKho() {
+  return db.warehouse.findMany({
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, isMain: true },
   });
 }

@@ -27,6 +27,7 @@ export default async function AdminCustomerPage({ params }: { params: Promise<{ 
   const [kh, nguong] = await Promise.all([getCustomer(id), getSettings()]);
   if (!kh) notFound();
 
+  const batHang = nguong.tiersEnabled;
   const con = conThieuLenHang(kh.chiTieu, nguong);
 
   return (
@@ -46,18 +47,20 @@ export default async function AdminCustomerPage({ params }: { params: Promise<{ 
             {kh.email ? " · " + kh.email : ""} · thành viên từ {formatDate(kh.createdAt)}
           </p>
         </div>
-        <Badge tone={tierTone(kh.hang)}>{kh.hang}</Badge>
+        {batHang ? <Badge tone={tierTone(kh.hang)}>{kh.hang}</Badge> : null}
       </div>
 
-      <dl className="mb-7 grid gap-px border-2 border-divider bg-divider sm:grid-cols-2 lg:grid-cols-4">
+      <dl className={"mb-7 grid gap-px border-2 border-divider bg-divider sm:grid-cols-2 " + (batHang ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
         <Card label="Chi tiêu 12 tháng" value={formatVnd(kh.chiTieu)} />
-        <Card label="Số đơn tính hạng" value={String(kh.soDon)} />
+        <Card label={batHang ? "Số đơn tính hạng" : "Số đơn"} value={String(kh.soDon)} />
         <Card label="Điểm hiện có" value={String(kh.pointBalance)} />
-        <Card
-          label="Lên hạng kế tiếp"
-          value={con ? formatVnd(con.thieu) : "Đã cao nhất"}
-          hint={con ? `còn thiếu để lên ${con.hang}` : undefined}
-        />
+        {batHang ? (
+          <Card
+            label="Lên hạng kế tiếp"
+            value={con ? formatVnd(con.thieu) : "Đã cao nhất"}
+            hint={con ? `còn thiếu để lên ${con.hang}` : undefined}
+          />
+        ) : null}
       </dl>
 
       <div className="grid items-start gap-7 lg:grid-cols-[1fr_320px]">

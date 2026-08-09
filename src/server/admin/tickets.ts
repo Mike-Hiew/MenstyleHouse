@@ -25,6 +25,13 @@ const TABS = [
   { key: "da-dong", label: "Đã đóng", status: "CLOSED" as const },
 ];
 
+const SORTABLE: Record<string, "code" | "subject" | "status" | "createdAt"> = {
+  code: "code",
+  subject: "subject",
+  status: "status",
+  date: "createdAt",
+};
+
 export async function listTickets(q: TableQuery) {
   const tab = TABS.find((t) => t.key === q.tab);
   const and: Prisma.TicketWhereInput[] = [];
@@ -45,7 +52,7 @@ export async function listTickets(q: TableQuery) {
   const [rows, total, chuaXuLy, counts] = await Promise.all([
     db.ticket.findMany({
       where,
-      orderBy: { createdAt: q.chieu },
+      orderBy: { [SORTABLE[q.sap] ?? "createdAt"]: q.chieu },
       skip: (q.trang - 1) * TABLE_PAGE_SIZE,
       take: TABLE_PAGE_SIZE,
       select: {

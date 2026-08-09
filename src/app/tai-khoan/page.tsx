@@ -98,7 +98,8 @@ export default async function AccountPage({
             <div>
               <h1 className="text-[28px] lg:text-[40px]">{points.name}</h1>
               <p className="label-tech mt-1">
-                {staff ? ROLE_LABEL[staff.role].toUpperCase() : "THÀNH VIÊN"} · HẠNG {hang.hang}
+                {staff ? ROLE_LABEL[staff.role].toUpperCase() : "THÀNH VIÊN"}
+                {hang.bat ? " · HẠNG " + hang.hang : ""}
               </p>
             </div>
             <form action={logoutAction}>
@@ -137,9 +138,11 @@ export default async function AccountPage({
                 </p>
                 <p className="mt-2 text-[12.5px] leading-[1.6] text-hairline">
                   Đã chi {formatVnd(hang.chiTieu)} trong 12 tháng.
-                  {hang.tiep
-                    ? ` Còn ${formatVnd(hang.tiep.thieu)} nữa lên hạng ${hang.tiep.hang}.`
-                    : " Bạn đang ở hạng cao nhất."}
+                  {hang.bat
+                    ? hang.tiep
+                      ? ` Còn ${formatVnd(hang.tiep.thieu)} nữa lên hạng ${hang.tiep.hang}.`
+                      : " Bạn đang ở hạng cao nhất."
+                    : ""}
                 </p>
               </section>
 

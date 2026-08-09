@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import { buildSku } from "../src/lib/slug";
 import {
   PrismaClient,
@@ -11,7 +12,18 @@ import {
 const db = new PrismaClient();
 
 /** Mật khẩu dev cho mọi tài khoản nội bộ. Đổi trước khi lên production. */
-const STAFF_PASSWORD = "admin123456";
+/**
+ * Mật khẩu cho bốn tài khoản nội bộ khi seed.
+ *
+ * Lấy từ `SEED_PASSWORD`; **không có thì sinh ngẫu nhiên và in ra một lần**.
+ * Bản trước viết cứng `admin123456` ngay trong mã — nghĩa là mọi bản triển khai
+ * chạy `db:seed` đều có bốn tài khoản quản trị dùng chung một mật khẩu ai đọc
+ * repo cũng biết.
+ */
+const STAFF_PASSWORD =
+  process.env.SEED_PASSWORD?.trim() ||
+  randomBytes(9).toString("base64url");
+const TU_SINH = !process.env.SEED_PASSWORD?.trim();
 
 /* Số ngẫu nhiên có hạt giống — seed chạy lại cho ra cùng dữ liệu. */
 let seedState = 20260807;
@@ -187,7 +199,7 @@ async function main() {
 
   // ── Kho & nhà cung cấp ────────────────────────────────────
   const warehouses = await Promise.all([
-    db.warehouse.create({ data: { name: "Kho Tân Bình", address: "128 Trường Chinh, Q. Tân Bình, TP.HCM" } }),
+    db.warehouse.create({ data: { name: "Kho Tân Bình", address: "128 Trường Chinh, Q. Tân Bình, TP.HCM", isMain: true } }),
     db.warehouse.create({ data: { name: "Kho Long Biên", address: "45 Ngọc Lâm, Q. Long Biên, Hà Nội" } }),
     db.warehouse.create({ data: { name: "Kho Hoà Khánh", address: "12 Âu Cơ, Q. Liên Chiểu, Đà Nẵng" } }),
   ]);
@@ -468,6 +480,20 @@ async function main() {
     "khách hàng": await db.user.count(),
   };
   console.log("Xong:", counts);
+
+  /*
+   * In mật khẩu **một lần duy nhất** khi nó được sinh ngẫu nhiên. Không lưu lại
+   * ở đâu: chép ra rồi đổi ngay là đúng việc, chứ để nó nằm trong file nào đó
+   * thì lại thành mật khẩu ai đọc repo cũng biết, y như cũ.
+   */
+  if (TU_SINH) {
+    console.log("");
+    console.log("┌───────────────────────────────────────────────────────┐");
+    console.log("│ MẬT KHẨU BỐN TÀI KHOẢN NỘI BỘ (chỉ hiện lần này)      │");
+    console.log("│   " + STAFF_PASSWORD.padEnd(52) + "│");
+    console.log("│ Đặt SEED_PASSWORD trong .env nếu muốn tự chọn.        │");
+    console.log("└───────────────────────────────────────────────────────┘");
+  }
 }
 
 main()

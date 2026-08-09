@@ -1,6 +1,8 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
+import { TAG } from "@/lib/cache-tags";
 import { compareSizes, type CatalogQuery, type Facets, type Scope } from "@/lib/catalog";
 
 /**
@@ -145,14 +147,17 @@ export async function listProducts(q: CatalogQuery, scope: Scope = {}): Promise<
 }
 
 /** Hàng mới về cho trang chủ. */
-export async function getLatestProducts(take = 4): Promise<ProductCardData[]> {
-  return db.product.findMany({
-    where: { status: "ACTIVE" },
-    take,
-    orderBy: { createdAt: "desc" },
-    include: cardInclude,
-  });
-}
+export const getLatestProducts = unstable_cache(
+  async (take = 4): Promise<ProductCardData[]> =>
+    db.product.findMany({
+      where: { status: "ACTIVE" },
+      take,
+      orderBy: { createdAt: "desc" },
+      include: cardInclude,
+    }),
+  ["latest-products"],
+  { tags: [TAG.catalog], revalidate: 300 },
+);
 
 /* ── Số đếm bộ lọc ────────────────────────────────────────── */
 
@@ -241,7 +246,8 @@ export async function loadFacets(q: CatalogQuery, scope: Scope = {}): Promise<Fa
 
 export const detailInclude = Prisma.validator<Prisma.ProductInclude>()({
   images: { orderBy: { sort: "asc" } },
-  category: { select: { name: true, slug: true } },
+  // `sizeChartId` để trang sản phẩm biết lấy bảng size nào.
+  category: { select: { name: true, slug: true, sizeChartId: true } },
   brand: { select: { name: true } },
   variants: { orderBy: [{ color: "asc" }, { size: "asc" }] },
   reviews: { where: { approved: true }, orderBy: { createdAt: "desc" }, take: 20 },
@@ -249,9 +255,22 @@ export const detailInclude = Prisma.validator<Prisma.ProductInclude>()({
 
 export type ProductDetail = Prisma.ProductGetPayload<{ include: typeof detailInclude }>;
 
-export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
-  return db.product.findFirst({ where: { slug, status: "ACTIVE" }, include: detailInclude });
-}
+/**
+ * Chi tiết sản phẩm — trang được xem nhiều nhất, và **đổi ít nhất**.
+ *
+ * Bọc cache theo nhãn thay vì đặt `revalidate` trên trang: trang vẫn phải động
+ * vì header đọc cookie giỏ hàng và phiên đăng nhập, nên ISR không dùng được.
+ * Cache đúng chỗ tốn thời gian — truy vấn DB — mới có tác dụng.
+ *
+ * Đánh giá mới được duyệt cũng phải hiện ngay, nên màn duyệt gọi
+ * `revalidateTag(TAG.catalog)`.
+ */
+export const getProductBySlug = unstable_cache(
+  async (slug: string): Promise<ProductDetail | null> =>
+    db.product.findFirst({ where: { slug, status: "ACTIVE" }, include: detailInclude }),
+  ["product-by-slug"],
+  { tags: [TAG.catalog], revalidate: 300 },
+);
 
 /** Gợi ý cùng danh mục, loại trừ chính nó. */
 export async function getRelated(product: ProductDetail, take = 4): Promise<ProductCardData[]> {

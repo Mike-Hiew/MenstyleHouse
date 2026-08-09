@@ -113,7 +113,7 @@ export default async function AdminDashboardPage() {
               <li key={v.id} className="bg-bg p-3.5">
                 <Link
                   href={("/san-pham/" + v.product.slug) as Route}
-                  className="block text-[13.5px] font-semibold hover:text-accent-700"
+                  className="flex min-h-11 items-center text-[13.5px] font-semibold hover:text-accent-700 lg:min-h-0"
                 >
                   {v.product.name}
                 </Link>

@@ -83,6 +83,13 @@ function whereFor(q: TableQuery) {
 
 const SORTABLE: Record<string, keyof Prisma.OrderOrderByWithRelationInput> = {
   code: "code",
+  receiver: "receiver",
+  province: "province",
+  // Trạng thái sắp theo **thứ tự enum**, tức đúng thứ tự vòng đời đơn: chờ →
+  // xác nhận → đóng gói → giao → xong. Sắp theo chữ cái thì "Đã giao" đứng
+  // cạnh "Đã huỷ" và bảng chẳng nói lên điều gì.
+  status: "status",
+  paymentStatus: "paymentStatus",
   total: "total",
   createdAt: "createdAt",
 };
@@ -172,6 +179,17 @@ export async function advanceOrderStatus(
     await cancelOrder(code, actorName);
     // Cửa hàng huỷ đơn là việc khách không biết trước — phải báo.
     await baoKhachDoiTrangThai(code, "CANCELLED");
+    return;
+  }
+
+  /*
+   * Trả hàng cũng đi đường riêng như huỷ: còn phải hoàn tồn kho, thu hồi điểm
+   * đã cộng, trả lại điểm đã tiêu và đánh dấu hoàn tiền. Nhánh chung bên dưới
+   * chỉ đổi mỗi chữ trạng thái.
+   */
+  if (to === "RETURNED") {
+    const { returnOrder } = await import("@/server/orders");
+    await returnOrder(code, actorName, note || "Khách trả hàng");
     return;
   }
 

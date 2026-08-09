@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { Menu, Search, ShieldCheck, ShoppingBag, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useOverlay } from "@/components/ui/overlay";
+import { AccountMenu, chuTat, type ThanhVien } from "./account-menu";
+import { logoutAction } from "@/app/(tai-khoan)/actions";
 import { Container } from "./shell";
 
 /**
@@ -33,7 +35,7 @@ const ACCOUNT = [
   { label: "Đăng ký", href: "/dang-ky" },
 ];
 
-export type HeaderMember = { name: string; points: number };
+export type HeaderMember = ThanhVien;
 
 export function SiteHeader({
   categories = [],
@@ -142,22 +144,10 @@ export function SiteHeader({
               </Link>
             ) : null}
 
-            {/* Member: ô vuông đen chữ tắt + tên + điểm, đúng mockup. */}
+            {/* Member: ô vuông đen chữ tắt + tên + điểm (mockup), bấm vào xổ
+                xuống điểm/hạng và nút đăng xuất. */}
             {member ? (
-              <Link
-                href={{ pathname: "/tai-khoan" }}
-                className="hidden items-center gap-2.5 border border-border-soft py-1.5 pl-1.5 pr-3 text-left lg:flex"
-              >
-                <span className="grid h-7 w-7 flex-none place-items-center bg-neutral-900 font-heading text-[11px] font-extrabold text-bg">
-                  {initials(member.name)}
-                </span>
-                <span>
-                  <span className="block text-[12.5px] font-bold">{member.name}</span>
-                  <span className="block font-mono text-[10px] font-bold leading-[1.3] text-accent-600">
-                    {member.points} điểm
-                  </span>
-                </span>
-              </Link>
+              <AccountMenu ban={member} vaiTro={staffRole} />
             ) : (
             <div className="hidden gap-2 lg:flex">
               {ACCOUNT.map((a, i) => (
@@ -223,6 +213,7 @@ export function SiteHeader({
         categories={categories}
         isActive={isActive}
         staffRole={staffRole}
+        member={member}
       />
     </header>
   );
@@ -234,12 +225,14 @@ function NavDrawer({
   categories,
   isActive,
   staffRole,
+  member,
 }: {
   open: boolean;
   onClose: () => void;
   categories: { name: string; slug: string }[];
   isActive: (href: string) => boolean;
   staffRole: string | null;
+  member: HeaderMember | null;
 }) {
   const panelRef = useOverlay(open, onClose);
 
@@ -317,31 +310,58 @@ function NavDrawer({
           ) : null}
         </nav>
 
-        <div className="flex flex-none gap-2 border-t-2 border-divider p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          {ACCOUNT.map((a, i) => (
+        {/*
+          Đã đăng nhập thì đáy drawer là thông tin tài khoản + đăng xuất. Bản
+          trước luôn hiện "Đăng nhập / Đăng ký" kể cả khi đang đăng nhập, nên
+          trên điện thoại không có đường nào đăng xuất ngoài việc vào hẳn trang
+          tài khoản.
+        */}
+        {member ? (
+          <div className="flex-none border-t-2 border-divider pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             <Link
-              key={a.href}
-              href={{ pathname: a.href }}
-              className={cn(
-                "flex h-12 flex-1 items-center justify-center text-[14px]",
-                i === 0
-                  ? "border border-border-soft font-semibold"
-                  : "bg-neutral-900 font-extrabold text-bg",
-              )}
+              href={"/tai-khoan" as const}
+              onClick={onClose}
+              className="flex items-center gap-3 bg-neutral-900 p-4 text-bg"
             >
-              {a.label}
+              <span className="grid h-9 w-9 flex-none place-items-center bg-bg font-heading text-[12px] font-extrabold text-text">
+                {chuTat(member.name)}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[14px] font-extrabold">{member.name}</span>
+                <span className="block font-mono text-[11px] font-bold text-hairline">
+                  {member.points} điểm{member.hang ? " · HẠNG " + member.hang : ""}
+                </span>
+              </span>
             </Link>
-          ))}
-        </div>
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="flex min-h-12 w-full items-center px-4 text-left text-[14px] font-extrabold text-accent-700"
+              >
+                Đăng xuất
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="flex flex-none gap-2 border-t-2 border-divider p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            {ACCOUNT.map((a, i) => (
+              <Link
+                key={a.href}
+                href={{ pathname: a.href }}
+                className={cn(
+                  "flex h-12 flex-1 items-center justify-center text-[14px]",
+                  i === 0
+                    ? "border border-border-soft font-semibold"
+                    : "bg-neutral-900 font-extrabold text-bg",
+                )}
+              >
+                {a.label}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-/** Chữ tắt hai ký tự cho ô avatar — mockup dùng "MA". */
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  const last = parts[parts.length - 1] ?? "";
-  const first = parts[0] ?? "";
-  return ((first[0] ?? "") + (last[0] ?? "")).toUpperCase() || "MSH";
-}

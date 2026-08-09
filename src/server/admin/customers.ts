@@ -27,6 +27,20 @@ export class PhoneTakenError extends Error {
   }
 }
 
+/** Cột sắp xếp được thẳng trong SQL. */
+const SORTABLE: Record<string, "name" | "phone" | "pointBalance" | "createdAt"> = {
+  name: "name",
+  phone: "phone",
+  diem: "pointBalance",
+  createdAt: "createdAt",
+};
+
+/** Những cột phải tính rồi mới sắp được. */
+const TINH_TRONG_BO_NHO = new Set(["soDon", "chiTieu", "hang"]);
+
+/** Xếp hạng theo thứ bậc, không theo bảng chữ cái — "BẠC" đứng trước "KIM CƯƠNG". */
+const THU_TU_HANG: Record<string, number> = { "MỚI": 0, "BẠC": 1, "VÀNG": 2, "KIM CƯƠNG": 3 };
+
 function mocTinh() {
   const d = new Date();
   d.setMonth(d.getMonth() - 12);
@@ -65,18 +79,38 @@ export async function listCustomers(q: TableQuery) {
       : {}),
   };
 
+  const nguong = await getSettings();
+  const chon = { id: true, name: true, phone: true, email: true, pointBalance: true } as const;
+
+  /*
+   * Chi tiêu, số đơn và hạng **không phải cột trong `User`** — chúng tính từ
+   * bảng đơn. Nên phải chia hai đường:
+   *
+   *   - sắp theo cột thật (tên, số điện thoại, điểm, ngày tạo): để Postgres
+   *     sắp rồi cắt trang, như cũ;
+   *   - sắp theo số tính ra: lấy **toàn bộ** người khớp bộ lọc, tính chi tiêu
+   *     cho tất cả, sắp rồi mới cắt trang.
+   *
+   * Đường thứ hai tốn hơn, nhưng đường rẻ — cắt trang trước rồi sắp trong 20
+   * dòng đang hiện — là **nói dối**: nó xếp lại đúng một trang chứ không đưa
+   * khách chi nhiều nhất lên đầu, mà nhìn thì không phân biệt được.
+   */
+  const theoTinh = TINH_TRONG_BO_NHO.has(q.sap);
+
   const [users, total] = await Promise.all([
     db.user.findMany({
       where,
-      orderBy: { createdAt: "desc" },
-      skip: (q.trang - 1) * TABLE_PAGE_SIZE,
-      take: TABLE_PAGE_SIZE,
-      select: { id: true, name: true, phone: true, email: true, pointBalance: true },
+      ...(theoTinh
+        ? {}
+        : {
+            orderBy: { [SORTABLE[q.sap] ?? "createdAt"]: SORTABLE[q.sap] ? q.chieu : "desc" },
+            skip: (q.trang - 1) * TABLE_PAGE_SIZE,
+            take: TABLE_PAGE_SIZE,
+          }),
+      select: chon,
     }),
     db.user.count({ where }),
   ]);
-
-  const nguong = await getSettings();
 
   const chiTieu = await db.order.groupBy({
     by: ["userId"],
@@ -91,7 +125,7 @@ export async function listCustomers(q: TableQuery) {
 
   const theoNguoi = new Map(chiTieu.map((c) => [c.userId, c]));
 
-  const rows: CustomerRow[] = users.map((u) => {
+  let rows: CustomerRow[] = users.map((u) => {
     const g = theoNguoi.get(u.id);
     const tien = g?._sum.total ?? 0;
     return {
@@ -105,6 +139,16 @@ export async function listCustomers(q: TableQuery) {
       hang: tierFor(tien, nguong),
     };
   });
+
+  if (theoTinh) {
+    const dau = q.chieu === "asc" ? 1 : -1;
+    rows.sort((a, b) => {
+      if (q.sap === "hang") return dau * (THU_TU_HANG[a.hang] - THU_TU_HANG[b.hang]);
+      const k = q.sap as "soDon" | "chiTieu";
+      return dau * (a[k] - b[k]);
+    });
+    rows = rows.slice((q.trang - 1) * TABLE_PAGE_SIZE, q.trang * TABLE_PAGE_SIZE);
+  }
 
   return { rows, total };
 }

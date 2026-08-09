@@ -33,11 +33,21 @@ export function CouponBox() {
       </div>
 
       {state.message ? (
+        /*
+         * Lỗi phải nổi hơn thành công, không phải ngược lại. Bản trước tô mã
+         * áp thành công bằng đỏ nổi bật còn mã bị từ chối bằng `text-muted` —
+         * màu nhạt nhất trang — nên khách gõ sai mã thì gần như không thấy gì.
+         *
+         * `role` cũng đổi theo: lỗi dùng `alert` (đọc ngay), thành công dùng
+         * `status` (đọc khi rảnh).
+         */
         <p
-          role="status"
+          role={state.ok ? "status" : "alert"}
           className={cn(
             "mb-3.5 text-[12.5px] font-semibold",
-            state.ok ? "text-accent-700" : "text-muted",
+            state.ok
+              ? "text-muted"
+              : "border-2 border-accent bg-accent-100 px-3 py-2 text-accent-800",
           )}
         >
           {state.message}
