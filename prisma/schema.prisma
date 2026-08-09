@@ -4,7 +4,15 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Đường chạy thật: đi qua connection pooler. Mỗi lượt gọi hàm serverless là
+  // một tiến trình riêng, không có pooler thì vài chục lượt khách đồng thời đã
+  // ăn hết số kết nối Postgres cho phép.
   url      = env("DATABASE_URL")
+  // Đường cho `prisma migrate`: nối thẳng, không qua pooler. Migrate cần khoá
+  // tư vấn (advisory lock) và lệnh DDL, hai thứ pgbouncer ở chế độ transaction
+  // không giữ được — chạy qua pooler thì migrate treo hoặc hỏng giữa chừng.
+  // Máy dev không có pooler: đặt bằng đúng `DATABASE_URL`.
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── Người dùng ──────────────────────────────────────────────
