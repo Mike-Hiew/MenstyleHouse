@@ -2,7 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { TAG } from "@/lib/cache-tags";
-import type { SizeChart } from "@/lib/size-chart";
+import type { OSize, SizeChart } from "@/lib/size-chart";
 
 /**
  * Bảng size đọc từ DB cho trang sản phẩm.
@@ -24,15 +24,42 @@ export const bangSizeCho = unstable_cache(
 
     const b = await db.sizeChart.findUnique({
       where: { id },
-      include: { rows: { orderBy: { sort: "asc" } } },
+      include: {
+        columns: { orderBy: { sort: "asc" } },
+        rows: { orderBy: { sort: "asc" }, include: { cells: true } },
+      },
     });
     if (!b) return null;
 
     return {
       title: b.name,
-      // Cột "Size" luôn đứng đầu và không cho sửa — nó là khoá của mỗi dòng.
-      columns: ["Size", ...b.columns],
-      rows: b.rows.map((r) => ({ size: r.size, values: r.values })),
+      columns: b.columns.map((c) => ({
+        label: c.label,
+        key: c.key,
+        of: c.of,
+        unit: c.unit,
+      })),
+      /*
+       * Dựng mảng ô theo đúng thứ tự cột, tra ô theo `columnId`.
+       *
+       * Bản trước lấy thẳng `row.values` — một mảng chuỗi xếp song song với
+       * `chart.columns` mà không gì buộc hai bên cùng độ dài. Ở đây dòng nào
+       * thiếu ô thì ô đó thành "trống", không kéo mọi con số phía sau trượt
+       * sang cột bên cạnh.
+       */
+      rows: b.rows.map((r) => {
+        const theoCot = new Map(r.cells.map((o) => [o.columnId, o]));
+        return {
+          size: r.size,
+          o: b.columns.map((c): OSize => {
+            const o = theoCot.get(c.id);
+            if (!o) return { loai: "trong" };
+            if (o.text !== null) return { loai: "chu", text: o.text };
+            if (o.min === null) return { loai: "trong" };
+            return { loai: "so", min: o.min, max: o.max ?? o.min };
+          }),
+        };
+      }),
       fit: b.fit,
       howTo: b.howTo,
     };

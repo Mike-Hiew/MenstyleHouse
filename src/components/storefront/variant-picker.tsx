@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/toast";
 import { addToCartAction } from "@/app/gio-hang/actions";
 import { compareSizes } from "@/lib/catalog";
 import { formatVnd } from "@/lib/money";
-import type { SizeChart } from "@/lib/size-chart";
+import { cungSize, dinhDangO, kyHieuDonVi, type SizeChart } from "@/lib/size-chart";
 
 export type PickerVariant = {
   id: string;
@@ -54,6 +54,18 @@ export function VariantPicker({
   const sizes = React.useMemo(
     () => [...new Set(variants.map((v) => v.size))].sort(compareSizes),
     [variants],
+  );
+
+  /*
+   * Bảng có cột nào đo sản phẩm không.
+   *
+   * Câu "sai số cho phép ±1cm" chỉ đúng với số đo của cái áo đã may. Bảng chỉ
+   * ghi chiều cao và cân nặng người mặc mà vẫn nói câu đó là nói sai — khách sẽ
+   * tưởng cân nặng cũng có dung sai 1cm.
+   */
+  const coSoDoSanPham = React.useMemo(
+    () => (sizeChart?.columns ?? []).some((c) => c.of === "GARMENT" && c.unit === "CM"),
+    [sizeChart],
   );
 
   const [color, setColor] = React.useState(
@@ -288,32 +300,39 @@ export function VariantPicker({
             <table className="w-full border-collapse text-[13px]">
               <thead>
                 <tr>
-                  {sizeChart.columns.map((c, i) => (
+                  <th className="border-b-2 border-divider py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-faint">
+                    Size
+                  </th>
+                  {sizeChart.columns.map((c) => (
                     <th
-                      key={c}
-                      className={cn(
-                        "border-b-2 border-divider py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-faint",
-                        i === 0 ? "text-left" : "text-center",
-                      )}
+                      key={c.label}
+                      className="border-b-2 border-divider py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.08em] text-faint"
                     >
-                      {c}
+                      {c.label}
+                      {/* Đơn vị đi kèm từng cột: bảng quần có cột tính bằng cm
+                          lẫn cột tính bằng kg, một dòng "đơn vị: cm" chung ở
+                          cuối bảng là nói sai về một nửa số cột. */}
+                      <span className="block font-normal normal-case tracking-normal">
+                        {kyHieuDonVi(c.unit)}
+                      </span>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {sizeChart.rows.map((r) => (
-                  <tr key={r.size} className={r.size === size ? "bg-subtle" : undefined}>
+                  <tr key={r.size} className={cungSize(r.size, size) ? "bg-subtle" : undefined}>
                     <td className="border-b border-hairline py-2.5 font-extrabold">{r.size}</td>
-                    {r.values.map((v, i) => (
+                    {r.o.map((o, i) => (
                       <td
-                        key={i}
+                        key={sizeChart.columns[i]?.label ?? i}
                         className={cn(
                           "border-b border-hairline py-2.5 text-center",
-                          i < r.values.length - 1 && "font-mono",
+                          o.loai === "so" && "font-mono",
+                          o.loai === "trong" && "text-faint",
                         )}
                       >
-                        {v}
+                        {dinhDangO(o)}
                       </td>
                     ))}
                   </tr>
@@ -330,7 +349,11 @@ export function VariantPicker({
               <li key={h}>{h}</li>
             ))}
           </ul>
-          <p className="mt-4 text-[13px] text-faint">Đơn vị: cm. Sai số cho phép ±1cm.</p>
+          {coSoDoSanPham ? (
+            <p className="mt-4 text-[13px] text-faint">
+              Số đo của sản phẩm đã may xong, sai số cho phép ±1cm.
+            </p>
+          ) : null}
         </Dialog>
       ) : null}
     </div>

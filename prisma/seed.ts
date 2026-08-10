@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
+import { moveStock } from "../src/lib/inventory";
 import { buildSku } from "../src/lib/slug";
 import {
   PrismaClient,
@@ -54,6 +55,22 @@ const CATEGORIES = [
   { name: "Quần short", slug: "quan-short", sizes: ["29", "30", "31", "32", "34"] },
   { name: "Phụ kiện", slug: "phu-kien", sizes: ["Freesize"] },
 ];
+
+/**
+ * Danh mục nào dùng bảng size nào — giữ khớp với
+ * `20260809070000_nap_bang_size/migration.sql`.
+ *
+ * Phụ kiện cố ý vắng mặt: chỉ có Freesize thì bày bảng đo làm gì.
+ */
+const BANG_SIZE_THEO_DANH_MUC: Record<string, string> = {
+  "ao-phong": "ao",
+  "ao-so-mi": "ao",
+  "ao-polo": "ao",
+  "ao-hoodie": "ao",
+  "ao-khoac": "ao",
+  "quan-jeans": "quan-dai",
+  "quan-short": "quan-short",
+};
 
 const BRANDS = ["MSH Basic", "MSH Heritage", "Nordfelt", "Tân Bình Denim", "Kojima", "Lữ Hành"];
 
@@ -142,9 +159,29 @@ async function main() {
   ]);
 
   // ── Danh mục & thương hiệu ────────────────────────────────
+  //
+  // `sizeChartId` phải gán ngay ở đây. Bảng size do migration
+  // `20260809070000_nap_bang_size` nạp và nó cũng gán ánh xạ này, nhưng seed vừa
+  // `category.deleteMany()` phía trên — tạo lại mà quên gán là **xoá sạch ánh xạ
+  // của migration**. Hậu quả không có lỗi nào báo ra: mọi trang sản phẩm lặng lẽ
+  // mất nút "Bảng size", đúng kiểu hỏng mà migration đó đã cảnh báo. Đã xảy ra
+  // thật một lần trên bản triển khai.
+  //
+  // Tra theo `slug` chứ không viết cứng id `sc_ao`, để seed chạy được cả trên DB
+  // mà bảng size do cửa hàng tự tạo.
+  const bangSize = await db.sizeChart.findMany({ select: { id: true, slug: true } });
+  const bangTheoSlug = new Map(bangSize.map((b) => [b.slug, b.id]));
+
   const categories = await Promise.all(
     CATEGORIES.map((c, i) =>
-      db.category.create({ data: { name: c.name, slug: c.slug, sort: i } }),
+      db.category.create({
+        data: {
+          name: c.name,
+          slug: c.slug,
+          sort: i,
+          sizeChartId: bangTheoSlug.get(BANG_SIZE_THEO_DANH_MUC[c.slug] ?? "") ?? null,
+        },
+      }),
     ),
   );
   const brands = await Promise.all(BRANDS.map((name) => db.brand.create({ data: { name } })));
@@ -311,24 +348,30 @@ async function main() {
   }
 
   // ── Nạp tồn kho đầu kỳ qua sổ cái (giữ bất biến) ──────────
+  //
+  // Đi qua `moveStock` chứ không tự ghi `variant.stock` — đúng như comment của
+  // nó: "ĐIỂM VÀO DUY NHẤT để đổi Variant.stock trong toàn hệ thống".
+  //
+  // Bản trước seed tự ghi thẳng `stock` cộng một `InventoryMovement`, và thiếu
+  // mất `StockLevel` mà migration `20260809051828_ton_kho_theo_kho` thêm vào.
+  // Hậu quả: chạy `db:seed` xong là 465 SKU có tồn nhưng tổng theo kho bằng 0,
+  // và `tests/inventory.test.ts` — bất biến bắt buộc chạy trong CI từ M4 — đổ.
+  // Cùng một kiểu lỗi với chuyện seed xoá mất ánh xạ bảng size: seed không biết
+  // về thứ mà migration đã thêm.
   console.log("Nạp tồn kho đầu kỳ cho " + allVariants.length + " SKU…");
   for (const v of allVariants) {
     const qty = rnd() < 0.08 ? int(0, 6) : int(12, 90);
     if (qty === 0) continue;
-    await db.$transaction([
-      db.variant.update({ where: { id: v.id }, data: { stock: qty } }),
-      db.inventoryMovement.create({
-        data: {
-          variantId: v.id,
-          type: "RECEIPT",
-          delta: qty,
-          stockAfter: qty,
-          refType: "Seed",
-          note: "Tồn đầu kỳ",
-          actorName: "Hệ thống",
-        },
+    await db.$transaction((tx) =>
+      moveStock(tx, {
+        variantId: v.id,
+        delta: qty,
+        type: "RECEIPT",
+        refType: "Seed",
+        note: "Tồn đầu kỳ",
+        actorName: "Hệ thống",
       }),
-    ]);
+    );
   }
 
   // ── Khuyến mãi ────────────────────────────────────────────

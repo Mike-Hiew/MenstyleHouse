@@ -2,28 +2,74 @@
 
 import * as React from "react";
 import { useActionState } from "react";
+import type { MeasureKey, MeasureOf, MeasureUnit } from "@prisma/client";
 import { cn } from "@/lib/cn";
+import { kyHieuDonVi } from "@/lib/size-chart";
 import {
+  chuyenCotAction,
   ganDanhMucAction,
   suaBangAction,
+  suaCotAction,
   suaDongAction,
+  themCotAction,
   themDongAction,
+  xoaCotAction,
   xoaDongAction,
   type BangSizeState,
 } from "@/app/admin/bang-size/actions";
 
+export type Cot = {
+  id: string;
+  label: string;
+  key: MeasureKey | null;
+  of: MeasureOf;
+  unit: MeasureUnit;
+};
 export type Dong = { id: string; size: string; values: string[] };
 export type Bang = {
   id: string;
   name: string;
   fit: string;
   howTo: string[];
-  columns: string[];
+  columns: Cot[];
   rows: Dong[];
 };
 export type DanhMuc = { id: string; name: string; sizeChartId: string | null };
 
 const o = "h-11 w-full border border-border-soft bg-surface px-3 text-[13.5px]";
+const oNho = "h-9 w-full border border-border-soft bg-surface px-2 text-[13px]";
+
+/**
+ * Khoá đo để chọn trong danh sách.
+ *
+ * Khai khoá là thứ biến `"88"` từ một chuỗi thành một số đo máy hiểu được. Bỏ
+ * trống cũng được — cột đó thành cột chữ tự do, hiện ra vẫn bình thường, chỉ là
+ * không tính toán được. Đó là đánh đổi có ý thức chứ không phải thiếu sót: cửa
+ * hàng vẫn cần chỗ ghi những ghi chú không đo thành số.
+ */
+const KHOA_DO: { value: MeasureKey | ""; ten: string }[] = [
+  { value: "", ten: "— cột chữ, không đo —" },
+  { value: "CHEST", ten: "Vòng ngực" },
+  { value: "WAIST", ten: "Vòng eo" },
+  { value: "HIP", ten: "Vòng mông" },
+  { value: "SHOULDER", ten: "Rộng vai" },
+  { value: "SLEEVE", ten: "Dài tay" },
+  { value: "TOP_LENGTH", ten: "Dài áo" },
+  { value: "BOTTOM_LENGTH", ten: "Dài quần" },
+  { value: "LEG_OPENING", ten: "Ống" },
+  { value: "INSEAM", ten: "Dài dàng trong" },
+  { value: "THIGH", ten: "Vòng đùi" },
+  { value: "NECK", ten: "Vòng cổ" },
+  { value: "HEIGHT", ten: "Chiều cao" },
+  { value: "WEIGHT", ten: "Cân nặng" },
+];
+
+const DO_CAI_GI: { value: MeasureOf; ten: string }[] = [
+  { value: "GARMENT", ten: "Sản phẩm" },
+  { value: "BODY", ten: "Cơ thể" },
+];
+
+const DON_VI: MeasureUnit[] = ["CM", "INCH", "KG"];
 
 function Bao({ state }: { state: BangSizeState }) {
   if (!state.message) return null;
@@ -41,15 +87,214 @@ function Bao({ state }: { state: BangSizeState }) {
 }
 
 /**
- * Sửa một bảng size: phần đầu (tên, cột, ghi chú) và các dòng size.
+ * Khai báo các cột của bảng.
+ *
+ * Tách hẳn khỏi khối "thông tin bảng" vì cột giờ là bản ghi thật, không còn là
+ * một chuỗi phân tách bằng phẩy. Đổi lại được ba thứ mà bản cũ không có: đổi
+ * nhãn cột mà không mất ý nghĩa, khai đơn vị riêng cho từng cột, và **xoá một
+ * cột không làm lệch dòng nào** — ô neo vào cột bằng khoá ngoại.
+ */
+function QuanLyCot({ bang }: { bang: Bang }) {
+  const [tState, themCot, dangThem] = useActionState<BangSizeState, FormData>(themCotAction, {});
+  const [sState, suaCot] = useActionState<BangSizeState, FormData>(suaCotAction, {});
+  const [xState, xoaCot] = useActionState<BangSizeState, FormData>(xoaCotAction, {});
+  const [cState, chuyenCot] = useActionState<BangSizeState, FormData>(chuyenCotAction, {});
+  const [dangSua, setDangSua] = React.useState<string | null>(null);
+
+  return (
+    <div className="border-2 border-border-soft p-4">
+      <p className="label-tech mb-3 font-bold">CÁC CỘT</p>
+      <Bao
+        state={
+          tState.message
+            ? tState
+            : sState.message
+              ? sState
+              : xState.message
+                ? xState
+                : cState
+        }
+      />
+      <p className="mb-3 text-[12.5px] leading-[1.6] text-muted">
+        Cột “Size” tự có, không cần khai. Khai <strong>khoá đo</strong> thì con số mới dùng được
+        cho việc gợi ý size sau này; để trống là cột chữ thuần.
+      </p>
+
+      {bang.columns.length === 0 ? (
+        <p className="mb-3 border border-dashed border-border-soft bg-subtle px-3.5 py-4 text-[13px] text-muted">
+          Chưa có cột nào. Bảng không cột thì dòng size không chứa được gì.
+        </p>
+      ) : (
+        <ul className="mb-4 flex flex-col border-t border-hairline">
+          {bang.columns.map((c, i) => (
+            <li key={c.id} className="border-b border-hairline py-2.5">
+              {dangSua === c.id ? (
+                <form action={suaCot} onSubmit={() => setDangSua(null)}>
+                  <input type="hidden" name="chartId" value={bang.id} />
+                  <input type="hidden" name="columnId" value={c.id} />
+                  <input
+                    name="label"
+                    defaultValue={c.label}
+                    aria-label="Tên cột"
+                    className={cn(oNho, "mb-2")}
+                  />
+                  <div className="mb-2 grid grid-cols-[1fr_auto_auto] gap-2">
+                    <select name="key" defaultValue={c.key ?? ""} aria-label="Khoá đo" className={oNho}>
+                      {KHOA_DO.map((k) => (
+                        <option key={k.value} value={k.value}>
+                          {k.ten}
+                        </option>
+                      ))}
+                    </select>
+                    <select name="of" defaultValue={c.of} aria-label="Đo cái gì" className={oNho}>
+                      {DO_CAI_GI.map((d) => (
+                        <option key={d.value} value={d.value}>
+                          {d.ten}
+                        </option>
+                      ))}
+                    </select>
+                    <select name="unit" defaultValue={c.unit} aria-label="Đơn vị" className={oNho}>
+                      {DON_VI.map((u) => (
+                        <option key={u} value={u}>
+                          {kyHieuDonVi(u)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <span className="flex items-center gap-3">
+                    <button
+                      type="submit"
+                      className="flex min-h-11 items-center text-[12px] font-extrabold text-accent-700 underline"
+                    >
+                      Lưu cột
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDangSua(null)}
+                      className="flex min-h-11 items-center text-[12px] text-faint underline"
+                    >
+                      Thôi
+                    </button>
+                  </span>
+                </form>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13.5px] font-semibold">
+                      {c.label}{" "}
+                      <span className="font-normal text-faint">({kyHieuDonVi(c.unit)})</span>
+                    </span>
+                    <span className="block text-[11.5px] text-muted">
+                      {c.key ? (
+                        <>
+                          {KHOA_DO.find((k) => k.value === c.key)?.ten ?? c.key} ·{" "}
+                          {c.of === "BODY" ? "đo cơ thể" : "đo sản phẩm"}
+                        </>
+                      ) : (
+                        <span className="text-faint">cột chữ — không tính toán được</span>
+                      )}
+                    </span>
+                  </span>
+
+                  <form action={chuyenCot}>
+                    <input type="hidden" name="chartId" value={bang.id} />
+                    <input type="hidden" name="columnId" value={c.id} />
+                    <input type="hidden" name="huong" value="len" />
+                    <button
+                      type="submit"
+                      disabled={i === 0}
+                      aria-label={"Đưa cột " + c.label + " lên trước"}
+                      className="flex h-9 w-7 items-center justify-center text-[13px] disabled:opacity-25"
+                    >
+                      ↑
+                    </button>
+                  </form>
+                  <form action={chuyenCot}>
+                    <input type="hidden" name="chartId" value={bang.id} />
+                    <input type="hidden" name="columnId" value={c.id} />
+                    <input type="hidden" name="huong" value="xuong" />
+                    <button
+                      type="submit"
+                      disabled={i === bang.columns.length - 1}
+                      aria-label={"Đưa cột " + c.label + " xuống sau"}
+                      className="flex h-9 w-7 items-center justify-center text-[13px] disabled:opacity-25"
+                    >
+                      ↓
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    onClick={() => setDangSua(c.id)}
+                    className="flex min-h-11 items-center text-[12px] underline"
+                  >
+                    Sửa
+                  </button>
+                  <form action={xoaCot}>
+                    <input type="hidden" name="chartId" value={bang.id} />
+                    <input type="hidden" name="columnId" value={c.id} />
+                    <button
+                      type="submit"
+                      className="flex min-h-11 items-center text-[12px] text-faint underline"
+                    >
+                      Xoá
+                    </button>
+                  </form>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form action={themCot} className="border-t-2 border-border-soft pt-3.5">
+        <input type="hidden" name="chartId" value={bang.id} />
+        <input name="label" placeholder="Tên cột mới, ví dụ Vòng ngực" className={cn(oNho, "mb-2")} />
+        <div className="mb-2 grid grid-cols-[1fr_auto_auto] gap-2">
+          <select name="key" defaultValue="" aria-label="Khoá đo" className={oNho}>
+            {KHOA_DO.map((k) => (
+              <option key={k.value} value={k.value}>
+                {k.ten}
+              </option>
+            ))}
+          </select>
+          <select name="of" defaultValue="GARMENT" aria-label="Đo cái gì" className={oNho}>
+            {DO_CAI_GI.map((d) => (
+              <option key={d.value} value={d.value}>
+                {d.ten}
+              </option>
+            ))}
+          </select>
+          <select name="unit" defaultValue="CM" aria-label="Đơn vị" className={oNho}>
+            {DON_VI.map((u) => (
+              <option key={u} value={u}>
+                {kyHieuDonVi(u)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="submit"
+          disabled={dangThem}
+          className="flex h-11 w-full items-center justify-center bg-neutral-900 text-[13px] font-extrabold text-bg disabled:opacity-60"
+        >
+          {dangThem ? "Đang thêm…" : "THÊM CỘT"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/**
+ * Sửa một bảng size: phần đầu (tên, ghi chú), các cột và các dòng size.
  *
  * Cột **"Size" không nằm trong danh sách cột sửa được** — nó luôn đứng đầu và là
  * khoá của mỗi dòng. Cho sửa thì bảng mất chỗ neo, và dòng "M" không còn biết
  * mình là size gì.
  *
- * Số ô giá trị của mỗi dòng phải khớp số cột. Lệch thì **cảnh báo ngay tại
- * dòng** chứ không chặn lưu: người ta hay thêm cột trước rồi mới đi điền lại
- * từng dòng, chặn giữa chừng là bắt họ làm ngược.
+ * Bản trước phải cảnh báo "lệch cột" ở từng dòng, vì cột và giá trị là hai mảng
+ * song song không gì buộc cùng độ dài. Giờ không cần nữa: ô neo vào cột bằng
+ * khoá ngoại nên số ô luôn bằng số cột, thiếu thì hiện ô trống chứ không đẩy các
+ * con số phía sau trượt đi.
  */
 export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhMuc[] }) {
   const [sState, luuBang, dangLuu] = useActionState<BangSizeState, FormData>(suaBangAction, {});
@@ -79,19 +324,23 @@ export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhM
             <table className="w-full border-collapse text-[13px]">
               <thead>
                 <tr>
-                  {["SIZE", ...bang.columns.map((c) => c.toUpperCase()), ""].map((h, i) => (
+                  <th className="label-tech whitespace-nowrap border-b-2 border-border-soft py-2 pr-3 text-left font-bold">
+                    SIZE
+                  </th>
+                  {bang.columns.map((c) => (
                     <th
-                      key={h || i}
+                      key={c.id}
                       className="label-tech whitespace-nowrap border-b-2 border-border-soft py-2 pr-3 text-left font-bold"
                     >
-                      {h}
+                      {c.label.toUpperCase()}
+                      <span className="font-normal text-faint"> ({kyHieuDonVi(c.unit)})</span>
                     </th>
                   ))}
+                  <th className="border-b-2 border-border-soft py-2" />
                 </tr>
               </thead>
               <tbody>
                 {bang.rows.map((r) => {
-                  const lech = r.values.length !== soCot;
                   return (
                     <tr key={r.id}>
                       {dangSua === r.id ? (
@@ -160,14 +409,6 @@ export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhM
                           </span>
                         ) : (
                           <span className="flex items-center justify-end gap-3">
-                            {lech ? (
-                              <span
-                                className="text-[11.5px] font-semibold text-accent-700"
-                                title={`Dòng này có ${r.values.length} giá trị nhưng bảng có ${soCot} cột`}
-                              >
-                                lệch cột
-                              </span>
-                            ) : null}
                             <button
                               type="button"
                               onClick={() => setDangSua(r.id)}
@@ -206,7 +447,7 @@ export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhM
             </label>
             <label className="block">
               <span className="mb-1.5 block text-[12px] font-semibold">
-                {bang.columns.join(" · ") || "Chưa khai cột nào"}
+                {bang.columns.map((c) => c.label).join(" · ") || "Chưa khai cột nào"}
               </span>
               <input
                 name="values"
@@ -225,12 +466,15 @@ export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhM
             </div>
           </div>
           <p className="mt-2.5 text-[12px] text-faint">
-            Giá trị phân tách bằng dấu phẩy, xếp đúng thứ tự cột ở trên.
+            Phân tách bằng dấu phẩy, xếp đúng thứ tự cột ở trên. Gõ được một giá trị
+            (<code>100</code>) hoặc một khoảng (<code>88-92</code>).
           </p>
         </form>
       </div>
 
       <aside className="flex flex-col gap-6">
+        <QuanLyCot bang={bang} />
+
         <form action={luuBang} className="border-2 border-border-soft p-4">
           <input type="hidden" name="id" value={bang.id} />
           <p className="label-tech mb-3 font-bold">THÔNG TIN BẢNG</p>
@@ -239,14 +483,6 @@ export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhM
           <label className="mb-3 block">
             <span className="mb-1.5 block text-[12px] font-semibold">Tên bảng</span>
             <input name="name" defaultValue={bang.name} className={o} />
-          </label>
-
-          <label className="mb-3 block">
-            <span className="mb-1.5 block text-[12px] font-semibold">Các cột</span>
-            <input name="columns" defaultValue={bang.columns.join(", ")} className={o} />
-            <span className="mt-1.5 block text-[12px] text-faint">
-              Phân tách bằng dấu phẩy. Cột “Size” tự có, không cần khai.
-            </span>
           </label>
 
           <label className="mb-3 block">

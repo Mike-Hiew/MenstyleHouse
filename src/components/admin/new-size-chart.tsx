@@ -32,7 +32,10 @@ export function NewSizeChart() {
 
       <label className="block">
         <span className="mb-1.5 block text-[12px] font-semibold">Các cột</span>
-        <input name="columns" defaultValue="Vòng ngực, Rộng vai, Dài áo, Gợi ý" className={o} />
+        <input name="columns" defaultValue="Vòng ngực, Rộng vai, Dài áo" className={o} />
+        <span className="mt-1.5 block text-[12px] text-faint">
+          Chỉ cần tên cột. Khoá đo và đơn vị khai ở màn sửa.
+        </span>
       </label>
 
       <div className="flex items-end">
