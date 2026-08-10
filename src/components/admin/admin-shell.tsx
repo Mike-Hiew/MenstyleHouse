@@ -23,6 +23,7 @@ import {
   ShoppingBag,
   TicketPercent,
   Users,
+  Warehouse,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -58,6 +59,10 @@ const ICON: Record<IconKey, React.ComponentType<{ size?: number; className?: str
   "don-hang": ShoppingBag,
   "ton-kho": Boxes,
   "nhap-kho": PackagePlus,
+  // Nhà kho: nói về **nơi chứa**, phân biệt với Boxes (số lượng tồn) và
+  // PackagePlus (hàng nhập về). Ba mục kho, ba icon khác nhau — thu gọn thanh
+  // bên thì chỉ còn cột icon, trùng nhau là mất đường.
+  kho: Warehouse,
   "hoa-don": ReceiptText,
   "khach-hang": Users,
   "khuyen-mai": TicketPercent,

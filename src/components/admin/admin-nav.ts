@@ -31,6 +31,7 @@ export type IconKey =
   | "don-hang"
   | "ton-kho"
   | "nhap-kho"
+  | "kho"
   | "hoa-don"
   | "khach-hang"
   | "khuyen-mai"
@@ -73,6 +74,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
    */
   { label: "Tồn kho", href: "/admin/ton-kho", icon: "ton-kho", can: "kho.xem" },
   { label: "Nhập kho", href: "/admin/nhap-kho", icon: "nhap-kho", can: "kho.ghi-so" },
+  /**
+   * Danh mục kho — nơi hàng nằm, không phải số lượng hàng. Cùng khả năng với
+   * Nhập kho: mở và đóng kho là việc một chiều, kế toán xem tồn được nhưng
+   * không đụng vào danh mục.
+   */
+  { label: "Danh mục kho", href: "/admin/kho", icon: "kho", can: "kho.ghi-so" },
   { label: "Hoá đơn", href: "/admin/hoa-don", icon: "hoa-don", can: "hoa-don.xem" },
   { label: "Khách hàng", href: "/admin/khach-hang", icon: "khach-hang", can: "khach-hang.xem" },
   { label: "Khuyến mãi", href: "/admin/khuyen-mai", icon: "khuyen-mai", can: "khuyen-mai.quan-ly" },
