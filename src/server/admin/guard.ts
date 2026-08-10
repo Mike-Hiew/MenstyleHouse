@@ -1,10 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import type { Role } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { STAFF_ROLES } from "@/lib/roles";
 import { canDo, type PermissionKey } from "@/lib/permissions";
 import { getMatrix } from "@/server/admin/permissions";
 
@@ -21,9 +19,20 @@ import { getMatrix } from "@/server/admin/permissions";
  * trí.
  */
 
-export { STAFF_ROLES, isStaff, ROLE_LABEL } from "@/lib/roles";
-
-export type AdminUser = { id: string; name: string; email: string | null; role: Role };
+/**
+ * `role` là **khoá** vai trò; `roleLabel` là nhãn để hiện.
+ *
+ * Mang sẵn nhãn theo người dùng thay vì bắt mỗi chỗ hiển thị tự tra lại danh
+ * sách vai trò — `nhanVienHienTai` vốn đã phải đọc DB, kèm thêm một cột nữa
+ * không tốn gì.
+ */
+export type AdminUser = {
+  id: string;
+  name: string;
+  email: string | null;
+  role: string;
+  roleLabel: string;
+};
 
 export class ForbiddenError extends Error {
   constructor() {
@@ -46,11 +55,21 @@ const nhanVienHienTai = cache(async (): Promise<AdminUser | null> => {
 
   const u = await db.user.findUnique({
     where: { id },
-    select: { id: true, name: true, email: true, role: true, active: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      active: true,
+      // "Có phải nhân viên không" giờ là **dữ liệu của vai trò**, không còn là
+      // một danh sách viết cứng trong mã. Nối luôn ở đây thay vì đọc thêm một
+      // lượt: câu này đã chạy sẵn cho mọi trang quản trị rồi.
+      roleRef: { select: { label: true, isStaff: true } },
+    },
   });
-  if (!u || !u.active || !STAFF_ROLES.includes(u.role)) return null;
+  if (!u || !u.active || !u.roleRef.isStaff) return null;
 
-  return { id: u.id, name: u.name, email: u.email, role: u.role };
+  return { id: u.id, name: u.name, email: u.email, role: u.role, roleLabel: u.roleRef.label };
 });
 
 /**
@@ -62,11 +81,17 @@ export async function currentStaff(): Promise<AdminUser | null> {
   return nhanVienHienTai();
 }
 
-/** Dùng trong layout/trang admin. Không đủ quyền thì đá về trang chủ. */
-export async function requireStaff(allowed: Role[] = STAFF_ROLES): Promise<AdminUser> {
+/**
+ * Dùng trong layout/trang admin. Không phải nhân viên thì đá về đăng nhập.
+ *
+ * Bỏ tham số `allowed` từ M6.22: nó nhận một danh sách vai trò viết cứng, mà từ
+ * M6.8 mọi chốt chặn đã nói theo **khả năng** (`requirePermission`) chứ không
+ * theo vai trò. Giữ lại một cửa vào theo danh sách vai trò là giữ lại đúng thứ
+ * mà bảng phân quyền sinh ra để thay thế.
+ */
+export async function requireStaff(): Promise<AdminUser> {
   const me = await nhanVienHienTai();
   if (!me) redirect("/dang-nhap");
-  if (!allowed.includes(me.role)) redirect("/");
   return me;
 }
 
@@ -85,9 +110,9 @@ export async function requirePermission(key: PermissionKey): Promise<AdminUser> 
  * Dùng trong Server Action: ném lỗi thay vì redirect để action trả về thông
  * báo cho form.
  */
-export async function assertStaff(allowed: Role[] = STAFF_ROLES): Promise<AdminUser> {
+export async function assertStaff(): Promise<AdminUser> {
   const me = await nhanVienHienTai();
-  if (!me || !allowed.includes(me.role)) throw new ForbiddenError();
+  if (!me) throw new ForbiddenError();
   return me;
 }
 

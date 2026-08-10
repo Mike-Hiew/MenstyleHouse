@@ -4,7 +4,6 @@ import { currentUserId } from "@/auth";
 import { getPointSummary } from "@/server/accounts";
 import { hangCuaToi } from "@/server/membership";
 import { currentStaff } from "@/server/admin/guard";
-import { ROLE_LABEL } from "@/lib/roles";
 import { SiteHeader } from "./site-header";
 
 /**
@@ -39,7 +38,7 @@ export async function Header() {
             }
           : null
       }
-      staffRole={staff ? ROLE_LABEL[staff.role] : null}
+      staffRole={staff ? staff.roleLabel : null}
     />
   );
 }

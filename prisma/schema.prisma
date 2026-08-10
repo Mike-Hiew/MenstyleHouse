@@ -16,12 +16,39 @@ datasource db {
 }
 
 // ─── Người dùng ──────────────────────────────────────────────
-enum Role {
-  CUSTOMER
-  STAFF
-  WAREHOUSE
-  ACCOUNTANT
-  ADMIN
+/// Vai trò.
+///
+/// Trước M6.22 đây là `enum Role` với năm giá trị cố định — cửa hàng muốn thêm
+/// một vai trò ("Trưởng ca", "Nhân viên kho phụ") phải sửa schema, chạy migration
+/// và triển khai lại. Thành bảng thì đó là việc bấm chuột.
+///
+/// **Khoá `key` đặt một lần rồi thôi.** Nó nằm trong JWT của phiên đang mở, trong
+/// `RolePermission` và trong `StaffInvite` — đổi khoá là mọi phiên đang đăng nhập
+/// trỏ vào một vai trò không còn tồn tại, và toàn bộ ma trận quyền mất chỗ neo.
+/// Cửa hàng chỉ đổi được `label`, thứ duy nhất người ta nhìn thấy.
+model Role {
+  key   String @id
+  label String
+
+  /// Vào được khu quản trị. `CUSTOMER` là vai trò duy nhất không.
+  ///
+  /// Cờ này đi vào JWT vì `middleware.ts` chạy trên Edge và **không đọc được
+  /// DB** — nó phải biết ngay từ token là có cho qua `/admin` hay không.
+  isStaff Boolean @default(true)
+
+  /// Chủ cửa hàng: luôn có mọi khả năng, không sửa quyền và không xoá được.
+  /// Đúng một dòng mang cờ này — đó là chốt chống tự khoá cửa.
+  isSuper Boolean @default(false)
+
+  /// Năm vai trò gốc: đổi được tên, **không xoá được**. Vài chỗ trong mã và
+  /// trong seed vẫn nhắc thẳng tên chúng.
+  builtIn Boolean @default(false)
+
+  sort Int @default(0)
+
+  users       User[]
+  permissions RolePermission[]
+  invites     StaffInvite[]
 }
 
 model User {
@@ -31,7 +58,11 @@ model User {
   phoneVerified     Boolean         @default(false)
   passwordHash      String?
   name              String
-  role              Role            @default(CUSTOMER)
+  /// Giữ tên trường là `role` và kiểu là chuỗi khoá, không đổi thành `roleKey`:
+  /// hàng chục chỗ đang so `user.role === "ADMIN"` hoặc tra ma trận theo
+  /// `matrix[role]` vẫn chạy nguyên như cũ.
+  role              String          @default("CUSTOMER")
+  roleRef           Role            @relation(fields: [role], references: [key])
   pointBalance      Int             @default(0)
   /// Tài khoản bị tắt không đăng nhập được và bị đá khỏi phiên đang mở. Dùng
   /// thay cho xoá: người đã phát hành hoá đơn thì không xoá được.
@@ -664,7 +695,8 @@ model StoreSetting {
 /// luôn có mọi khả năng, chốt ở `canDo` chứ không phải dữ liệu sửa được.
 model RolePermission {
   id         String @id @default(cuid())
-  role       Role
+  role       String
+  roleRef    Role   @relation(fields: [role], references: [key], onDelete: Cascade)
   /// Khoá khai trong `src/lib/permissions.ts`. Không phải dữ liệu tự do: mỗi
   /// khoá tương ứng một chốt chặn có thật ở server.
   permission String
@@ -687,7 +719,8 @@ enum InviteStatus {
 model StaffInvite {
   id          String       @id @default(cuid())
   email       String
-  role        Role
+  role        String
+  roleRef     Role         @relation(fields: [role], references: [key])
   token       String       @unique
   status      InviteStatus @default(PENDING)
   invitedById String?

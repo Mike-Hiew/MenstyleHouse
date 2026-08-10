@@ -158,6 +158,26 @@ async function main() {
     db.counter.deleteMany(),
   ]);
 
+  // ── Vai trò ───────────────────────────────────
+  //
+  // `upsert` chứ không `deleteMany` rồi tạo lại: vai trò do cửa hàng tự thêm phải
+  // sống sót qua mỗi lần seed, và `User.role` trỏ tới đây nên xoá là đâm khoá
+  // ngoại. Chỉ bảo đảm năm vai trò gốc luôn có mặt.
+  for (const [i, r] of [
+    { key: "CUSTOMER", label: "Khách hàng", isStaff: false, isSuper: false },
+    { key: "STAFF", label: "Nhân viên bán hàng", isStaff: true, isSuper: false },
+    { key: "WAREHOUSE", label: "Nhân viên kho", isStaff: true, isSuper: false },
+    { key: "ACCOUNTANT", label: "Kế toán", isStaff: true, isSuper: false },
+    { key: "ADMIN", label: "Chủ cửa hàng", isStaff: true, isSuper: true },
+  ].entries()) {
+    await db.role.upsert({
+      where: { key: r.key },
+      create: { ...r, builtIn: true, sort: i },
+      // Không đè `label`: cửa hàng đổi tên vai trò rồi thì seed không được đặt lại.
+      update: { isStaff: r.isStaff, isSuper: r.isSuper, builtIn: true },
+    });
+  }
+
   // ── Danh mục & thương hiệu ────────────────────────────────
   //
   // `sizeChartId` phải gán ngay ở đây. Bảng size do migration

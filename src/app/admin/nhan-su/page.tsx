@@ -3,6 +3,7 @@ import { StaffRoles } from "@/components/admin/staff-roles";
 import { requirePermission } from "@/server/admin/guard";
 import { listInvites, listStaff } from "@/server/admin/staff";
 import { getMatrix } from "@/server/admin/permissions";
+import { listRoles } from "@/server/admin/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,12 @@ export const metadata: Metadata = { title: "Nhân sự & phân quyền" };
  */
 export default async function NhanSuPage() {
   const me = await requirePermission("cai-dat.quan-ly");
-  const [staff, invites, matrix] = await Promise.all([listStaff(), listInvites(), getMatrix()]);
+  const [staff, invites, matrix, roles] = await Promise.all([
+    listStaff(),
+    listInvites(),
+    getMatrix(),
+    listRoles(),
+  ]);
 
   return (
     <div>
@@ -44,6 +50,7 @@ export default async function NhanSuPage() {
         }))}
         invites={invites}
         matrix={matrix}
+        roles={roles}
         meId={me.id}
       />
     </div>

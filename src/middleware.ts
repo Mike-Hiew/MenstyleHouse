@@ -6,9 +6,12 @@ import { getToken } from "next-auth/jwt";
  * Chặn sớm khu `/admin` để không tốn công render trang rồi mới đá ra.
  * Đây **không** phải lớp bảo vệ duy nhất — mỗi trang và mỗi Server Action vẫn
  * tự gọi `requireStaff()`/`assertStaff()` ở server.
+ *
+ * Từ M6.22 vai trò là dữ liệu, nên ở đây **không còn danh sách vai trò viết
+ * cứng**. Middleware chạy trên Edge và không đọc được DB, nên nó đọc cờ `staff`
+ * mà `auth.ts` đặt sẵn vào token — một danh sách viết cứng sẽ không bao giờ biết
+ * `TRUONG_CA` là nhân viên.
  */
-
-const STAFF = new Set(["STAFF", "WAREHOUSE", "ACCOUNTANT", "ADMIN"]);
 
 export async function middleware(req: NextRequest) {
   /*
@@ -29,9 +32,14 @@ export async function middleware(req: NextRequest) {
     req.headers.get("x-forwarded-proto") === "https" || req.nextUrl.protocol === "https:";
 
   const token = await getToken({ req, secret: process.env.AUTH_SECRET, secureCookie });
-  const role = typeof token?.role === "string" ? token.role : null;
 
-  if (role && STAFF.has(role)) return NextResponse.next();
+  /*
+   * So `=== true` chứ không phải `!token.staff`: token phát trước M6.22 chưa có
+   * trường này. Coi `undefined` là **chưa biết** và đá về đăng nhập — người đó
+   * đăng nhập lại một lần là có token mới kèm cờ. Đoán bừa theo hướng cho qua
+   * thì mọi phiên cũ đi thẳng vào khu quản trị.
+   */
+  if (token?.staff === true) return NextResponse.next();
 
   const url = req.nextUrl.clone();
   if (!token) {
@@ -40,7 +48,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Đã đăng nhập nhưng là khách hàng thường: về trang chủ, không lộ khu quản trị.
+  // Đã đăng nhập nhưng không phải nhân viên: về trang chủ, không lộ khu quản trị.
   url.pathname = "/";
   url.search = "";
   return NextResponse.redirect(url);

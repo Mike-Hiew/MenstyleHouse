@@ -3,7 +3,6 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import type { Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { phienConSong } from "@/lib/session";
 
@@ -38,7 +37,13 @@ const laSoDienThoai = (v: string) => /^0\d{9}$/.test(v);
 const docTrangThaiPhien = cache(async (userId: string) =>
   db.user.findUnique({
     where: { id: userId },
-    select: { active: true, sessionsValidFrom: true, role: true },
+    select: {
+      active: true,
+      sessionsValidFrom: true,
+      role: true,
+      // Cờ nhân viên phải đi vào token cho middleware — xem ghi chú ở `jwt()`.
+      roleRef: { select: { isStaff: true } },
+    },
   }),
 );
 
@@ -64,9 +69,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!parsed.success) return null;
 
         const dinhDanh = parsed.data.phone;
+        const kem = { include: { roleRef: { select: { isStaff: true } } } } as const;
         const user = laSoDienThoai(dinhDanh)
-          ? await db.user.findUnique({ where: { phone: dinhDanh } })
-          : await db.user.findUnique({ where: { email: dinhDanh.toLowerCase() } });
+          ? await db.user.findUnique({ where: { phone: dinhDanh }, ...kem })
+          : await db.user.findUnique({ where: { email: dinhDanh.toLowerCase() }, ...kem });
         if (!user?.passwordHash) return null;
 
         // Tài khoản đã tắt thì không vào được, dù mật khẩu vẫn đúng.
@@ -80,6 +86,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           email: user.email ?? undefined,
           role: user.role,
+          staff: user.roleRef.isStaff,
         };
       },
     }),
@@ -90,7 +97,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // `authorize` vừa đọc thẳng từ DB xong.
       if (user?.id) {
         token.uid = user.id;
-        token.role = (user as { role?: Role }).role ?? "CUSTOMER";
+        token.role = (user as { role?: string }).role ?? "CUSTOMER";
+        token.staff = (user as { staff?: boolean }).staff ?? false;
         return token;
       }
       if (!token.uid) return token;
@@ -101,11 +109,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // Đổi vai trò có hiệu lực ngay lượt tải trang kế tiếp, không đợi hết hạn.
       token.role = u.role;
+      /*
+       * Cờ "có phải nhân viên không" đi kèm vai trò vào token, vì `middleware.ts`
+       * chạy trên Edge và **không đọc được DB** — nó chỉ có mỗi token để quyết
+       * định cho qua `/admin` hay không. Từ khi vai trò là dữ liệu, một danh sách
+       * viết cứng trong middleware không còn biết `TRUONG_CA` là nhân viên.
+       *
+       * Đọc lại từ DB mỗi lượt như `role`, nên chuyển một vai trò từ nhân viên
+       * thành không phải nhân viên có tác dụng ngay lượt tải trang kế tiếp.
+       */
+      token.staff = u.roleRef.isStaff;
       return token;
     },
     session({ session, token }) {
       if (token.uid) session.user.id = String(token.uid);
-      session.user.role = (token.role as Role) ?? "CUSTOMER";
+      session.user.role = (token.role as string) ?? "CUSTOMER";
       return session;
     },
   },
@@ -117,8 +135,8 @@ export async function currentUserId(): Promise<string | null> {
   return session?.user?.id ?? null;
 }
 
-/** Vai trò hiện tại; khách vãng lai coi như CUSTOMER. */
-export async function currentRole(): Promise<Role> {
+/** Khoá vai trò hiện tại; khách vãng lai coi như CUSTOMER. */
+export async function currentRole(): Promise<string> {
   const session = await auth();
   return session?.user?.role ?? "CUSTOMER";
 }

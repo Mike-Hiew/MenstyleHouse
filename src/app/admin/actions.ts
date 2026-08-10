@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import type { Route } from "next";
-import type { Carrier, OrderStatus, Role } from "@prisma/client";
+import type { Carrier, OrderStatus } from "@prisma/client";
 import { assertPermission, currentStaff, ForbiddenError } from "@/server/admin/guard";
 import {
   advanceOrderStatus,
@@ -41,7 +41,8 @@ import { getSettings, setQrImage } from "@/server/settings";
 import { guiMailThat } from "@/server/mail";
 import { mailHoaDon, mailMoiNhanVien, mailTraLoiHoTro } from "@/server/mail-templates";
 import { getTicket } from "@/server/admin/tickets";
-import { ROLE_LABEL } from "@/lib/roles";
+import { nhanVaiTro } from "@/lib/roles";
+import { danhSachVaiTro } from "@/server/roles";
 import {
   deleteStaff,
   EmailTakenError,
@@ -801,7 +802,7 @@ export async function setRoleAction(
     if (actor.id === id && role !== "ADMIN") {
       return { ok: false, message: "Không tự đổi vai trò của chính mình được." };
     }
-    await setUserRole(id, role as Role);
+    await setUserRole(id, role);
   } catch (e) {
     if (e instanceof ForbiddenError) return { ok: false, message: e.message };
     if (e instanceof LastAdminError) return { ok: false, message: e.message };
@@ -873,7 +874,7 @@ export async function saveRolePermissionsAction(
 
   try {
     await assertPermission("phan-quyen.quan-ly");
-    await setRolePermissions(role as Role, form.getAll("perm").map(String));
+    await setRolePermissions(role, form.getAll("perm").map(String));
   } catch (e) {
     if (e instanceof ForbiddenError) return { ok: false, message: e.message };
     if (e instanceof CannotEditAdminError) return { ok: false, message: e.message };
@@ -914,12 +915,12 @@ export async function inviteStaffAction(
 
   try {
     const actor = await assertPermission("phan-quyen.quan-ly");
-    const m = await inviteStaff({ email, role: role as Role, invitedById: actor.id });
+    const m = await inviteStaff({ email, role, invitedById: actor.id });
 
     const caiDat = await getSettings();
     const gui = await mailMoiNhanVien({
       to: email,
-      vaiTro: ROLE_LABEL[role as Role],
+      vaiTro: nhanVaiTro(role, await danhSachVaiTro()),
       token: m.token,
       nguoiMoi: actor.name,
       hotline: caiDat.hotline,
@@ -971,7 +972,7 @@ export async function staffAction(
         if (!["CUSTOMER", "STAFF", "WAREHOUSE", "ACCOUNTANT", "ADMIN"].includes(role)) {
           return { ok: false, message: "Vai trò không hợp lệ." };
         }
-        await setUserRole(id, role as Role);
+        await setUserRole(id, role);
         break;
       }
       case "bat":

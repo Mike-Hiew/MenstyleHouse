@@ -13,7 +13,6 @@ import { CancelOrderButton } from "@/components/storefront/cancel-order";
 import { logoutAction } from "@/app/(tai-khoan)/actions";
 import { currentUserId } from "@/auth";
 import { currentStaff } from "@/server/admin/guard";
-import { ROLE_LABEL } from "@/lib/roles";
 import { getPointSummary } from "@/server/accounts";
 import { hangCuaToi } from "@/server/membership";
 import { listOrdersForUser } from "@/server/orders";
@@ -98,7 +97,7 @@ export default async function AccountPage({
             <div>
               <h1 className="text-[28px] lg:text-[40px]">{points.name}</h1>
               <p className="label-tech mt-1">
-                {staff ? ROLE_LABEL[staff.role].toUpperCase() : "THÀNH VIÊN"}
+                {staff ? staff.roleLabel.toUpperCase() : "THÀNH VIÊN"}
                 {hang.bat ? " · HẠNG " + hang.hang : ""}
               </p>
             </div>
@@ -120,7 +119,7 @@ export default async function AccountPage({
               <span className="flex-1">
                 <span className="block text-[15px] font-extrabold">Khu quản trị</span>
                 <span className="block text-[13px] text-muted">
-                  Bạn đang đăng nhập với vai trò {ROLE_LABEL[staff.role]}.
+                  Bạn đang đăng nhập với vai trò {staff.roleLabel}.
                 </span>
               </span>
               <span className="flex min-h-11 flex-none items-center bg-accent px-5 text-[13px] font-extrabold text-bg">

@@ -5,7 +5,8 @@ import { SiteFooter } from "@/components/storefront/site-footer";
 import { Container } from "@/components/storefront/shell";
 import { AcceptInviteForm } from "@/components/storefront/accept-invite-form";
 import { readInvite } from "@/server/admin/staff";
-import { ROLE_LABEL } from "@/lib/roles";
+import { nhanVaiTro } from "@/lib/roles";
+import { danhSachVaiTro } from "@/server/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export default async function AcceptInvitePage({
               <p className="mb-7 text-[14.5px] leading-[1.7] text-muted">
                 Bạn được mời vào khu quản trị Men Style House với vai trò{" "}
                 <strong className="text-text">
-                  {ROLE_LABEL[moi.role as keyof typeof ROLE_LABEL]}
+                  {nhanVaiTro(moi.role, await danhSachVaiTro())}
                 </strong>
                 . Đặt mật khẩu để bắt đầu — đăng nhập sau này bằng{" "}
                 <strong className="font-mono text-text">{moi.email}</strong>.

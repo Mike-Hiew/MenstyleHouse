@@ -10,7 +10,8 @@ import {
   NEXT_STATUS,
   setShipping,
 } from "../src/server/admin/orders";
-import { isStaff, STAFF_ROLES } from "../src/server/admin/guard";
+import { danhSachVaiTro } from "../src/server/roles";
+import { laNhanVien } from "../src/lib/roles";
 
 /**
  * Máy trạng thái đơn là chỗ nhân viên bấm hàng ngày. Nhảy cóc sai một bước là
@@ -150,14 +151,21 @@ describe("máy trạng thái đơn", () => {
 });
 
 describe("phân quyền admin", () => {
-  it("khách hàng thường không phải nhân viên", () => {
-    expect(isStaff("CUSTOMER")).toBe(false);
-    expect(isStaff(null)).toBe(false);
-    expect(isStaff(undefined)).toBe(false);
+  /*
+   * Từ M6.22 "ai là nhân viên" là **dữ liệu của vai trò**, không còn là danh sách
+   * viết cứng trong mã. Nên kiểm trên chính dữ liệu đó chứ không kiểm lại một
+   * hằng số do chính mình khai.
+   */
+  it("khách hàng thường không phải nhân viên", async () => {
+    const ds = await danhSachVaiTro();
+    expect(laNhanVien("CUSTOMER", ds)).toBe(false);
+    // Vai trò không tồn tại cũng không phải nhân viên — hỏng theo hướng khoá cửa.
+    expect(laNhanVien("KHONG_CO_THAT", ds)).toBe(false);
   });
 
-  it("mọi vai trò nhân viên đều vào được khu quản trị", () => {
-    for (const r of STAFF_ROLES) expect(isStaff(r)).toBe(true);
+  it("đúng một vai trò không phải nhân viên, và đó là khách hàng", async () => {
+    const ds = await danhSachVaiTro();
+    expect(ds.filter((r) => !r.isStaff).map((r) => r.key)).toEqual(["CUSTOMER"]);
   });
 });
 
