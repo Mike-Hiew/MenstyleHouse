@@ -26,7 +26,7 @@ import {
 } from "../src/server/admin/staff";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ADMIN_NAV } from "../src/components/admin/admin-nav";
+import { ADMIN_NAV, gomNhom } from "../src/components/admin/admin-nav";
 import { db } from "../src/lib/db";
 
 /**
@@ -351,6 +351,35 @@ describe("không trang quản trị nào để hở", () => {
     // Mục thiếu `can` thì ai cũng thấy — đúng lỗi đã xảy ra với "Danh mục".
     const thieu = ADMIN_NAV.filter((n) => n.href !== "/admin" && !n.can);
     expect(thieu.map((n) => n.label)).toEqual([]);
+  });
+
+  it("mọi mục trừ Tổng quan đều thuộc một nhóm nghiệp vụ", () => {
+    // Mục quên khai nhóm sẽ rơi vào khối đứng riêng trên đầu, nằm lạc lõng phía
+    // trên mọi tiêu đề mà không có gì báo.
+    const lac = ADMIN_NAV.filter((n) => n.href !== "/admin" && !n.nhom);
+    expect(lac.map((n) => n.label)).toEqual([]);
+  });
+
+  it("gom nhóm giữ nguyên thứ tự và không đánh rơi mục nào", () => {
+    const k = gomNhom(ADMIN_NAV);
+    expect(k.dau.map((n) => n.href)).toEqual(["/admin"]);
+    expect(k.dau.length + k.nhom.reduce((s, g) => s + g.items.length, 0)).toBe(ADMIN_NAV.length);
+    expect(k.nhom.map((g) => g.key)).toEqual(["ban-hang", "hang-hoa", "so-sach", "he-thong"]);
+  });
+
+  it("NHÓM RỖNG BỊ BỎ HẲN, không để lại tiêu đề trống", () => {
+    /*
+     * Kế toán không có khả năng nào thuộc Hàng hoá ngoài `kho.xem`. Nếu gom
+     * nhóm giữ lại nhóm rỗng thì thanh bên hiện một tiêu đề trống trơn — trông
+     * như menu hỏng chứ không như "bạn không có quyền".
+     */
+    const chiSoSach = ADMIN_NAV.filter((n) => n.nhom === "so-sach");
+    const k = gomNhom(chiSoSach);
+    expect(k.nhom.map((g) => g.key)).toEqual(["so-sach"]);
+    expect(k.dau).toEqual([]);
+
+    // Không thấy mục nào thì không còn nhóm nào cả.
+    expect(gomNhom([]).nhom).toEqual([]);
   });
 
   it("khả năng dùng ở sidebar và ở trang đều là khoá có thật", () => {

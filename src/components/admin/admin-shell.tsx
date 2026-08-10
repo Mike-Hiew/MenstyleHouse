@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useOverlay } from "@/components/ui/overlay";
-import type { AdminNavItem, IconKey } from "./admin-nav";
+import { gomNhom, type AdminNavItem, type IconKey } from "./admin-nav";
 import { AdminAccountMenu } from "./admin-account-menu";
 import { AlertBell, type Viec } from "./alert-bell";
 
@@ -172,6 +172,8 @@ function SidebarInner({
   open: boolean;
   onToggle?: () => void;
 }) {
+  const khoi = gomNhom(nav);
+
   return (
     <>
       {/*
@@ -209,65 +211,98 @@ function SidebarInner({
       </div>
 
       <nav className="flex flex-col py-2">
-        {nav.map((n) => {
-          const active = n.href === "/admin" ? pathname === "/admin" : pathname.startsWith(n.href);
-          const Icon = ICON[n.icon];
-          const body = (
-            <>
-              <Icon
-                size={17}
-                className={cn(
-                  "flex-none",
-                  active ? "text-accent" : n.soon ? "text-neutral-600" : "text-muted",
-                )}
-                aria-hidden
-              />
-              {open ? <span className="truncate">{n.label}</span> : null}
-            </>
-          );
+        {khoi.dau.map((n) => (
+          <MucNav key={n.href} muc={n} pathname={pathname} open={open} />
+        ))}
 
-          /*
-           * Thu gọn thì bỏ padding ngang và căn giữa: 64px trừ viền trái 3px
-           * còn 61px, để nguyên `px-3.5` là icon lệch hẳn sang trái.
-           */
-          const base = cn(
-            "flex items-center overflow-hidden whitespace-nowrap border-l-[3px] py-3 text-left text-[13.5px]",
-            open ? "gap-3 px-3.5" : "justify-center px-0",
-          );
-
-          // Mục của milestone sau: hiện nhưng mờ và không bấm được.
-          if (n.soon) {
-            return (
-              <span
-                key={n.href}
-                title={n.label + " — mở ở milestone sau"}
-                aria-disabled="true"
-                className={cn(base, "border-transparent text-neutral-500")}
-              >
-                {body}
+        {khoi.nhom.map((g) => (
+          <div key={g.key} className="contents">
+            {/*
+              Mở rộng thì tiêu đề nhóm; thu gọn thì một vạch ngăn.
+              Thu gọn chỉ còn 64px, không đủ chỗ cho chữ nào — mà bỏ hẳn dấu ngăn
+              thì mười lăm icon dính liền thành một cột không có nhịp nào để mắt bám.
+            */}
+            {open ? (
+              <span className="label-tech px-3.5 pb-1 pt-4 text-[10.5px] font-bold text-neutral-500">
+                {g.label.toUpperCase()}
               </span>
-            );
-          }
-
-          return (
-            <Link
-              key={n.href}
-              href={n.href as Route}
-              title={n.label}
-              className={cn(
-                base,
-                active
-                  ? "border-accent bg-neutral-800 font-extrabold text-bg"
-                  : "border-transparent font-normal text-hairline hover:bg-neutral-800",
-              )}
-            >
-              {body}
-            </Link>
-          );
-        })}
+            ) : (
+              <span aria-hidden className="mx-auto my-2 block h-px w-6 bg-neutral-700" />
+            )}
+            {g.items.map((n) => (
+              <MucNav key={n.href} muc={n} pathname={pathname} open={open} />
+            ))}
+          </div>
+        ))}
       </nav>
     </>
   );
+}
+
+/** Một dòng trong thanh bên. Tách ra để cả mục đứng riêng lẫn mục trong nhóm
+ * dùng chung một thân, không phải chép hai bản. */
+function MucNav({
+  muc: n,
+  pathname,
+  open,
+}: {
+  muc: AdminNavItem;
+  pathname: string;
+  open: boolean;
+}) {
+  const active = n.href === "/admin" ? pathname === "/admin" : pathname.startsWith(n.href);
+  const Icon = ICON[n.icon];
+  const body = (
+    <>
+      <Icon
+        size={17}
+        className={cn(
+          "flex-none",
+          active ? "text-accent" : n.soon ? "text-neutral-600" : "text-muted",
+        )}
+        aria-hidden
+      />
+      {open ? <span className="truncate">{n.label}</span> : null}
+    </>
+  );
+
+  /*
+   * Thu gọn thì bỏ padding ngang và căn giữa: 64px trừ viền trái 3px còn 61px,
+   * để nguyên `px-3.5` là icon lệch hẳn sang trái.
+   */
+  const base = cn(
+    "flex items-center overflow-hidden whitespace-nowrap border-l-[3px] py-3 text-left text-[13.5px]",
+    open ? "gap-3 px-3.5" : "justify-center px-0",
+  );
+
+  // Mục của milestone sau: hiện nhưng mờ và không bấm được.
+  if (n.soon) {
+    return (
+      <span
+        title={n.label + " — mở ở milestone sau"}
+        aria-disabled="true"
+        className={cn(base, "border-transparent text-neutral-500")}
+      >
+        {body}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      href={n.href as Route}
+      title={n.label}
+      className={cn(
+        base,
+        active
+          ? "border-accent bg-neutral-800 font-extrabold text-bg"
+          : "border-transparent font-normal text-hairline hover:bg-neutral-800",
+      )}
+    >
+      {body}
+    </Link>
+  );
+
 }
 
 function MobileDrawer({
