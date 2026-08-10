@@ -1,5 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { settingsSchema, setQrImage, updateSettings } from "../src/server/settings";
+import {
+  cuaHangSchema,
+  luuCuaHang,
+  luuThanThiet,
+  luuThanhToan,
+  settingsSchema,
+  setQrImage,
+  thanThietSchema,
+  thanhToanSchema,
+  updateSettings,
+  vanChuyenSchema,
+} from "../src/server/settings";
 import { LastAdminError, listStaff, setUserRole } from "../src/server/admin/staff";
 import { quoteShipping } from "../src/lib/shipping";
 import { db } from "../src/lib/db";
@@ -69,6 +80,95 @@ describe("kiểm điều kiện cài đặt", () => {
   it("mã số thuế phải đúng dạng 10 số", () => {
     expect(settingsSchema.safeParse({ ...goc, taxCode: "123" }).success).toBe(false);
     expect(settingsSchema.safeParse({ ...goc, taxCode: "0316998221-001" }).success).toBe(true);
+  });
+});
+
+/**
+ * Màn Cài đặt chia thành bốn trang con từ M6.20, mỗi trang lưu riêng.
+ *
+ * Hai điều phải đúng, và cả hai đều hỏng im lặng nếu sai:
+ *   1. Mỗi schema **chỉ đòi field của trang mình** — đòi thừa thì trang đó không
+ *      bao giờ lưu được, vì form không hề gửi field của trang khác.
+ *   2. Mỗi phép kiểm chéo nằm ở **đúng trang chứa field của nó** — đặt nhầm chỗ
+ *      thì lỗi hiện ở một tab người ta không mở, hoặc không hiện ở đâu cả.
+ */
+describe("bốn schema theo trang", () => {
+  const cuaHang = { shopName: goc.shopName, taxCode: goc.taxCode, address: goc.address, hotline: goc.hotline, email: goc.email };
+  const thanhToan = { bankName: goc.bankName, bankAccount: goc.bankAccount, bankOwner: goc.bankOwner, payCod: true, payBank: true };
+  const vanChuyen = { shipInnerCity: goc.shipInnerCity, shipProvince: goc.shipProvince, freeShipFrom: goc.freeShipFrom, vatRate: goc.vatRate, holdMinutes: goc.holdMinutes };
+  const thanThiet = { redeemEnabled: true, pointValue: goc.pointValue, redeemMaxPct: goc.redeemMaxPct, tiersEnabled: true, tierSilver: goc.tierSilver, tierGold: goc.tierGold, tierDiamond: goc.tierDiamond };
+
+  it("mỗi trang tự đứng được, không đòi field của trang khác", () => {
+    expect(cuaHangSchema.safeParse(cuaHang).success).toBe(true);
+    expect(thanhToanSchema.safeParse(thanhToan).success).toBe(true);
+    expect(vanChuyenSchema.safeParse(vanChuyen).success).toBe(true);
+    expect(thanThietSchema.safeParse(thanThiet).success).toBe(true);
+  });
+
+  it("ngưỡng hạng ngược chỉ bị chặn ở trang Khách thân thiết", () => {
+    const r = thanThietSchema.safeParse({ ...thanThiet, tierGold: 100_000 });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0]?.message).toMatch(/cao hơn ngưỡng BẠC/);
+
+    // Trang khác không mang ba con số đó nên không có gì để kiểm.
+    expect(cuaHangSchema.safeParse(cuaHang).success).toBe(true);
+  });
+
+  it("tắt hết thanh toán chỉ bị chặn ở trang Thanh toán", () => {
+    const r = thanhToanSchema.safeParse({ ...thanhToan, payCod: false, payBank: false });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0]?.message).toMatch(/ít nhất một phương thức/);
+  });
+
+  it("tắt chương trình hạng thì thôi bắt ngưỡng tăng dần", () => {
+    // Tắt rồi thì ba con số kia không còn ý nghĩa; chặn lúc đó là chặn vì một
+    // lỗi không tồn tại, và người ta không lưu nổi cái nút vừa bấm tắt.
+    const r = thanThietSchema.safeParse({ ...thanThiet, tiersEnabled: false, tierGold: 1 });
+    expect(r.success).toBe(true);
+  });
+});
+
+describe("lưu theo trang không đụng trang khác", () => {
+  it("lưu Cửa hàng không làm tắt phương thức thanh toán", async () => {
+    /*
+     * Đây là ca dễ hỏng nhất khi tách form: nếu hàm lưu spread cả input hoặc
+     * chạm tới cờ boolean của trang khác, thì lưu tên cửa hàng cũng tắt luôn
+     * COD — vì form trang Cửa hàng không hề gửi ô tick nào.
+     */
+    await luuCuaHang({ ...cuaHangSchema.parse({ ...goc, shopName: "Tên vừa đổi" }) });
+
+    const s = await db.storeSetting.findUniqueOrThrow({ where: { id: "cua-hang" } });
+    expect(s.shopName).toBe("Tên vừa đổi");
+    expect([s.payCod, s.payBank, s.tiersEnabled, s.redeemEnabled]).toEqual([true, true, true, true]);
+    // Và không đụng tới số của trang Vận chuyển.
+    expect(s.vatRate).toBe(goc.vatRate);
+  });
+
+  it("bỏ tick COD ở trang Thanh toán thì tắt được thật", async () => {
+    // Bỏ tick nghĩa là trường vắng mặt trong FormData → Zod cho `undefined` →
+    // Prisma bỏ qua field `undefined`. Không ép `Boolean()` thì tắt mãi không
+    // được mà chẳng có lỗi nào hiện ra.
+    await luuThanhToan(thanhToanSchema.parse({ bankName: goc.bankName, bankAccount: goc.bankAccount, bankOwner: goc.bankOwner, payBank: "on" }));
+
+    const s = await db.storeSetting.findUniqueOrThrow({ where: { id: "cua-hang" } });
+    expect([s.payCod, s.payBank]).toEqual([false, true]);
+  });
+
+  it("bỏ tick chương trình hạng ở trang Thân thiết thì tắt được thật", async () => {
+    await luuThanThiet(
+      thanThietSchema.parse({
+        pointValue: 1,
+        redeemMaxPct: 50,
+        tierSilver: goc.tierSilver,
+        tierGold: goc.tierGold,
+        tierDiamond: goc.tierDiamond,
+      }),
+    );
+
+    const s = await db.storeSetting.findUniqueOrThrow({ where: { id: "cua-hang" } });
+    expect([s.tiersEnabled, s.redeemEnabled]).toEqual([false, false]);
+    // Thông tin cửa hàng không suy suyển.
+    expect(s.shopName).toBe(goc.shopName);
   });
 });
 

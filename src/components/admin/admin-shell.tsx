@@ -19,6 +19,7 @@ import {
   Search,
   Settings,
   Shirt,
+  ShieldCheck,
   ShoppingBag,
   TicketPercent,
   Users,
@@ -62,6 +63,9 @@ const ICON: Record<IconKey, React.ComponentType<{ size?: number; className?: str
   "khuyen-mai": TicketPercent,
   "ho-tro": LifeBuoy,
   "bao-cao": BarChart3,
+  // Khiên chứ không phải hình người: `Users` đã là mục Khách hàng, hai mục cùng
+  // icon thì lúc thu gọn không phân biệt được — đúng cái mà bản chấm vuông mắc.
+  "nhan-su": ShieldCheck,
   "cai-dat": Settings,
 };
 

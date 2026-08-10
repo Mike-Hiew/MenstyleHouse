@@ -37,7 +37,7 @@ import {
 } from "@/server/admin/coupons";
 import { replyTicket, setTicketStatus, TicketClosedError } from "@/server/admin/tickets";
 import { createCustomer, PhoneTakenError } from "@/server/admin/customers";
-import { getSettings, setQrImage, settingsSchema, updateSettings } from "@/server/settings";
+import { getSettings, setQrImage } from "@/server/settings";
 import { guiMailThat } from "@/server/mail";
 import { mailHoaDon, mailMoiNhanVien, mailTraLoiHoTro } from "@/server/mail-templates";
 import { getTicket } from "@/server/admin/tickets";
@@ -771,33 +771,15 @@ export async function createCustomerAction(
 }
 
 /* ── Cài đặt cửa hàng ─────────────────────────────────────── */
-
-export async function saveSettingsAction(
-  _prev: AdminActionState,
-  form: FormData,
-): Promise<AdminActionState> {
-  const parsed = settingsSchema.safeParse(Object.fromEntries(form));
-  if (!parsed.success) {
-    return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." };
-  }
-
-  try {
-    await assertPermission("cai-dat.quan-ly");
-    await updateSettings(parsed.data);
-  } catch (e) {
-    if (e instanceof ForbiddenError) return { ok: false, message: e.message };
-    console.error(e);
-    return { ok: false, message: "Không lưu được cài đặt." };
-  }
-
-  /*
-   * Cài đặt chạm gần như mọi trang: hoá đơn lấy thuế suất, giỏ lấy ngưỡng miễn
-   * phí ship, chân trang lấy thông tin cửa hàng. Xoá cache toàn bộ layout thay
-   * vì liệt kê từng đường dẫn rồi sót một chỗ hiển thị số cũ.
-   */
-  revalidatePath("/", "layout");
-  return { ok: true, message: "Đã lưu cài đặt cửa hàng." };
-}
+/*
+ * `saveSettingsAction` gỡ bỏ ở M6.20. Màn Cài đặt chia thành bốn trang con, mỗi
+ * trang có action riêng ở `src/app/admin/cai-dat/actions.ts`.
+ *
+ * Gỡ hẳn chứ không để lại: một Server Action đã export là **một điểm vào công
+ * khai**, gọi thẳng được bằng giao thức action mà không cần đi qua giao diện
+ * nào. Để lại một action chết có quyền ghi đè toàn bộ cài đặt là mở một cánh cửa
+ * không ai còn nhìn tới.
+ */
 
 /** Đổi vai trò một thành viên. Chỉ quản trị được đụng. */
 export async function setRoleAction(
@@ -827,7 +809,7 @@ export async function setRoleAction(
     return { ok: false, message: "Không đổi được vai trò." };
   }
 
-  revalidatePath("/admin/cai-dat");
+  revalidatePath("/admin/nhan-su");
   return { ok: true, message: "Đã đổi vai trò." };
 }
 
@@ -943,7 +925,7 @@ export async function inviteStaffAction(
       hotline: caiDat.hotline,
     });
 
-    revalidatePath("/admin/cai-dat");
+    revalidatePath("/admin/nhan-su");
     /*
      * Luôn trả về đường dẫn, kể cả khi mail đã gửi được: mail có thể rơi vào
      * hộp thư rác, và người mời cần một đường lui để gửi tay.

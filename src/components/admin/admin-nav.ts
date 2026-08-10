@@ -36,6 +36,7 @@ export type IconKey =
   | "khuyen-mai"
   | "ho-tro"
   | "bao-cao"
+  | "nhan-su"
   | "cai-dat";
 
 export type AdminNavItem = {
@@ -77,6 +78,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Khuyến mãi", href: "/admin/khuyen-mai", icon: "khuyen-mai", can: "khuyen-mai.quan-ly" },
   { label: "Hỗ trợ", href: "/admin/ho-tro", icon: "ho-tro", can: "ho-tro.tra-loi" },
   { label: "Báo cáo", href: "/admin/bao-cao", icon: "bao-cao", can: "bao-cao.xem" },
+  /**
+   * Nhân sự đứng riêng chứ không nằm trong Cài đặt: đây là quản lý **người**,
+   * không phải tham số cửa hàng. Dùng chung khoá quyền `cai-dat.quan-ly` với
+   * Cài đặt — tách màn không phải dịp đổi phân quyền.
+   */
+  { label: "Nhân sự", href: "/admin/nhan-su", icon: "nhan-su", can: "cai-dat.quan-ly" },
   { label: "Cài đặt", href: "/admin/cai-dat", icon: "cai-dat", can: "cai-dat.quan-ly" },
 ];
 
