@@ -72,6 +72,26 @@ const INVOICE_VIEW = {
  * được làm thủng dãy số.
  */
 export async function issueInvoice(orderCode: string, actorId: string) {
+  /*
+   * Thuế suất đọc **trước** khi mở transaction, không phải ở giữa.
+   *
+   * `getSettings()` truy vấn bằng client toàn cục chứ không bằng `tx`. Gọi nó ở
+   * giữa một interactive transaction là tự khoá chính mình: transaction đang
+   * giữ một kết nối của pool, còn lời gọi kia xếp hàng chờ một kết nối khác —
+   * mà kết nối chỉ được nhả khi transaction xong. Pool đủ rộng thì không ai
+   * thấy gì; pool bằng 1 thì kẹt cứng cho tới lúc Prisma đóng transaction ở
+   * mốc 5 giây.
+   *
+   * Đã xảy ra thật trên bản triển khai: `DATABASE_URL` đặt `connection_limit=1`
+   * và mọi lần bấm "Tạo hoá đơn" đều trả về "Không phát hành được hoá đơn" sau
+   * gần 9 giây, trong khi cùng đoạn mã đó chạy tốt ở máy dev vì pool mặc định
+   * rộng hơn.
+   *
+   * Đọc trước cũng đúng về nghĩa: thuế suất là tham số của lần phát hành này,
+   * chốt tại thời điểm bắt đầu.
+   */
+  const { vatRate } = await getSettings();
+
   return db.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { code: orderCode },
@@ -113,7 +133,6 @@ export async function issueInvoice(orderCode: string, actorId: string) {
     });
     const number = String(Number(last?.number ?? 0) + 1).padStart(8, "0");
 
-    const { vatRate } = await getSettings();
     const tien = splitVat(order.total, vatRate);
 
     return tx.invoice.create({
