@@ -11,6 +11,8 @@ import { ReviewForm } from "@/components/storefront/review-form";
 import { WishlistButton } from "@/components/storefront/wishlist-button";
 import { getProductBySlug, getRelated, type ProductDetail } from "@/server/catalog";
 import { bangSizeCho } from "@/server/size-charts";
+import { fitRangesFromChart } from "@/lib/size-finder";
+import { FLAGS } from "@/lib/flags";
 import { effectivePrice } from "@/lib/catalog";
 import { formatVnd } from "@/lib/money";
 import { Photo } from "@/components/ui/photo";
@@ -149,6 +151,7 @@ export default async function ProductPage({ params }: Params) {
                 basePrice={product.basePrice}
                 salePrice={product.salePrice}
                 sizeChart={bangSize}
+                fitRanges={FLAGS.sizeFinder && bangSize ? fitRangesFromChart(bangSize) : []}
                 accordions={accordionsFor(product)}
               />
 

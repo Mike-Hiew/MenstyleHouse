@@ -9,6 +9,9 @@ import { getLatestProducts } from "@/server/catalog";
 import { getNavCategories } from "@/server/navigation";
 import { getBestsellers, getFlashSale, getHomeReviews } from "@/server/home";
 import { Photo } from "@/components/ui/photo";
+import { SizeFinder } from "@/components/storefront/size-finder";
+import { khoangGoiYTrangChu } from "@/server/size-charts";
+import { FLAGS } from "@/lib/flags";
 
 export const dynamic = "force-dynamic";
 
@@ -30,12 +33,13 @@ const cta =
   "inline-flex h-[52px] items-center justify-center rounded-full px-[26px] text-[14px] font-semibold transition-[background-color,box-shadow,transform] hover:shadow-raised active:scale-[0.97]";
 
 export default async function HomePage() {
-  const [products, categories, banChay, loiKhach, sale] = await Promise.all([
+  const [products, categories, banChay, loiKhach, sale, khoangSize] = await Promise.all([
     getLatestProducts(4),
     getNavCategories(),
     getBestsellers(4),
     getHomeReviews(3),
     getFlashSale(),
+    FLAGS.sizeFinder ? khoangGoiYTrangChu() : Promise.resolve([]),
   ]);
 
   // Mockup dùng ảnh lookbook riêng; ở đây mượn ảnh sản phẩm mới nhất làm hero.
@@ -136,6 +140,21 @@ export default async function HomePage() {
             <ProductGrid products={products} />
           )}
         </Container>
+
+        {/* Mục 3 (v2): bộ gợi ý size. Số đo đọc từ cột "Gợi ý" của bảng size áo. */}
+        {khoangSize.length > 0 ? (
+          <Container className="pb-14">
+            <div className="mb-8 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+              <h2 className="max-w-[14ch] text-[clamp(36px,5.4vw,78px)] font-extrabold leading-[0.92] tracking-[-0.035em] [font-variation-settings:'wdth'_84]">
+                Size của bạn, trong 10 giây
+              </h2>
+              <p className="max-w-[34ch] text-muted">
+                Kéo chiều cao và cân nặng. Gợi ý theo bảng size MSH cho người 45–90kg.
+              </p>
+            </div>
+            <SizeFinder ranges={khoangSize} />
+          </Container>
+        ) : null}
 
         {sale ? (
           <Container className="pb-2">

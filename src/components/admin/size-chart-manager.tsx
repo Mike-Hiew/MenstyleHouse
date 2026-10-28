@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { cn } from "@/lib/cn";
+import { FIT_HINT_COLUMN, parseFitHint } from "@/lib/size-finder";
 import {
   ganDanhMucAction,
   suaBangAction,
@@ -60,6 +61,12 @@ export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhM
 
   const [dangSua, setDangSua] = React.useState<string | null>(null);
   const soCot = bang.columns.length;
+  /**
+   * Cột "Gợi ý" nuôi bộ gợi ý size ngoài storefront. Dòng nào ghi sai định
+   * dạng thì bộ gợi ý lặng lẽ bỏ qua dòng đó — báo ngay tại dòng để người sửa
+   * bảng biết, thay vì để khách thấy thiếu size mà không ai hiểu vì sao.
+   */
+  const cotGoiY = bang.columns.findIndex((c) => FIT_HINT_COLUMN.test(c));
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_320px] lg:items-start">
@@ -92,6 +99,8 @@ export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhM
               <tbody>
                 {bang.rows.map((r) => {
                   const lech = r.values.length !== soCot;
+                  const goiY = cotGoiY >= 0 ? parseFitHint(r.values[cotGoiY] ?? "") : null;
+                  const goiYHong = goiY !== null && !goiY.height && !goiY.weight;
                   return (
                     <tr key={r.id}>
                       {dangSua === r.id ? (
@@ -166,6 +175,14 @@ export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhM
                                 title={`Dòng này có ${r.values.length} giá trị nhưng bảng có ${soCot} cột`}
                               >
                                 lệch cột
+                              </span>
+                            ) : null}
+                            {goiYHong ? (
+                              <span
+                                className="text-[11.5px] font-semibold text-accent-700"
+                                title="Bộ gợi ý size không đọc được ô Gợi ý của dòng này. Ghi dạng 1m60–1m66 · 52–58kg"
+                              >
+                                gợi ý size bỏ qua
                               </span>
                             ) : null}
                             <button
@@ -246,6 +263,10 @@ export function SizeChartManager({ bang, danhMuc }: { bang: Bang; danhMuc: DanhM
             <input name="columns" defaultValue={bang.columns.join(", ")} className={o} />
             <span className="mt-1.5 block text-[12px] text-faint">
               Phân tách bằng dấu phẩy. Cột “Size” tự có, không cần khai.
+            </span>
+            <span className="mt-1.5 block text-[12px] text-faint">
+              Cột “Gợi ý” nuôi bộ gợi ý size ngoài cửa hàng. Ghi chiều cao và cân nặng dạng{" "}
+              <span className="font-mono">1m60–1m66 · 52–58kg</span> (chỉ cân nặng cũng được).
             </span>
           </label>
 
