@@ -367,6 +367,31 @@
   }
 }
 
+/*
+ * Hoá đơn in nhiệt ở trang đặt hàng thành công (mục 7): mép trên/dưới răng
+ * cưa bằng mask, giấy "nhả" ra từ khe máy in. Bóng đổ đặt ở lớp bọc ngoài bằng
+ * `drop-shadow` — `box-shadow` trên chính tờ giấy sẽ bị mask cắt mất.
+ */
+.receipt-paper {
+  --zz: 7px;
+  padding-block: calc(var(--zz) + 22px);
+  background: #fffdf8;
+  color: #1d1c1a;
+  -webkit-mask:
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--zz)) 51% repeat-x,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--zz)) 51% repeat-x;
+  mask:
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--zz)) 51% repeat-x,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--zz)) 51% repeat-x;
+}
+
+@keyframes receipt-print {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-40px);
+  }
+}
+
 @keyframes bump {
   35% {
     transform: scale(1.12);
