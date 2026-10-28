@@ -38,4 +38,10 @@ export const FLAGS = {
    * `src/content/fit-lab.ts` còn là số giữ chỗ, chỉ bật khi đã có số đo thật.
    */
   fitLab: flag(process.env.NEXT_PUBLIC_FF_FIT_LAB, false),
+  /**
+   * Mục 6 — hero ghim khi cuộn: ảnh nở ra tràn màn hình, chữ "đứng form" giãn
+   * bề ngang, cuối cùng hiện tiêu đề trắng + thẻ sản phẩm. Chỉ từ tablet trở
+   * lên; điện thoại luôn là hero cũ.
+   */
+  heroStage: flag(process.env.NEXT_PUBLIC_FF_HERO_STAGE, true),
 } as const;
