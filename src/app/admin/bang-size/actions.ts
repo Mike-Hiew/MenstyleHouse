@@ -6,14 +6,20 @@ import type { Route } from "next";
 import { TAG } from "@/lib/cache-tags";
 import { assertPermission, ForbiddenError } from "@/server/admin/guard";
 import {
+  addColumn,
   addRow,
   bangSizeSchema,
   ChartInUseError,
+  cotSchema,
   createSizeChart,
+  deleteColumn,
   deleteRow,
   deleteSizeChart,
   dongSchema,
   ganChoDanhMuc,
+  moveColumn,
+  taoBangSchema,
+  updateColumn,
   updateRow,
   updateSizeChart,
 } from "@/server/admin/size-charts";
@@ -39,7 +45,7 @@ function loi(e: unknown, macDinh: string): BangSizeState {
 }
 
 export async function taoBangAction(_prev: BangSizeState, form: FormData): Promise<BangSizeState> {
-  const parsed = bangSizeSchema.safeParse(Object.fromEntries(form));
+  const parsed = taoBangSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." };
   }
@@ -93,6 +99,81 @@ export async function xoaBangAction(_prev: BangSizeState, form: FormData): Promi
    */
   redirect("/admin/bang-size");
 }
+
+/* ── Cột ──────────────────────────────────────────────────── */
+
+export async function themCotAction(_prev: BangSizeState, form: FormData): Promise<BangSizeState> {
+  const parsed = cotSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." };
+  }
+
+  try {
+    await assertPermission("bang-size.quan-ly");
+    await addColumn(parsed.data);
+  } catch (e) {
+    return loi(e, "Chưa thêm được cột.");
+  }
+
+  revalidatePath("/admin/bang-size/" + parsed.data.chartId);
+  return xong("Đã thêm cột. Các dòng đã có nhận ô trống ở cột này cho tới khi bạn nhập.");
+}
+
+export async function suaCotAction(_prev: BangSizeState, form: FormData): Promise<BangSizeState> {
+  const id = String(form.get("columnId") ?? "");
+  const chartId = String(form.get("chartId") ?? "");
+  const parsed = cotSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." };
+  }
+
+  try {
+    await assertPermission("bang-size.quan-ly");
+    await updateColumn(id, parsed.data);
+  } catch (e) {
+    return loi(e, "Chưa lưu được cột.");
+  }
+
+  revalidatePath("/admin/bang-size/" + chartId);
+  return xong("Đã lưu cột.");
+}
+
+/**
+ * Xoá cột. Chỉ ô của đúng cột đó mất đi — số của các cột khác đứng yên, vì ô neo
+ * vào cột bằng khoá ngoại chứ không theo vị trí trong mảng.
+ */
+export async function xoaCotAction(_prev: BangSizeState, form: FormData): Promise<BangSizeState> {
+  const chartId = String(form.get("chartId") ?? "");
+  try {
+    await assertPermission("bang-size.quan-ly");
+    await deleteColumn(String(form.get("columnId") ?? ""));
+  } catch (e) {
+    return loi(e, "Chưa xoá được cột.");
+  }
+
+  revalidatePath("/admin/bang-size/" + chartId);
+  return xong("Đã xoá cột.");
+}
+
+export async function chuyenCotAction(
+  _prev: BangSizeState,
+  form: FormData,
+): Promise<BangSizeState> {
+  const chartId = String(form.get("chartId") ?? "");
+  const huong = form.get("huong") === "len" ? "len" : "xuong";
+
+  try {
+    await assertPermission("bang-size.quan-ly");
+    await moveColumn(String(form.get("columnId") ?? ""), huong);
+  } catch (e) {
+    return loi(e, "Chưa đổi được thứ tự cột.");
+  }
+
+  revalidatePath("/admin/bang-size/" + chartId);
+  return xong("Đã đổi thứ tự cột.");
+}
+
+/* ── Dòng size ────────────────────────────────────────────── */
 
 export async function themDongAction(_prev: BangSizeState, form: FormData): Promise<BangSizeState> {
   const parsed = dongSchema.safeParse(Object.fromEntries(form));

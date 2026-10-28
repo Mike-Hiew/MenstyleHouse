@@ -2,10 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   canDo,
   isPermissionKey,
-  MA_TRAN_MAC_DINH,
   PERMISSION_KEYS,
   permissionGroups,
-  SIEU_QUYEN,
 } from "../src/lib/permissions";
 import {
   CannotEditAdminError,
@@ -28,7 +26,7 @@ import {
 } from "../src/server/admin/staff";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ADMIN_NAV } from "../src/components/admin/admin-nav";
+import { ADMIN_NAV, gomNhom } from "../src/components/admin/admin-nav";
 import { db } from "../src/lib/db";
 
 /**
@@ -52,11 +50,16 @@ afterEach(async () => {
 });
 
 describe("danh mục khả năng", () => {
-  it("mọi khoá trong ma trận mặc định đều là khoá có thật", () => {
-    // Gõ sai một khoá ở đây là cấp một quyền không chặn gì cả.
-    for (const keys of Object.values(MA_TRAN_MAC_DINH)) {
-      for (const k of keys) expect(isPermissionKey(k)).toBe(true);
-    }
+  it("mọi khoá đang lưu trong DB đều là khoá có thật", async () => {
+    /*
+     * `MA_TRAN_MAC_DINH` biến mất ở M6.22 cùng với enum vai trò — giữ một ma
+     * trận mặc định viết cứng theo tên vai trò thì vô nghĩa khi vai trò là dữ
+     * liệu. Kiểm thẳng thứ đang nằm trong DB: gõ sai một khoá là cấp một
+     * quyền không chặn gì cả.
+     */
+    const rows = await db.rolePermission.findMany({ select: { permission: true } });
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows) expect(isPermissionKey(r.permission)).toBe(true);
   });
 
   it("không có khoá trùng, và nhóm phủ hết danh mục", () => {
@@ -67,12 +70,26 @@ describe("danh mục khả năng", () => {
 });
 
 describe("chủ cửa hàng luôn có mọi quyền", () => {
-  it("canDo trả true cho ADMIN kể cả khi ma trận rỗng", () => {
-    for (const k of PERMISSION_KEYS) expect(canDo(SIEU_QUYEN, k, {})).toBe(true);
+  /*
+   * Siêu quyền giờ là **dữ liệu**: `getMatrix()` rót toàn bộ khả năng vào vai
+   * trò mang cờ `isSuper`, nên `canDo` không còn nhánh `if` nào cho riêng ADMIN.
+   * Kiểm qua ma trận thật chứ không kiểm một hằng số.
+   */
+  it("vai trò siêu quyền có đủ mọi khả năng trong ma trận", async () => {
+    const sieu = await db.role.findFirstOrThrow({ where: { isSuper: true } });
+    const m = await getMatrix();
+    for (const k of PERMISSION_KEYS) expect(canDo(sieu.key, k, m)).toBe(true);
   });
 
-  it("không ghi được quyền cho ADMIN", async () => {
-    await expect(setRolePermissions(SIEU_QUYEN, ["don.xem"])).rejects.toBeInstanceOf(
+  it("đúng một vai trò mang cờ siêu quyền", async () => {
+    // Hai vai trò cùng siêu quyền thì chốt "không hạ người quản trị cuối cùng"
+    // đếm nhầm, và có thể hạ hết người của một vai trò mà vẫn qua.
+    expect(await db.role.count({ where: { isSuper: true } })).toBe(1);
+  });
+
+  it("không ghi được quyền cho vai trò siêu quyền", async () => {
+    const sieu = await db.role.findFirstOrThrow({ where: { isSuper: true } });
+    await expect(setRolePermissions(sieu.key, ["don.xem"])).rejects.toBeInstanceOf(
       CannotEditAdminError,
     );
   });
@@ -334,6 +351,35 @@ describe("không trang quản trị nào để hở", () => {
     // Mục thiếu `can` thì ai cũng thấy — đúng lỗi đã xảy ra với "Danh mục".
     const thieu = ADMIN_NAV.filter((n) => n.href !== "/admin" && !n.can);
     expect(thieu.map((n) => n.label)).toEqual([]);
+  });
+
+  it("mọi mục trừ Tổng quan đều thuộc một nhóm nghiệp vụ", () => {
+    // Mục quên khai nhóm sẽ rơi vào khối đứng riêng trên đầu, nằm lạc lõng phía
+    // trên mọi tiêu đề mà không có gì báo.
+    const lac = ADMIN_NAV.filter((n) => n.href !== "/admin" && !n.nhom);
+    expect(lac.map((n) => n.label)).toEqual([]);
+  });
+
+  it("gom nhóm giữ nguyên thứ tự và không đánh rơi mục nào", () => {
+    const k = gomNhom(ADMIN_NAV);
+    expect(k.dau.map((n) => n.href)).toEqual(["/admin"]);
+    expect(k.dau.length + k.nhom.reduce((s, g) => s + g.items.length, 0)).toBe(ADMIN_NAV.length);
+    expect(k.nhom.map((g) => g.key)).toEqual(["ban-hang", "hang-hoa", "so-sach", "he-thong"]);
+  });
+
+  it("NHÓM RỖNG BỊ BỎ HẲN, không để lại tiêu đề trống", () => {
+    /*
+     * Kế toán không có khả năng nào thuộc Hàng hoá ngoài `kho.xem`. Nếu gom
+     * nhóm giữ lại nhóm rỗng thì thanh bên hiện một tiêu đề trống trơn — trông
+     * như menu hỏng chứ không như "bạn không có quyền".
+     */
+    const chiSoSach = ADMIN_NAV.filter((n) => n.nhom === "so-sach");
+    const k = gomNhom(chiSoSach);
+    expect(k.nhom.map((g) => g.key)).toEqual(["so-sach"]);
+    expect(k.dau).toEqual([]);
+
+    // Không thấy mục nào thì không còn nhóm nào cả.
+    expect(gomNhom([]).nhom).toEqual([]);
   });
 
   it("khả năng dùng ở sidebar và ở trang đều là khoá có thật", () => {

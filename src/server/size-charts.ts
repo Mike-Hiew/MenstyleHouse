@@ -2,9 +2,15 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { TAG } from "@/lib/cache-tags";
-import type { SizeChart } from "@/lib/size-chart";
+import type { CotSize, OSize, SizeChart } from "@/lib/size-chart";
 import { fitRangesFromChart, type SizeRange } from "@/lib/size-finder";
 import { DEFAULT_TOP_RANGES, HOME_SIZE_CHART_SLUG } from "@/content/size-finder";
+
+/** Đủ những gì `hienThi` cần: cột theo thứ tự, mỗi dòng kèm các ô của nó. */
+const KEM_O = {
+  columns: { orderBy: { sort: "asc" } },
+  rows: { orderBy: { sort: "asc" }, include: { cells: true } },
+} as const;
 
 /**
  * Bảng size đọc từ DB cho trang sản phẩm.
@@ -26,7 +32,7 @@ export const bangSizeCho = unstable_cache(
 
     const b = await db.sizeChart.findUnique({
       where: { id },
-      include: { rows: { orderBy: { sort: "asc" } } },
+      include: KEM_O,
     });
     if (!b) return null;
 
@@ -38,16 +44,40 @@ export const bangSizeCho = unstable_cache(
 
 function hienThi(b: {
   name: string;
-  columns: string[];
-  rows: { size: string; values: string[] }[];
+  columns: { id: string; label: string; key: CotSize["key"]; of: CotSize["of"]; unit: CotSize["unit"] }[];
+  rows: { size: string; cells: { columnId: string; min: number | null; max: number | null; text: string | null }[] }[];
   fit: string;
   howTo: string[];
 }): SizeChart {
   return {
     title: b.name,
-    // Cột "Size" luôn đứng đầu và không cho sửa — nó là khoá của mỗi dòng.
-    columns: ["Size", ...b.columns],
-    rows: b.rows.map((r) => ({ size: r.size, values: r.values })),
+    columns: b.columns.map((c) => ({
+      label: c.label,
+      key: c.key,
+      of: c.of,
+      unit: c.unit,
+    })),
+    /*
+     * Dựng mảng ô theo đúng thứ tự cột, tra ô theo `columnId`.
+     *
+     * Bản trước lấy thẳng `row.values` — một mảng chuỗi xếp song song với
+     * `chart.columns` mà không gì buộc hai bên cùng độ dài. Ở đây dòng nào
+     * thiếu ô thì ô đó thành "trống", không kéo mọi con số phía sau trượt
+     * sang cột bên cạnh.
+     */
+    rows: b.rows.map((r) => {
+      const theoCot = new Map(r.cells.map((o) => [o.columnId, o]));
+      return {
+        size: r.size,
+        o: b.columns.map((c): OSize => {
+          const o = theoCot.get(c.id);
+          if (!o) return { loai: "trong" };
+          if (o.text !== null) return { loai: "chu", text: o.text };
+          if (o.min === null) return { loai: "trong" };
+          return { loai: "so", min: o.min, max: o.max ?? o.min };
+        }),
+      };
+    }),
     fit: b.fit,
     howTo: b.howTo,
   };
@@ -62,7 +92,7 @@ export const khoangGoiYTrangChu = unstable_cache(
   async (): Promise<SizeRange[]> => {
     const b = await db.sizeChart.findUnique({
       where: { slug: HOME_SIZE_CHART_SLUG },
-      include: { rows: { orderBy: { sort: "asc" } } },
+      include: KEM_O,
     });
     const ranges = b ? fitRangesFromChart(hienThi(b)) : [];
     return ranges.length > 0 ? ranges : DEFAULT_TOP_RANGES;

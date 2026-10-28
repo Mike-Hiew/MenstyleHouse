@@ -11,6 +11,19 @@ import { appUrl } from "@/server/mail";
  */
 export const revalidate = 3600;
 
+/**
+ * Dựng khi có người hỏi, không dựng lúc build.
+ *
+ * Mặc định Next sinh sẵn file này lúc `next build` — nghĩa là **build phải nối
+ * được vào cơ sở dữ liệu**. Trên máy dev thì Postgres đang chạy nên không ai
+ * nhận ra, còn dựng ảnh Docker thì không có DB nào cả và cả bản build đổ. Buộc
+ * build phải có DB cũng sai về nguyên tắc: ảnh phải dựng được ở bất cứ đâu, kể
+ * cả trên máy CI không có gì ngoài mã nguồn.
+ *
+ * `revalidate` ở trên vẫn giữ nguyên tác dụng: sinh xong thì giữ một giờ.
+ */
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const goc = appUrl();
 

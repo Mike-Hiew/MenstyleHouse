@@ -6,6 +6,7 @@ import {
   type SizeRange,
 } from "@/lib/size-finder";
 import { DEFAULT_TOP_RANGES } from "@/content/size-finder";
+import type { CotSize, OSize } from "@/lib/size-chart";
 
 const R = DEFAULT_TOP_RANGES;
 const rec = (heightCm: number, weightKg: number, fit: "om" | "vua" | "rong" = "vua") =>
@@ -98,12 +99,22 @@ describe("parseFitHint", () => {
 });
 
 describe("fitRangesFromChart", () => {
+  const cot = (label: string, extra: Partial<CotSize> = {}): CotSize => ({
+    label,
+    key: null,
+    of: "GARMENT",
+    unit: "CM",
+    ...extra,
+  });
+  const so = (min: number, max = min): OSize => ({ loai: "so", min, max });
+  const chu = (text: string): OSize => ({ loai: "chu", text });
+
   const chart = {
-    columns: ["Size", "Vòng ngực", "Gợi ý"],
+    columns: [cot("Vòng ngực", { key: "CHEST" }), cot("Gợi ý")],
     rows: [
-      { size: "S", values: ["96", "1m60–1m66 · 52–58kg"] },
-      { size: "M", values: ["100", "1m65–1m72 · 57–65kg"] },
-      { size: "L", values: ["104", "không rõ"] },
+      { size: "S", o: [so(96), chu("1m60–1m66 · 52–58kg")] },
+      { size: "M", o: [so(100), chu("1m65–1m72 · 57–65kg")] },
+      { size: "L", o: [so(104), chu("không rõ")] },
     ],
   };
 
@@ -114,8 +125,31 @@ describe("fitRangesFromChart", () => {
     ]);
   });
 
+  it("cột chiều cao/cân nặng có kiểu được ưu tiên hơn chữ trong cột Gợi ý", () => {
+    const coKieu = {
+      columns: [
+        cot("Chiều cao", { key: "HEIGHT", of: "BODY" }),
+        cot("Cân nặng", { key: "WEIGHT", of: "BODY", unit: "KG" }),
+        cot("Gợi ý"),
+      ],
+      rows: [
+        { size: "S", o: [so(158, 164), so(50, 56), chu("1m60–1m66 · 52–58kg")] },
+        { size: "M", o: [so(165, 171), { loai: "trong" } as OSize, chu("57–65kg")] },
+      ],
+    };
+    expect(fitRangesFromChart(coKieu)).toEqual([
+      { size: "S", height: [158, 164], weight: [50, 56] },
+      { size: "M", height: [165, 171], weight: [57, 65] },
+    ]);
+  });
+
   it("không có cột Gợi ý hoặc dưới 2 dòng đọc được thì rỗng", () => {
-    expect(fitRangesFromChart({ columns: ["Size", "Vòng ngực"], rows: chart.rows })).toEqual([]);
+    expect(
+      fitRangesFromChart({
+        columns: [chart.columns[0]],
+        rows: chart.rows.map((r) => ({ size: r.size, o: [r.o[0]] })),
+      }),
+    ).toEqual([]);
     expect(fitRangesFromChart({ ...chart, rows: chart.rows.slice(0, 1) })).toEqual([]);
   });
 });

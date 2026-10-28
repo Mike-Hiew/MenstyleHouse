@@ -71,7 +71,7 @@ export default async function SizeChartsPage() {
                     ) : null}
                   </td>
                   <td className="border-b border-hairline py-3 pr-3 font-mono">
-                    {b.columns.length}
+                    {b._count.columns}
                   </td>
                   {/*
                     Bảng không có dòng nào thì trang sản phẩm không hiện gì cả —

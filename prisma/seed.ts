@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
+import { moveStock } from "../src/lib/inventory";
 import { buildSku } from "../src/lib/slug";
 import {
   PrismaClient,
@@ -157,6 +158,26 @@ async function main() {
     db.counter.deleteMany(),
   ]);
 
+  // ── Vai trò ───────────────────────────────────
+  //
+  // `upsert` chứ không `deleteMany` rồi tạo lại: vai trò do cửa hàng tự thêm phải
+  // sống sót qua mỗi lần seed, và `User.role` trỏ tới đây nên xoá là đâm khoá
+  // ngoại. Chỉ bảo đảm năm vai trò gốc luôn có mặt.
+  for (const [i, r] of [
+    { key: "CUSTOMER", label: "Khách hàng", isStaff: false, isSuper: false },
+    { key: "STAFF", label: "Nhân viên bán hàng", isStaff: true, isSuper: false },
+    { key: "WAREHOUSE", label: "Nhân viên kho", isStaff: true, isSuper: false },
+    { key: "ACCOUNTANT", label: "Kế toán", isStaff: true, isSuper: false },
+    { key: "ADMIN", label: "Chủ cửa hàng", isStaff: true, isSuper: true },
+  ].entries()) {
+    await db.role.upsert({
+      where: { key: r.key },
+      create: { ...r, builtIn: true, sort: i },
+      // Không đè `label`: cửa hàng đổi tên vai trò rồi thì seed không được đặt lại.
+      update: { isStaff: r.isStaff, isSuper: r.isSuper, builtIn: true },
+    });
+  }
+
   // ── Danh mục & thương hiệu ────────────────────────────────
   // Bảng size không bị seed xoá (do migration nạp); thiếu thì bỏ qua.
   const charts = new Map(
@@ -225,7 +246,7 @@ async function main() {
   }
 
   // ── Kho & nhà cung cấp ────────────────────────────────────
-  const [khoChinh] = await Promise.all([
+  await Promise.all([
     db.warehouse.create({ data: { name: "Kho Tân Bình", address: "128 Trường Chinh, Q. Tân Bình, TP.HCM", isMain: true } }),
     db.warehouse.create({ data: { name: "Kho Long Biên", address: "45 Ngọc Lâm, Q. Long Biên, Hà Nội" } }),
     db.warehouse.create({ data: { name: "Kho Hoà Khánh", address: "12 Âu Cơ, Q. Liên Chiểu, Đà Nẵng" } }),
@@ -339,28 +360,30 @@ async function main() {
   }
 
   // ── Nạp tồn kho đầu kỳ qua sổ cái (giữ bất biến) ──────────
+  //
+  // Đi qua `moveStock` chứ không tự ghi `variant.stock` — đúng như comment của
+  // nó: "ĐIỂM VÀO DUY NHẤT để đổi Variant.stock trong toàn hệ thống".
+  //
+  // Bản trước seed tự ghi thẳng `stock` cộng một `InventoryMovement`, và thiếu
+  // mất `StockLevel` mà migration `20260809051828_ton_kho_theo_kho` thêm vào.
+  // Hậu quả: chạy `db:seed` xong là 465 SKU có tồn nhưng tổng theo kho bằng 0,
+  // và `tests/inventory.test.ts` — bất biến bắt buộc chạy trong CI từ M4 — đổ.
+  // Cùng một kiểu lỗi với chuyện seed xoá mất ánh xạ bảng size: seed không biết
+  // về thứ mà migration đã thêm.
   console.log("Nạp tồn kho đầu kỳ cho " + allVariants.length + " SKU…");
   for (const v of allVariants) {
     const qty = rnd() < 0.08 ? int(0, 6) : int(12, 90);
     if (qty === 0) continue;
-    // Tồn đầu kỳ nằm ở kho chính: `StockLevel` phải cộng lại đúng bằng
-    // `Variant.stock` (bất biến `auditWarehouse`), như mọi lối qua `moveStock`.
-    await db.$transaction([
-      db.variant.update({ where: { id: v.id }, data: { stock: qty } }),
-      db.stockLevel.create({ data: { variantId: v.id, warehouseId: khoChinh.id, qty } }),
-      db.inventoryMovement.create({
-        data: {
-          variantId: v.id,
-          warehouseId: khoChinh.id,
-          type: "RECEIPT",
-          delta: qty,
-          stockAfter: qty,
-          refType: "Seed",
-          note: "Tồn đầu kỳ",
-          actorName: "Hệ thống",
-        },
+    await db.$transaction((tx) =>
+      moveStock(tx, {
+        variantId: v.id,
+        delta: qty,
+        type: "RECEIPT",
+        refType: "Seed",
+        note: "Tồn đầu kỳ",
+        actorName: "Hệ thống",
       }),
-    ]);
+    );
   }
 
   // ── Khuyến mãi ────────────────────────────────────────────

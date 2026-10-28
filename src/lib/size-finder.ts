@@ -7,6 +7,8 @@
  * nào chưa ghi thì dùng bảng mặc định ở `src/content/size-finder.ts`.
  */
 
+import type { OSize, SizeChart } from "@/lib/size-chart";
+
 export type FitPref = "om" | "vua" | "rong";
 
 export type SizeRange = {
@@ -142,19 +144,36 @@ export function parseFitHint(text: string): { height: [number, number] | null; w
 export const FIT_HINT_COLUMN = /gợi ý/i;
 
 /**
- * Lấy khoảng của từng size từ một bảng size (dạng hiển thị: cột đầu là "Size").
- * Trả `[]` khi bảng không có cột gợi ý hoặc không dòng nào đọc được — nơi gọi
- * khi đó không hiện bộ gợi ý cho bảng này.
+ * Lấy khoảng của từng size từ một bảng size.
+ *
+ * Ưu tiên cột đo người mặc có kiểu (`HEIGHT` theo cm, `WEIGHT` theo kg) — số
+ * đã nằm sẵn trong ô, không phải đoán. Bảng chưa khai hai cột đó thì đọc chữ
+ * trong cột "Gợi ý" (vd. `"1m60–1m66 · 52–58kg"`), là dạng các bảng size cũ
+ * còn để lại sau migration `so_do_co_kieu`.
+ *
+ * Trả `[]` khi không dòng nào đọc được — nơi gọi khi đó không hiện bộ gợi ý
+ * cho bảng này.
  */
-export function fitRangesFromChart(chart: {
-  columns: string[];
-  rows: { size: string; values: string[] }[];
-}): SizeRange[] {
-  // `columns[0]` là "Size", không nằm trong `values`.
-  const col = chart.columns.slice(1).findIndex((c) => FIT_HINT_COLUMN.test(c));
-  if (col < 0) return [];
+export function fitRangesFromChart(chart: Pick<SizeChart, "columns" | "rows">): SizeRange[] {
+  const cot = (key: "HEIGHT" | "WEIGHT", unit: "CM" | "KG") =>
+    chart.columns.findIndex((c) => c.key === key && c.unit === unit);
+  const cotCao = cot("HEIGHT", "CM");
+  const cotNang = cot("WEIGHT", "KG");
+  const cotGoiY = chart.columns.findIndex((c) => FIT_HINT_COLUMN.test(c.label));
+
+  const khoang = (o: OSize | undefined): [number, number] | null =>
+    o?.loai === "so" && o.min <= o.max ? [o.min, o.max] : null;
+
   const ranges = chart.rows
-    .map((r) => ({ size: r.size, ...parseFitHint(r.values[col] ?? "") }))
+    .map((r) => {
+      const goiY = r.o[cotGoiY];
+      const chu = goiY?.loai === "chu" ? parseFitHint(goiY.text) : { height: null, weight: null };
+      return {
+        size: r.size,
+        height: khoang(r.o[cotCao]) ?? chu.height,
+        weight: khoang(r.o[cotNang]) ?? chu.weight,
+      };
+    })
     .filter((r) => r.height || r.weight);
   return ranges.length >= 2 ? ranges : [];
 }

@@ -3,8 +3,9 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { cn } from "@/lib/cn";
-import { ROLE_LABEL } from "@/lib/roles";
-import { permissionGroups, SIEU_QUYEN, type PermissionKey } from "@/lib/permissions";
+import { nhanVaiTro, type VaiTro } from "@/lib/roles";
+import { VaiTroPanel, type VaiTroDong } from "./vai-tro-panel";
+import { permissionGroups, type PermissionKey } from "@/lib/permissions";
 import {
   inviteStaffAction,
   saveRolePermissionsAction,
@@ -31,9 +32,6 @@ export type PendingInvite = {
   expiresAt: Date;
 };
 
-const VAI_TRO = ["ADMIN", "STAFF", "WAREHOUSE", "ACCOUNTANT", "CUSTOMER"] as const;
-/** Vai trò sửa được ma trận. `ADMIN` luôn full, `CUSTOMER` không vào admin. */
-const VAI_TRO_SUA_DUOC = ["STAFF", "WAREHOUSE", "ACCOUNTANT"] as const;
 
 /**
  * Hai phần tách bạch:
@@ -49,17 +47,21 @@ export function StaffRoles({
   members,
   invites,
   matrix,
+  roles,
   meId,
 }: {
   members: StaffMember[];
   invites: PendingInvite[];
   matrix: Record<string, PermissionKey[]>;
+  /** Danh sách vai trò đọc từ DB — không còn hằng số nào trong file này. */
+  roles: VaiTroDong[];
   meId: string;
 }) {
   return (
     <div className="flex flex-col gap-10">
-      <ThanhVien members={members} invites={invites} meId={meId} />
-      <MaTran matrix={matrix} />
+      <VaiTroPanel roles={roles} />
+      <ThanhVien members={members} invites={invites} roles={roles} meId={meId} />
+      <MaTran matrix={matrix} roles={roles} />
     </div>
   );
 }
@@ -69,10 +71,12 @@ export function StaffRoles({
 function ThanhVien({
   members,
   invites,
+  roles,
   meId,
 }: {
   members: StaffMember[];
   invites: PendingInvite[];
+  roles: VaiTro[];
   meId: string;
 }) {
   const [state, chay, pending] = useActionState<AdminActionState, FormData>(staffAction, {});
@@ -169,16 +173,16 @@ function ThanhVien({
                   <td className="border-b border-hairline py-2.5 pr-3">
                     {toi ? (
                       <span className="bg-accent px-2 py-1 text-[11px] font-extrabold text-bg">
-                        {ROLE_LABEL[m.role as keyof typeof ROLE_LABEL] ?? m.role}
+                        {nhanVaiTro(m.role, roles)}
                       </span>
                     ) : (
                       <form action={chay} className="flex items-center gap-2">
                         <input type="hidden" name="viec" value="doi-vai-tro" />
                         <input type="hidden" name="id" value={m.id} />
                         <select name="role" defaultValue={m.role} className={cn(o, "min-h-11")}>
-                          {VAI_TRO.map((r) => (
-                            <option key={r} value={r}>
-                              {ROLE_LABEL[r]}
+                          {roles.map((r) => (
+                            <option key={r.key} value={r.key}>
+                              {r.label}
                             </option>
                           ))}
                         </select>
@@ -276,7 +280,7 @@ function ThanhVien({
             {invites.map((i) => (
               <li key={i.id} className="flex flex-wrap items-center gap-3 text-[13px]">
                 <span className="font-semibold">{i.email}</span>
-                <span className="text-muted">{ROLE_LABEL[i.role as keyof typeof ROLE_LABEL]}</span>
+                <span className="text-muted">{nhanVaiTro(i.role, roles)}</span>
                 <span className="label-tech">
                   hết hạn {new Date(i.expiresAt).toLocaleDateString("vi-VN")}
                 </span>
@@ -301,11 +305,13 @@ function ThanhVien({
         <label className="block">
           <span className="mb-1.5 block text-[12px] font-semibold">Vai trò</span>
           <select name="role" defaultValue="STAFF" className={cn(o, "min-h-12")}>
-            {VAI_TRO.filter((r) => r !== "CUSTOMER").map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABEL[r]}
-              </option>
-            ))}
+            {roles
+              .filter((r) => r.isStaff)
+              .map((r) => (
+                <option key={r.key} value={r.key}>
+                  {r.label}
+                </option>
+              ))}
           </select>
         </label>
         <button
@@ -322,12 +328,26 @@ function ThanhVien({
 
 /* ── Phần 2: vai trò làm được gì ──────────────────────────── */
 
-function MaTran({ matrix }: { matrix: Record<string, PermissionKey[]> }) {
+function MaTran({
+  matrix,
+  roles,
+}: {
+  matrix: Record<string, PermissionKey[]>;
+  roles: VaiTro[];
+}) {
   const [state, luu, pending] = useActionState<AdminActionState, FormData>(
     saveRolePermissionsAction,
     {},
   );
-  const [role, setRole] = React.useState<string>("STAFF");
+  /*
+   * Chỉ vai trò **nhân viên và không siêu quyền** mới sửa được ma trận: khách hàng
+   * không vào khu quản trị nên tick gì cũng vô nghĩa, còn chủ cửa hàng luôn có mọi
+   * quyền — cho bỏ tick là mở đường tự khoá cửa.
+   */
+  const suaDuoc = roles.filter((r) => r.isStaff && !r.isSuper);
+  const sieu = roles.find((r) => r.isSuper);
+
+  const [role, setRole] = React.useState<string>(() => suaDuoc[0]?.key ?? "");
 
   const dangCo = new Set(matrix[role] ?? []);
 
@@ -352,22 +372,24 @@ function MaTran({ matrix }: { matrix: Record<string, PermissionKey[]> }) {
       ) : null}
 
       <div className="mb-4 flex flex-wrap gap-2">
-        {VAI_TRO_SUA_DUOC.map((r) => (
+        {suaDuoc.map((r) => (
           <button
-            key={r}
+            key={r.key}
             type="button"
-            onClick={() => setRole(r)}
+            onClick={() => setRole(r.key)}
             className={cn(
               "min-h-11 border-2 px-4 text-[13px] font-extrabold",
-              role === r ? "border-accent bg-accent-100" : "border-border-soft",
+              role === r.key ? "border-accent bg-accent-100" : "border-border-soft",
             )}
           >
-            {ROLE_LABEL[r]}
+            {r.label}
           </button>
         ))}
-        <span className="flex min-h-11 items-center border-2 border-dashed border-border-soft px-4 text-[12.5px] text-faint">
-          {ROLE_LABEL[SIEU_QUYEN]} luôn có mọi quyền
-        </span>
+        {sieu ? (
+          <span className="flex min-h-11 items-center border-2 border-dashed border-border-soft px-4 text-[12.5px] text-faint">
+            {sieu.label} luôn có mọi quyền
+          </span>
+        ) : null}
       </div>
 
       {/* `key` để đổi vai trò là các ô tick nạp lại theo vai trò mới. */}
@@ -406,7 +428,7 @@ function MaTran({ matrix }: { matrix: Record<string, PermissionKey[]> }) {
           disabled={pending}
           className="mt-6 min-h-12 bg-accent px-7 text-[14px] font-extrabold text-bg disabled:opacity-60"
         >
-          {pending ? "Đang lưu…" : `LƯU QUYỀN CHO ${ROLE_LABEL[role as keyof typeof ROLE_LABEL].toUpperCase()}`}
+          {pending ? "Đang lưu…" : `LƯU QUYỀN CHO ${nhanVaiTro(role, roles).toUpperCase()}`}
         </button>
       </form>
     </section>

@@ -3,11 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Đường chạy thật: đi qua connection pooler. Mỗi lượt gọi hàm serverless là
   // một tiến trình riêng, không có pooler thì vài chục lượt khách đồng thời đã
   // ăn hết số kết nối Postgres cho phép.
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
   // Đường cho `prisma migrate`: nối thẳng, không qua pooler. Migrate cần khoá
   // tư vấn (advisory lock) và lệnh DDL, hai thứ pgbouncer ở chế độ transaction
   // không giữ được — chạy qua pooler thì migrate treo hoặc hỏng giữa chừng.
@@ -16,41 +16,72 @@ datasource db {
 }
 
 // ─── Người dùng ──────────────────────────────────────────────
-enum Role {
-  CUSTOMER
-  STAFF
-  WAREHOUSE
-  ACCOUNTANT
-  ADMIN
+/// Vai trò.
+///
+/// Trước M6.22 đây là `enum Role` với năm giá trị cố định — cửa hàng muốn thêm
+/// một vai trò ("Trưởng ca", "Nhân viên kho phụ") phải sửa schema, chạy migration
+/// và triển khai lại. Thành bảng thì đó là việc bấm chuột.
+///
+/// **Khoá `key` đặt một lần rồi thôi.** Nó nằm trong JWT của phiên đang mở, trong
+/// `RolePermission` và trong `StaffInvite` — đổi khoá là mọi phiên đang đăng nhập
+/// trỏ vào một vai trò không còn tồn tại, và toàn bộ ma trận quyền mất chỗ neo.
+/// Cửa hàng chỉ đổi được `label`, thứ duy nhất người ta nhìn thấy.
+model Role {
+  key   String @id
+  label String
+
+  /// Vào được khu quản trị. `CUSTOMER` là vai trò duy nhất không.
+  ///
+  /// Cờ này đi vào JWT vì `middleware.ts` chạy trên Edge và **không đọc được
+  /// DB** — nó phải biết ngay từ token là có cho qua `/admin` hay không.
+  isStaff Boolean @default(true)
+
+  /// Chủ cửa hàng: luôn có mọi khả năng, không sửa quyền và không xoá được.
+  /// Đúng một dòng mang cờ này — đó là chốt chống tự khoá cửa.
+  isSuper Boolean @default(false)
+
+  /// Năm vai trò gốc: đổi được tên, **không xoá được**. Vài chỗ trong mã và
+  /// trong seed vẫn nhắc thẳng tên chúng.
+  builtIn Boolean @default(false)
+
+  sort Int @default(0)
+
+  users       User[]
+  permissions RolePermission[]
+  invites     StaffInvite[]
 }
 
 model User {
-  id             String          @id @default(cuid())
-  email          String?         @unique
-  phone          String?         @unique
-  phoneVerified  Boolean         @default(false)
-  passwordHash   String?
-  name           String
-  role           Role            @default(CUSTOMER)
-  pointBalance   Int             @default(0)
+  id                String          @id @default(cuid())
+  email             String?         @unique
+  phone             String?         @unique
+  phoneVerified     Boolean         @default(false)
+  passwordHash      String?
+  name              String
+  /// Giữ tên trường là `role` và kiểu là chuỗi khoá, không đổi thành `roleKey`:
+  /// hàng chục chỗ đang so `user.role === "ADMIN"` hoặc tra ma trận theo
+  /// `matrix[role]` vẫn chạy nguyên như cũ.
+  role              String          @default("CUSTOMER")
+  roleRef           Role            @relation(fields: [role], references: [key])
+  pointBalance      Int             @default(0)
   /// Tài khoản bị tắt không đăng nhập được và bị đá khỏi phiên đang mở. Dùng
   /// thay cho xoá: người đã phát hành hoá đơn thì không xoá được.
-  active         Boolean         @default(true)
+  active            Boolean         @default(true)
   /// Mọi phiên phát trước mốc này coi như chết. Phiên là JWT nên không thu hồi
   /// từng cái được; đẩy mốc lên là giết sạch phiên cũ trong một lần ghi. Đổi
   /// mật khẩu đẩy mốc này — nếu không, người chiếm được tài khoản vẫn ngồi
   /// trong đó sau khi chủ tài khoản đã đổi mật khẩu.
-  sessionsValidFrom DateTime     @default(now())
-  createdAt      DateTime        @default(now())
-  addresses      Address[]
-  orders         Order[]
-  pointEntries   PointEntry[]
-  carts          Cart[]
-  tickets        Ticket[]
-  invoicesIssued Invoice[]
-  invitesSent    StaffInvite[]   @relation("InviteAuthor")
-  passwordResets PasswordReset[]
-  wishlist       Wishlist[]
+  sessionsValidFrom DateTime        @default(now())
+  createdAt         DateTime        @default(now())
+  addresses         Address[]
+  orders            Order[]
+  pointEntries      PointEntry[]
+  carts             Cart[]
+  tickets           Ticket[]
+  invoicesIssued    Invoice[]
+  invitesSent       StaffInvite[]   @relation("InviteAuthor")
+  passwordResets    PasswordReset[]
+  wishlist          Wishlist[]
 }
 
 model Address {
@@ -92,15 +123,15 @@ model PointEntry {
 
 // ─── Danh mục sản phẩm ───────────────────────────────────────
 model Category {
-  id       String    @id @default(cuid())
-  name     String
-  slug     String    @unique
-  sort     Int       @default(0)
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  sort        Int        @default(0)
   /// Bảng size mặc định cho mọi sản phẩm trong danh mục. `null` = không có
   /// bảng size (phụ kiện chỉ có Freesize thì bày bảng đo làm gì).
   sizeChartId String?
   sizeChart   SizeChart? @relation(fields: [sizeChartId], references: [id], onDelete: SetNull)
-  products Product[]
+  products    Product[]
 }
 
 model Brand {
@@ -130,7 +161,7 @@ model Product {
   /// Đè bảng size của danh mục cho riêng sản phẩm này — một mẫu oversize nằm
   /// trong danh mục áo phông cần bảng riêng, không nên vì thế mà tách danh mục.
   sizeChartId    String?
-  sizeChart      SizeChart? @relation(fields: [sizeChartId], references: [id], onDelete: SetNull)
+  sizeChart      SizeChart?     @relation(fields: [sizeChartId], references: [id], onDelete: SetNull)
   categoryId     String
   category       Category       @relation(fields: [categoryId], references: [id])
   brandId        String?
@@ -392,13 +423,13 @@ model Invoice {
 
 // ─── Kho ─────────────────────────────────────────────────────
 model Warehouse {
-  id       String         @id @default(cuid())
-  name     String
-  address  String
+  id        String              @id @default(cuid())
+  name      String
+  address   String
   /// Kho nhận hàng khi không chỉ định — đúng một kho được đánh dấu.
-  isMain   Boolean        @default(false)
-  receipts GoodsReceipt[]
-  levels   StockLevel[]
+  isMain    Boolean             @default(false)
+  receipts  GoodsReceipt[]
+  levels    StockLevel[]
   movements InventoryMovement[]
 }
 
@@ -485,20 +516,20 @@ enum MovementType {
 }
 
 model InventoryMovement {
-  id         String       @id @default(cuid())
-  variantId  String
-  variant    Variant      @relation(fields: [variantId], references: [id])
+  id          String       @id @default(cuid())
+  variantId   String
+  variant     Variant      @relation(fields: [variantId], references: [id])
   /// Kho mà dòng này tác động. Cũ (trước khi tách kho) để `null`.
   warehouseId String?
-  warehouse   Warehouse?  @relation(fields: [warehouseId], references: [id])
-  type       MovementType
-  delta      Int
-  stockAfter Int
-  refType    String?
-  refId      String?
-  note       String?
-  actorName  String?
-  createdAt  DateTime     @default(now())
+  warehouse   Warehouse?   @relation(fields: [warehouseId], references: [id])
+  type        MovementType
+  delta       Int
+  stockAfter  Int
+  refType     String?
+  refId       String?
+  note        String?
+  actorName   String?
+  createdAt   DateTime     @default(now())
 
   @@index([variantId, createdAt])
 }
@@ -653,10 +684,10 @@ model StoreSetting {
   /// Bật/tắt cả tính năng hạng thành viên. Tắt thì hạng biến mất khỏi trang
   /// tài khoản, menu tài khoản và bảng khách hàng — cửa hàng nào không chạy
   /// chương trình hạng thì không phải nhìn một cột luôn ghi "MỚI".
-  tiersEnabled Boolean @default(true)
-  tierSilver  Int
-  tierGold    Int
-  tierDiamond Int
+  tiersEnabled  Boolean @default(true)
+  tierSilver    Int
+  tierGold      Int
+  tierDiamond   Int
 
   /// Phương thức thanh toán đang bật. Ví điện tử chưa có nên chưa có cờ.
   payCod  Boolean @default(true)
@@ -672,7 +703,8 @@ model StoreSetting {
 /// luôn có mọi khả năng, chốt ở `canDo` chứ không phải dữ liệu sửa được.
 model RolePermission {
   id         String @id @default(cuid())
-  role       Role
+  role       String
+  roleRef    Role   @relation(fields: [role], references: [key], onDelete: Cascade)
   /// Khoá khai trong `src/lib/permissions.ts`. Không phải dữ liệu tự do: mỗi
   /// khoá tương ứng một chốt chặn có thật ở server.
   permission String
@@ -695,7 +727,8 @@ enum InviteStatus {
 model StaffInvite {
   id          String       @id @default(cuid())
   email       String
-  role        Role
+  role        String
+  roleRef     Role         @relation(fields: [role], references: [key])
   token       String       @unique
   status      InviteStatus @default(PENDING)
   invitedById String?
@@ -728,8 +761,8 @@ model PasswordReset {
 
 /// Người đăng ký nhận tin sale ngoài trang chủ.
 model NewsletterSubscriber {
-  id    String @id @default(cuid())
-  email String @unique
+  id             String    @id @default(cuid())
+  email          String    @unique
   /// Nguồn đăng ký, để sau còn biết khối nào mang lại người đăng ký.
   source         String    @default("home")
   createdAt      DateTime  @default(now())
@@ -761,16 +794,15 @@ model Wishlist {
 /// theo slug danh mục — thêm một nhóm hàng mới là phải sửa mã và triển khai lại,
 /// còn cửa hàng thì không tự đổi được một con số nào.
 model SizeChart {
-  id     String @id @default(cuid())
-  name   String
-  slug   String @unique
+  id      String            @id @default(cuid())
+  name    String
+  slug    String            @unique
   /// Ghi chú về form, hiện ngay dưới tiêu đề bảng.
-  fit    String @default("")
+  fit     String            @default("")
   /// Hướng dẫn cách đo, mỗi phần tử một dòng.
-  howTo  String[]
-  /// Tên các cột **sau cột Size**: ["Vòng ngực", "Rộng vai", …].
-  columns String[]
-  rows   SizeChartRow[]
+  howTo   String[]
+  columns SizeChartColumn[]
+  rows    SizeChartRow[]
 
   categories Category[]
   products   Product[]
@@ -780,14 +812,94 @@ model SizeChart {
 }
 
 model SizeChartRow {
-  id      String    @id @default(cuid())
+  id      String          @id @default(cuid())
   chartId String
-  chart   SizeChart @relation(fields: [chartId], references: [id], onDelete: Cascade)
+  chart   SizeChart       @relation(fields: [chartId], references: [id], onDelete: Cascade)
   /// Nhãn size: "M", "32", "Freesize".
   size    String
-  /// Giá trị từng cột, xếp đúng thứ tự `SizeChart.columns`.
-  values  String[]
-  sort    Int       @default(0)
+  cells   SizeChartCell[]
+  sort    Int             @default(0)
 
   @@index([chartId, sort])
+}
+
+/// Số đo này đo cái gì.
+///
+/// Trước M6.19 cột chỉ có mỗi cái nhãn chữ, nên `"88"` với máy chỉ là một chuỗi:
+/// không biết nó đo vòng ngực hay dài tay. Khai khoá ở đây là điều kiện để sau
+/// này so số đo của khách với bảng — không có nó thì phòng thử đồ không có gì
+/// để so.
+enum MeasureKey {
+  CHEST
+  WAIST
+  HIP
+  SHOULDER
+  SLEEVE
+  TOP_LENGTH
+  BOTTOM_LENGTH
+  LEG_OPENING
+  INSEAM
+  THIGH
+  NECK
+  HEIGHT
+  WEIGHT
+}
+
+/// Đo **cái áo** hay đo **người mặc**.
+///
+/// Phân biệt bắt buộc, không phải chi tiết trang trí. Bảng áo hiện ghi size M có
+/// vòng ngực 100 — đó là vòng ngực của cái áo may xong, không phải của người.
+/// Trộn hai loại vào một cột là mọi phép gợi ý size về sau đều sai mà không có
+/// cách nào phát hiện.
+enum MeasureOf {
+  GARMENT
+  BODY
+}
+
+enum MeasureUnit {
+  CM
+  INCH
+  KG
+}
+
+/// Một cột số đo của bảng size.
+///
+/// Cột **"Size" không nằm ở đây** — nó luôn là cột đầu và là khoá của mỗi dòng.
+model SizeChartColumn {
+  id      String          @id @default(cuid())
+  chartId String
+  chart   SizeChart       @relation(fields: [chartId], references: [id], onDelete: Cascade)
+  /// Chữ hiện cho khách: "Vòng ngực". Đổi nhãn không làm mất ý nghĩa vì ý nghĩa
+  /// nằm ở `key`.
+  label   String
+  /// `null` = cột chữ tự do, ví dụ một ghi chú không đo được thành số.
+  key     MeasureKey?
+  of      MeasureOf       @default(GARMENT)
+  unit    MeasureUnit     @default(CM)
+  sort    Int
+  cells   SizeChartCell[]
+
+  @@unique([chartId, sort])
+}
+
+/// Giao của một dòng size và một cột.
+///
+/// Bản trước lưu cả dòng thành `values: String[]` xếp theo thứ tự `columns` —
+/// hai mảng song song mà không gì buộc chúng cùng độ dài. Bỏ một cột ở giữa là
+/// mọi con số trượt sang ô bên cạnh, bảng vẫn hiện ra bình thường và không ai
+/// biết. Neo ô vào cột bằng khoá ngoại thì kiểu hỏng đó biến mất hẳn.
+model SizeChartCell {
+  id       String          @id @default(cuid())
+  rowId    String
+  row      SizeChartRow    @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  columnId String
+  column   SizeChartColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  /// Khoảng số đo. Một giá trị duy nhất thì `min` = `max`.
+  min      Float?
+  max      Float?
+  /// Nội dung cho cột chữ tự do; cột số thì để `null`.
+  text     String?
+
+  @@unique([rowId, columnId])
+  @@index([columnId])
 }

@@ -1,9 +1,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import type { Role } from "@prisma/client";
 import { db } from "@/lib/db";
-import { STAFF_ROLES } from "@/lib/roles";
 
 /**
  * Thành viên khu quản trị: mời, sửa, bật/tắt, xoá.
@@ -53,7 +51,9 @@ export class InviteInvalidError extends Error {
 
 export async function listStaff() {
   return db.user.findMany({
-    where: { role: { in: [...STAFF_ROLES] } },
+    // Ai là nhân viên giờ là **dữ liệu của vai trò**, không còn là danh sách
+    // viết cứng — thêm một vai trò nhân viên là người mang nó hiện ra ngay.
+    where: { roleRef: { isStaff: true } },
     orderBy: [{ active: "desc" }, { role: "asc" }, { name: "asc" }],
     select: {
       id: true,
@@ -81,20 +81,35 @@ export type InviteRow = Awaited<ReturnType<typeof listInvites>>[number];
 
 /* ── Đếm quản trị còn lại ─────────────────────────────────── */
 
-/** Số quản trị **đang bật**. Quản trị bị tắt không cứu được ai. */
+/**
+ * Số người mang **vai trò siêu quyền** và **đang bật**.
+ *
+ * Hỏi theo cờ `isSuper` chứ không theo tên `"ADMIN"`: cửa hàng đổi tên vai trò
+ * chủ cửa hàng thì chốt chống tự khoá cửa vẫn phải giữ nguyên tác dụng. Quản trị
+ * bị tắt không cứu được ai nên không tính.
+ */
 async function soAdminConLai(tru?: string) {
   return db.user.count({
-    where: { role: "ADMIN", active: true, ...(tru ? { id: { not: tru } } : {}) },
+    where: { roleRef: { isSuper: true }, active: true, ...(tru ? { id: { not: tru } } : {}) },
   });
 }
 
 /* ── Vai trò, bật/tắt, sửa, xoá ───────────────────────────── */
 
-export async function setUserRole(id: string, role: Role) {
-  const nguoi = await db.user.findUnique({ where: { id }, select: { role: true, active: true } });
+export async function setUserRole(id: string, role: string) {
+  const [nguoi, moi] = await Promise.all([
+    db.user.findUnique({
+      where: { id },
+      select: { active: true, roleRef: { select: { isSuper: true } } },
+    }),
+    db.role.findUnique({ where: { key: role }, select: { isSuper: true } }),
+  ]);
   if (!nguoi) throw new Error("Không tìm thấy người dùng");
+  if (!moi) throw new Error("Không tìm thấy vai trò " + role);
 
-  if (nguoi.role === "ADMIN" && nguoi.active && role !== "ADMIN") {
+  // Theo cờ `isSuper`, không theo tên "ADMIN": cửa hàng đổi được nhãn vai trò,
+  // mà chốt chống tự khoá cửa thì phải giữ nguyên tác dụng.
+  if (nguoi.roleRef.isSuper && nguoi.active && !moi.isSuper) {
     if ((await soAdminConLai(id)) === 0) throw new LastAdminError();
   }
 
@@ -109,10 +124,13 @@ export async function setUserRole(id: string, role: Role) {
  * tài khoản thì phải chặn được ngay chứ không đợi người đó tự đăng xuất.
  */
 export async function setUserActive(id: string, active: boolean) {
-  const nguoi = await db.user.findUnique({ where: { id }, select: { role: true, active: true } });
+  const nguoi = await db.user.findUnique({
+    where: { id },
+    select: { active: true, roleRef: { select: { isSuper: true } } },
+  });
   if (!nguoi) throw new Error("Không tìm thấy người dùng");
 
-  if (!active && nguoi.role === "ADMIN" && nguoi.active) {
+  if (!active && nguoi.roleRef.isSuper && nguoi.active) {
     if ((await soAdminConLai(id)) === 0) throw new LastAdminError();
   }
 
@@ -162,7 +180,7 @@ export async function deleteStaff(id: string) {
 
 /* ── Mời ──────────────────────────────────────────────────── */
 
-export async function inviteStaff(input: { email: string; role: Role; invitedById: string }) {
+export async function inviteStaff(input: { email: string; role: string; invitedById: string }) {
   const email = input.email.trim().toLowerCase();
 
   const daCo = await db.user.findUnique({ where: { email }, select: { id: true } });

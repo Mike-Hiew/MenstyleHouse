@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { visibleNav } from "@/components/admin/admin-nav";
-import { myPermissions, requireStaff, ROLE_LABEL } from "@/server/admin/guard";
+import { myPermissions, requireStaff } from "@/server/admin/guard";
 import { vieccanLam } from "@/server/admin/alerts";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminShell
       nav={visibleNav(can)}
-      user={{ name: user.name, roleLabel: ROLE_LABEL[user.role], email: user.email ?? null }}
+      user={{ name: user.name, roleLabel: user.roleLabel, email: user.email ?? null }}
       viec={viec.map(({ key, nhan, so, href }) => ({ key, nhan, so, href }))}
       crumb="MSH ADMIN"
     >

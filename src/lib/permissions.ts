@@ -1,5 +1,3 @@
-import type { Role } from "@prisma/client";
-
 /**
  * Danh mục khả năng và ma trận mặc định.
  *
@@ -58,42 +56,14 @@ export function permissionGroups() {
 }
 
 /**
- * **Chủ cửa hàng luôn có mọi khả năng, không sửa được.**
+ * Vai trò `key` có làm được `key` khả năng không.
  *
- * Cho bỏ tick của ADMIN là mở đường tự khoá cửa: gỡ đúng `phan-quyen.quan-ly`
- * thì không còn ai vào được màn phân quyền để sửa lại, phải đi sửa thẳng DB.
+ * **Không còn ca đặc biệt cho chủ cửa hàng.** Trước M6.22 hàm này mở đầu bằng
+ * `if (role === "ADMIN") return true` — một cái tên viết cứng giữa lớp thuần.
+ * Giờ `getMatrix()` rót thẳng **toàn bộ khả năng** vào vai trò mang `isSuper`,
+ * nên siêu quyền là dữ liệu chứ không phải nhánh `if`, và hàm này quay về đúng
+ * một việc: tra bảng.
  */
-export const SIEU_QUYEN: Role = "ADMIN";
-
-export function canDo(role: Role, key: PermissionKey, matrix: Record<string, string[]>): boolean {
-  if (role === SIEU_QUYEN) return true;
+export function canDo(role: string, key: PermissionKey, matrix: Record<string, string[]>): boolean {
   return matrix[role]?.includes(key) ?? false;
 }
-
-/**
- * Ma trận mặc định — **chép đúng những gì đang viết cứng trong mã** trước khi
- * có bảng này. Nhờ vậy chạy migration xong hệ thống phân quyền y hệt hôm qua;
- * đổi quyền là việc của người bấm tick, không phải tác dụng phụ của nâng cấp.
- */
-export const MA_TRAN_MAC_DINH: Record<Exclude<Role, "ADMIN" | "CUSTOMER">, PermissionKey[]> = {
-  STAFF: [
-    "don.xem",
-    "don.doi-trang-thai",
-    "don.van-chuyen",
-    "san-pham.xem",
-    "san-pham.sua",
-    "kho.xem",
-    "khach-hang.xem",
-    "khach-hang.tao",
-    "ho-tro.tra-loi",
-  ],
-  WAREHOUSE: ["kho.xem", "kho.ghi-so", "san-pham.xem", "don.xem"],
-  ACCOUNTANT: [
-    "hoa-don.xem",
-    "hoa-don.phat-hanh",
-    "thanh-toan.xac-nhan",
-    "bao-cao.xem",
-    "don.xem",
-    "kho.xem",
-  ],
-};

@@ -49,8 +49,33 @@ export default async function SizeChartDetailPage({
           name: bang.name,
           fit: bang.fit,
           howTo: bang.howTo,
-          columns: bang.columns,
-          rows: bang.rows.map((r) => ({ id: r.id, size: r.size, values: r.values })),
+          columns: bang.columns.map((c) => ({
+            id: c.id,
+            label: c.label,
+            key: c.key,
+            of: c.of,
+            unit: c.unit,
+          })),
+          /*
+           * Một ô cho mỗi cột, đúng thứ tự cột. Tra theo `columnId` chứ không
+           * theo thứ tự ô trong DB: ô không có ràng buộc thứ tự nào, chỉ cột mới
+           * có. Nhờ dựng từ danh sách cột mà số ô **luôn** khớp số cột — kiểu
+           * lệch cột của bản cũ không còn dựng lên được nữa.
+           */
+          rows: bang.rows.map((r) => {
+            const theoCot = new Map(r.cells.map((o) => [o.columnId, o]));
+            return {
+              id: r.id,
+              size: r.size,
+              values: bang.columns.map((c) => {
+                const o = theoCot.get(c.id);
+                if (!o) return "";
+                if (o.text !== null) return o.text;
+                if (o.min === null) return "";
+                return o.max === null || o.max === o.min ? String(o.min) : `${o.min}-${o.max}`;
+              }),
+            };
+          }),
         }}
         danhMuc={danhMuc.map((d) => ({ id: d.id, name: d.name, sizeChartId: d.sizeChartId }))}
       />

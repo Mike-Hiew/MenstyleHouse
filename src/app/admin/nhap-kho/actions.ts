@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Route } from "next";
 import { z } from "zod";
-import { assertStaff, ForbiddenError } from "@/server/admin/guard";
+import { assertPermission, ForbiddenError } from "@/server/admin/guard";
 import { findVariantBySku } from "@/server/admin/inventory";
 import {
   addLine,
@@ -22,7 +22,6 @@ import {
  * Thao tác kho. Chỉ thủ kho và chủ cửa hàng — kiểm ở server cho từng action,
  * không dựa vào việc UI có hiện nút hay không.
  */
-const WAREHOUSE_ROLES = ["WAREHOUSE", "ADMIN"] as const;
 
 export type StockState = { ok?: boolean; message?: string };
 
@@ -51,7 +50,7 @@ export async function createDraftAction(_prev: StockState, form: FormData): Prom
 
   let code: string;
   try {
-    const user = await assertStaff([...WAREHOUSE_ROLES]);
+    const user = await assertPermission("kho.ghi-so");
     code = await createDraft({ ...parsed.data, createdById: user.id, actorName: user.name });
   } catch (e) {
     return { ok: false, message: toMessage(e) };
@@ -74,7 +73,7 @@ export async function addLineAction(_prev: StockState, form: FormData): Promise<
   }
 
   try {
-    await assertStaff([...WAREHOUSE_ROLES]);
+    await assertPermission("kho.ghi-so");
     const variant = await findVariantBySku(parsed.data.sku);
     if (!variant) return { ok: false, message: `Không có SKU "${parsed.data.sku}" trong hệ thống.` };
 
@@ -97,7 +96,7 @@ export async function removeLineAction(_prev: StockState, form: FormData): Promi
   const lineId = String(form.get("lineId") ?? "");
 
   try {
-    await assertStaff([...WAREHOUSE_ROLES]);
+    await assertPermission("kho.ghi-so");
     await removeLine(code, lineId);
   } catch (e) {
     return { ok: false, message: toMessage(e) };
@@ -111,7 +110,7 @@ export async function postReceiptAction(_prev: StockState, form: FormData): Prom
   const code = String(form.get("code") ?? "");
 
   try {
-    const user = await assertStaff([...WAREHOUSE_ROLES]);
+    const user = await assertPermission("kho.ghi-so");
     await postReceipt(code, user.name);
   } catch (e) {
     return { ok: false, message: toMessage(e) };
@@ -127,7 +126,7 @@ export async function cancelReceiptAction(_prev: StockState, form: FormData): Pr
   const code = String(form.get("code") ?? "");
 
   try {
-    const user = await assertStaff([...WAREHOUSE_ROLES]);
+    const user = await assertPermission("kho.ghi-so");
     await cancelReceipt(code, user.name);
   } catch (e) {
     return { ok: false, message: toMessage(e) };
@@ -150,7 +149,7 @@ export async function adjustStockAction(_prev: StockState, form: FormData): Prom
   }
 
   try {
-    const user = await assertStaff([...WAREHOUSE_ROLES]);
+    const user = await assertPermission("kho.ghi-so");
     const variant = await findVariantBySku(parsed.data.sku);
     if (!variant) return { ok: false, message: `Không có SKU "${parsed.data.sku}" trong hệ thống.` };
 
