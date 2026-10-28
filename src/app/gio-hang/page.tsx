@@ -35,34 +35,34 @@ export default async function CartPage() {
           </h1>
 
           {lines.length === 0 ? (
-            <div className="border border-dashed border-border-soft bg-subtle px-5 py-14 lg:px-8 lg:py-16">
+            <div className="rounded-panel bg-sand px-6 py-14 lg:px-10 lg:py-16">
               <h2 className="mb-2.5 text-[22px]">Giỏ hàng đang trống</h2>
               <p className="mb-5 max-w-[420px] text-[14px] text-muted">
                 Chọn vài món bạn thích rồi quay lại đây nhé.
               </p>
               <Link
                 href="/san-pham"
-                className="inline-flex min-h-12 items-center bg-accent px-6 text-[14px] font-extrabold text-bg hover:bg-accent-600"
+                className="inline-flex min-h-12 items-center bg-accent px-6 text-[14px] font-semibold text-bg hover:bg-accent-600 rounded-full justify-center"
               >
                 XEM SẢN PHẨM
               </Link>
             </div>
           ) : (
-            <div className="grid items-start gap-8 lg:grid-cols-[1fr_340px]">
+            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_340px]">
               <CartLines lines={lines} />
 
-              <aside className="border-t-2 border-divider pt-[18px] lg:sticky lg:top-[120px]">
+              <aside className="rounded-panel bg-surface p-6 shadow-soft lg:sticky lg:top-[120px]">
                 <h2 className="mb-4 text-[16px] font-extrabold">Tóm tắt đơn</h2>
 
-                <p className="mb-3.5 bg-subtle px-3.5 py-3 text-[12.5px] leading-[1.6]">
-                  Đơn này tích được <strong className="font-mono">{earn} điểm</strong> nếu bạn có
+                <p className="mb-3.5 rounded-2xl bg-sand px-4 py-3 text-[12.5px] leading-[1.6]">
+                  Đơn này tích được <strong className="tabular-nums">{earn} điểm</strong> nếu bạn có
                   tài khoản. Điểm ghi nhận khi đơn đã thanh toán và đã giao.
                 </p>
 
                 {/* Khách vãng lai vẫn mua được — đây chỉ là lời mời, không chặn. */}
                 <Link
                   href={{ pathname: "/dang-ky" }}
-                  className="mb-3.5 flex min-h-11 items-center border border-accent px-3.5 text-[12.5px] font-extrabold text-accent-700"
+                  className="mb-3.5 flex min-h-11 items-center justify-center rounded-full bg-field px-4 text-[12.5px] font-semibold hover:bg-field-hover"
                 >
                   ĐĂNG KÝ ĐỂ TÍCH {earn} ĐIỂM
                 </Link>
@@ -83,7 +83,7 @@ export default async function CartPage() {
 
                 {missing > 0 ? (
                   <p className="mb-2 text-[12.5px] text-muted">
-                    Mua thêm <strong className="font-mono">{formatVnd(missing)}</strong> để được
+                    Mua thêm <strong className="tabular-nums">{formatVnd(missing)}</strong> để được
                     miễn phí giao hàng.
                   </p>
                 ) : null}
@@ -97,13 +97,13 @@ export default async function CartPage() {
 
                 <Link
                   href="/thanh-toan"
-                  className="flex h-[52px] w-full items-center bg-accent pl-5 text-[15px] font-extrabold text-bg hover:bg-accent-600"
+                  className="flex h-[52px] w-full items-center bg-accent px-6 text-[15px] font-semibold text-bg hover:bg-accent-600 rounded-full justify-center"
                 >
                   TIẾN HÀNH THANH TOÁN
                 </Link>
                 <Link
                   href="/san-pham"
-                  className="flex h-11 w-full items-center pl-5 text-[13px] font-semibold text-muted"
+                  className="mt-1 flex h-11 w-full items-center justify-center text-[13px] font-semibold text-muted hover:text-text"
                 >
                   ← Tiếp tục mua sắm
                 </Link>

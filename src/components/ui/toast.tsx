@@ -27,16 +27,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed bottom-6 right-6 z-60 flex flex-col gap-2"
+        className="pointer-events-none fixed bottom-6 left-1/2 z-60 flex w-max max-w-[calc(100%-32px)] -translate-x-1/2 flex-col items-center gap-2"
       >
         {items.map((t) => (
           <div
             key={t.id}
             className={cn(
-              "border-2 px-4 py-3 text-[14px] font-semibold",
-              t.tone === "error"
-                ? "border-accent bg-accent text-white"
-                : "border-divider bg-surface text-text",
+              "rounded-full px-5 py-3 text-[13.5px] font-semibold shadow-raised",
+              t.tone === "error" ? "bg-accent text-white" : "bg-neutral-900 text-white",
             )}
           >
             {t.message}

@@ -33,7 +33,7 @@ export function AuthForm({ mode }: { mode: "dang-ky" | "dang-nhap" }) {
       {state.message ? (
         <p
           role="alert"
-          className="border-2 border-accent bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
+          className="rounded-2xl bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
         >
           {state.message}
         </p>
@@ -96,7 +96,7 @@ export function AuthForm({ mode }: { mode: "dang-ky" | "dang-nhap" }) {
         </Field>
       ) : (
         <p className="-mt-1 text-[13px]">
-          <Link href={{ pathname: "/quen-mat-khau" }} className="text-accent-700 underline">
+          <Link href={{ pathname: "/quen-mat-khau" }} className="underline decoration-1 underline-offset-4">
             Quên mật khẩu?
           </Link>
         </p>
@@ -105,7 +105,7 @@ export function AuthForm({ mode }: { mode: "dang-ky" | "dang-nhap" }) {
       <button
         type="submit"
         disabled={pending}
-        className="flex h-12 items-center justify-center bg-accent text-[15px] font-extrabold text-bg disabled:opacity-60"
+        className="flex h-12 items-center justify-center bg-accent text-[15px] font-semibold text-bg disabled:opacity-60 rounded-full transition-colors hover:bg-accent-600"
       >
         {pending ? "Đang xử lý…" : isRegister ? "ĐĂNG KÝ — TẶNG 100 ĐIỂM" : "ĐĂNG NHẬP"}
       </button>
@@ -114,14 +114,14 @@ export function AuthForm({ mode }: { mode: "dang-ky" | "dang-nhap" }) {
         {isRegister ? (
           <>
             Đã có tài khoản?{" "}
-            <Link href={{ pathname: "/dang-nhap" }} className="font-extrabold text-accent-700 underline">
+            <Link href={{ pathname: "/dang-nhap" }} className="font-extrabold underline decoration-1 underline-offset-4">
               Đăng nhập
             </Link>
           </>
         ) : (
           <>
             Chưa có tài khoản?{" "}
-            <Link href={{ pathname: "/dang-ky" }} className="font-extrabold text-accent-700 underline">
+            <Link href={{ pathname: "/dang-ky" }} className="font-extrabold underline decoration-1 underline-offset-4">
               Đăng ký
             </Link>
           </>

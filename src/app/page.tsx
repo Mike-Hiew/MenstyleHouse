@@ -26,7 +26,8 @@ export const dynamic = "force-dynamic";
  * vào không ăn.
  */
 
-const cta = "inline-flex items-center px-6 py-4 text-[14px] font-extrabold uppercase";
+const cta =
+  "inline-flex h-[52px] items-center justify-center rounded-full px-[26px] text-[14px] font-semibold transition-[background-color,box-shadow,transform] hover:shadow-raised active:scale-[0.97]";
 
 export default async function HomePage() {
   const [products, categories, banChay, loiKhach, sale] = await Promise.all([
@@ -45,9 +46,12 @@ export default async function HomePage() {
       <Header />
 
       <main>
-        <section className="grid border-b-2 border-divider lg:grid-cols-2">
+        <section className="grid lg:grid-cols-2">
           <Container className="max-w-[680px] px-8 py-16 lg:ml-auto lg:mr-0 lg:border-r-2 lg:border-border-soft">
-            <p className="label-tech mb-4 font-bold text-accent-700">BST 01 — BASIC KHÔNG NHÀM</p>
+            <p className="mb-4 inline-flex items-center gap-2 text-[12.5px] font-semibold text-muted">
+              <i className="block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+              BST 01 — Basic không nhàm
+            </p>
             <h1 className="text-[52px] leading-[1.05]">
               Đồ nam
               <br />
@@ -67,20 +71,20 @@ export default async function HomePage() {
               </Link>
               <Link
                 href={{ pathname: "/san-pham", query: "sap-xep=moi-nhat" }}
-                className={cta + " border border-border-soft hover:bg-subtle"}
+                className={cta + " bg-field hover:bg-field-hover hover:shadow-none"}
               >
                 Hàng mới về
               </Link>
             </div>
 
-            <dl className="mt-12 grid grid-cols-3 gap-4 border-t border-hairline pt-6">
+            <dl className="mt-12 grid grid-cols-3 gap-4 pt-2">
               <Stat value="40+" label="mẫu đang bán" />
               <Stat value="4.8/5" label="từ 1.240 đánh giá" />
               <Stat value="2–4 ngày" label="giao toàn quốc" />
             </dl>
           </Container>
 
-          <div className="relative min-h-[320px] bg-subtle">
+          <div className="relative mx-4 min-h-[320px] overflow-hidden rounded-panel bg-subtle lg:my-4 lg:mr-4 lg:ml-0">
             {hero ? (
               <Photo
                 src={hero.url}
@@ -89,24 +93,24 @@ export default async function HomePage() {
                 priority
               />
             ) : null}
-            <span className="absolute bottom-0 left-0 bg-accent px-6 py-4 text-[13px] font-extrabold uppercase tracking-[0.04em] text-bg">
+            <span className="absolute bottom-4 left-4 rounded-full bg-accent px-4 py-2.5 text-[13px] font-semibold text-bg shadow-raised">
               Giảm đến 40% — tuần này
             </span>
           </div>
         </section>
 
-        <nav aria-label="Danh mục" className="border-b-2 border-divider">
-          <ul className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8">
+        <nav aria-label="Danh mục" className="mt-6">
+          <ul className="mx-auto grid max-w-[1320px] grid-cols-2 gap-2 px-4 sm:grid-cols-4 lg:grid-cols-8 lg:px-8">
             {categories.map((c, i) => (
-              <li key={c.slug} className="border-r border-hairline last:border-r-0">
+              <li key={c.slug}>
                 <Link
                   href={{ pathname: "/danh-muc/" + c.slug }}
-                  className="block px-5 py-4 hover:bg-subtle"
+                  className="block rounded-2xl bg-surface/60 px-5 py-4 transition-[background-color,box-shadow] hover:bg-surface hover:shadow-soft"
                 >
-                  <span className="label-tech block font-bold">
+                  <span className="block text-[11.5px] font-semibold tabular-nums text-faint">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="mt-1.5 block text-[14px]">{c.name}</span>
+                  <span className="mt-1 block text-[14px] font-medium">{c.name}</span>
                 </Link>
               </li>
             ))}
@@ -114,11 +118,11 @@ export default async function HomePage() {
         </nav>
 
         <Container className="py-14">
-          <div className="mb-6 flex items-end justify-between gap-4 border-b border-hairline pb-4">
+          <div className="mb-6 flex items-end justify-between gap-4">
             <h2 className="text-[28px]">Mới về tuần này</h2>
             <Link
               href={"/san-pham" as Route}
-              className="flex min-h-11 items-center text-[13px] font-extrabold uppercase tracking-[0.08em] text-accent-700 lg:min-h-0"
+              className="flex min-h-11 items-center rounded-full bg-field px-4 text-[13px] font-semibold hover:bg-field-hover"
             >
               Xem tất cả →
             </Link>
@@ -135,12 +139,12 @@ export default async function HomePage() {
 
         {sale ? (
           <Container className="pb-2">
-            <div className="grid bg-accent text-bg lg:grid-cols-2">
+            <div className="grid overflow-hidden rounded-panel bg-accent text-bg lg:grid-cols-2">
               <div className="p-8 lg:p-12">
                 {/* `label-tech` mặc định màu xám nhạt — trên nền đỏ nó thành
                     một vệt bùn không đọc được, nên phải đặt lại màu chữ. */}
-                <p className="label-tech font-bold tracking-[0.14em] text-bg">
-                  ĐANG CHẠY — {sale.phu.toUpperCase()}
+                <p className="text-[12.5px] font-semibold text-bg/85">
+                  Đang chạy — {sale.phu}
                 </p>
                 <h2 className="mt-4 text-[32px] leading-[1.02] lg:text-[44px]">{sale.tieuDe}</h2>
                 <p className="mt-3 text-[15px] opacity-90">
@@ -156,10 +160,10 @@ export default async function HomePage() {
               </div>
 
               {/* Ba ảnh sản phẩm đang bán, thay cho ảnh lookbook rời của mockup. */}
-              <div className="grid grid-cols-3 gap-0.5 p-0.5 lg:pl-0">
+              <div className="grid grid-cols-3 gap-2 p-3 lg:pl-0">
                 {products.slice(0, 3).map((p) =>
                   p.images[0] ? (
-                    <div key={p.id} className="relative min-h-[120px] bg-accent-600">
+                    <div key={p.id} className="relative min-h-[120px] overflow-hidden rounded-card bg-accent-600">
                       <Photo src={p.images[0].url} alt={p.images[0].alt} sizes="17vw" />
                     </div>
                   ) : null,
@@ -171,16 +175,16 @@ export default async function HomePage() {
 
         {banChay.length > 0 ? (
           <Container className="pt-12">
-            <div className="mb-6 flex items-end justify-between gap-4 border-b-2 border-border-soft pb-3.5">
+            <div className="mb-6 flex items-end justify-between gap-4">
               <h2 className="text-[28px]">Bán chạy nhất</h2>
-              <span className="label-tech font-bold text-neutral-400">30 NGÀY QUA</span>
+              <span className="text-[12.5px] font-semibold text-muted">30 ngày qua</span>
             </div>
             <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
               {banChay.map((b) => (
                 <ProductCard
                   key={b.san_pham.id}
                   product={b.san_pham}
-                  badge={`ĐÃ BÁN ${b.daBan}`}
+                  badge={`Đã bán ${b.daBan}`}
                 />
               ))}
             </div>
@@ -189,15 +193,13 @@ export default async function HomePage() {
 
         {loiKhach.length > 0 ? (
           <Container className="pt-12">
-            <div className="border-t-2 border-border-soft pt-6">
+            <div className="pt-6">
               <h2 className="mb-6 text-[28px]">Khách mặc nói gì</h2>
-              {/* Mockup: `gap:0` + kẻ trái ở lưới, kẻ phải ở từng ô. Để cả gap
-                  lẫn border là thành hai vạch song song. */}
-              <ul className="grid gap-0 border-l border-hairline md:grid-cols-3">
+              <ul className="grid gap-3 md:grid-cols-3">
                 {loiKhach.map((r) => (
-                  <li key={r.id} className="border-r border-hairline p-6">
+                  <li key={r.id} className="rounded-card bg-surface p-6 shadow-soft">
                     <p
-                      className="font-mono text-[13px] font-bold tracking-[2px] text-accent"
+                      className="text-[13px] font-bold tracking-[2px] text-text"
                       aria-label={`${r.sao} trên 5 sao`}
                     >
                       {"★".repeat(r.sao)}
@@ -214,7 +216,7 @@ export default async function HomePage() {
         ) : null}
 
         <Container className="pt-12">
-          <div className="grid items-center gap-6 bg-subtle p-8 lg:grid-cols-2 lg:gap-8 lg:p-10">
+          <div className="grid items-center gap-6 rounded-panel bg-sand p-8 lg:grid-cols-2 lg:gap-8 lg:p-10">
             <div>
               <h2 className="mb-2 text-[24px] lg:text-[28px]">Nhận tin sale trước 24 giờ</h2>
               <p className="text-[14px] text-muted">

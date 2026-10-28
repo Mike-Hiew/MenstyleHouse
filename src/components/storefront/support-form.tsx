@@ -27,8 +27,8 @@ export function SupportForm() {
 
   if (state.ok && state.code) {
     return (
-      <div className="border-2 border-divider bg-surface p-8">
-        <div className="mb-5 grid h-14 w-14 place-items-center bg-neutral-900 text-[28px] font-extrabold text-bg">
+      <div className="p-8 rounded-card bg-surface shadow-soft">
+        <div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-neutral-900 text-[28px] font-extrabold text-bg">
           ✓
         </div>
         <h2 className="mb-3 text-[28px] leading-[1.15]">Đã nhận yêu cầu của bạn</h2>
@@ -45,19 +45,19 @@ export function SupportForm() {
           {/* Đưa thẳng khách tới trang tra cứu kèm mã — không bắt họ tự chép. */}
           <Link
             href={("/ho-tro/tra-cuu?ma=" + state.code) as Route}
-            className="flex min-h-12 items-center bg-accent px-6 text-[14px] font-extrabold text-bg"
+            className="flex min-h-12 items-center bg-accent px-6 text-[14px] font-semibold text-bg rounded-full justify-center transition-colors hover:bg-accent-600"
           >
             THEO DÕI YÊU CẦU
           </Link>
           <Link
             href={{ pathname: "/san-pham" }}
-            className="flex min-h-12 items-center bg-neutral-900 px-6 text-[14px] font-extrabold text-bg"
+            className="flex min-h-12 items-center bg-neutral-900 px-6 text-[14px] font-semibold text-bg rounded-full justify-center"
           >
             TIẾP TỤC MUA SẮM
           </Link>
           <Link
             href={{ pathname: "/tra-cuu-don" }}
-            className="flex min-h-12 items-center border border-border-soft px-6 text-[14px] font-extrabold"
+            className="flex min-h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
           >
             Tra cứu đơn hàng
           </Link>
@@ -71,7 +71,7 @@ export function SupportForm() {
       {state.message ? (
         <p
           role="alert"
-          className="mb-5 border-2 border-accent bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
+          className="mb-5 rounded-2xl bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
         >
           {state.message}
         </p>
@@ -126,7 +126,7 @@ export function SupportForm() {
               key={"b" + lan}
               defaultValue={cu("body") ?? ""}
               placeholder="Kể rõ tình trạng để cửa hàng xử lý được ngay từ lần trả lời đầu tiên."
-              className={o(err("body"))}
+              className={o(err("body"), true)}
             />
           </Row>
         </div>
@@ -135,7 +135,7 @@ export function SupportForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-7 h-12 w-full bg-accent text-[14px] font-extrabold text-bg disabled:opacity-60 sm:w-auto sm:px-10"
+        className="mt-7 h-12 w-full bg-accent text-[14px] font-semibold text-bg disabled:opacity-60 sm:w-auto sm:px-10 rounded-full justify-center transition-colors hover:bg-accent-600"
       >
         {pending ? "Đang gửi…" : "GỬI YÊU CẦU"}
       </button>
@@ -143,10 +143,11 @@ export function SupportForm() {
   );
 }
 
-const o = (loi?: string) =>
+const o = (loi?: string, multiline = false) =>
   cn(
-    "w-full border bg-bg px-3.5 py-3 text-[16px] outline-none lg:text-[14px]",
-    loi ? "border-accent" : "border-border-soft focus:border-accent",
+    multiline ? "rounded-2xl" : "rounded-full",
+    "w-full bg-field px-4 py-3 text-[16px] outline-none transition-[background-color,box-shadow] focus:bg-surface focus:ring-4 lg:text-[14px]",
+    loi ? "ring-2 ring-accent/60 focus:ring-accent/30" : "focus:ring-ring",
   );
 
 function Row({

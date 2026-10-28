@@ -94,7 +94,7 @@ function EmptyState({
   if (q) keep.set("q", q);
 
   return (
-    <div className="border border-dashed border-border-soft bg-subtle px-5 py-12 lg:px-8 lg:py-16">
+    <div className="rounded-card bg-sand px-5 py-12 lg:px-8 lg:py-16">
       <h2 className="mb-2.5 text-[20px] lg:text-[22px]">
         {filtered ? "Chưa có sản phẩm nào khớp bộ lọc" : "Danh mục này chưa có sản phẩm"}
       </h2>
@@ -107,7 +107,7 @@ function EmptyState({
       </p>
       <Link
         href={{ pathname: filtered ? basePath : "/san-pham", query: keep.toString() }}
-        className="inline-flex min-h-12 items-center bg-accent px-6 text-[14px] font-extrabold text-bg hover:bg-accent-600"
+        className="inline-flex min-h-12 items-center bg-accent px-6 text-[14px] font-semibold text-bg hover:bg-accent-600 rounded-full justify-center"
       >
         {filtered ? "XOÁ BỘ LỌC" : "XEM TẤT CẢ SẢN PHẨM"}
       </Link>

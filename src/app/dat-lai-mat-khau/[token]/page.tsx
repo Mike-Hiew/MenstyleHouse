@@ -23,7 +23,7 @@ export default async function ResetPage({ params }: { params: Promise<{ token: s
       <main>
         <Container narrow className="pb-16 pt-10">
           {!yc ? (
-            <div className="max-w-[520px] border-2 border-divider bg-surface p-7">
+            <div className="max-w-[520px] p-7 rounded-card bg-surface shadow-soft">
               <h1 className="mb-3 text-[26px] leading-[1.2]">Đường dẫn không dùng được</h1>
               <p className="mb-6 text-[14.5px] leading-[1.7] text-muted">
                 Đường dẫn đã hết hạn, đã dùng rồi, hoặc bị thay bằng một yêu cầu mới hơn. Xin một
@@ -31,7 +31,7 @@ export default async function ResetPage({ params }: { params: Promise<{ token: s
               </p>
               <Link
                 href={{ pathname: "/quen-mat-khau" }}
-                className="flex min-h-12 w-fit items-center bg-accent px-6 text-[14px] font-extrabold text-bg"
+                className="flex min-h-12 w-fit items-center bg-accent px-6 text-[14px] font-semibold text-bg rounded-full justify-center transition-colors hover:bg-accent-600"
               >
                 XIN ĐƯỜNG DẪN MỚI
               </Link>
@@ -40,7 +40,7 @@ export default async function ResetPage({ params }: { params: Promise<{ token: s
             <div className="max-w-[440px]">
               <h1 className="mb-2 text-[32px] leading-[1.15]">Đặt mật khẩu mới</h1>
               <p className="mb-7 text-[14.5px] leading-[1.7] text-muted">
-                Cho tài khoản <strong className="font-mono text-text">{yc.email}</strong>. Đặt xong
+                Cho tài khoản <strong className="text-text">{yc.email}</strong>. Đặt xong
                 thì đăng nhập lại bằng mật khẩu mới.
               </p>
               <ResetForm token={token} />

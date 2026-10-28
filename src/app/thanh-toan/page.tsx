@@ -65,14 +65,14 @@ export default async function CheckoutPage() {
           <h1 className="mb-[22px] text-[28px] lg:text-[40px]">Thanh toán</h1>
 
           {!cart || cart.lines.length === 0 ? (
-            <div className="border border-dashed border-border-soft bg-subtle px-5 py-14 lg:px-8">
+            <div className="rounded-card bg-sand px-5 py-14 lg:px-8">
               <h2 className="mb-2.5 text-[22px]">Chưa có gì để thanh toán</h2>
               <p className="mb-5 max-w-[420px] text-[14px] text-muted">
                 Giỏ hàng đang trống nên chưa đặt đơn được.
               </p>
               <Link
                 href="/san-pham"
-                className="inline-flex min-h-12 items-center bg-accent px-6 text-[14px] font-extrabold text-bg hover:bg-accent-600"
+                className="inline-flex min-h-12 items-center bg-accent px-6 text-[14px] font-semibold text-bg hover:bg-accent-600 rounded-full justify-center"
               >
                 XEM SẢN PHẨM
               </Link>

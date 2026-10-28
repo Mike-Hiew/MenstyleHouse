@@ -37,7 +37,7 @@ export function AddressBook({ danhSach }: { danhSach: DiaChi[] }) {
   return (
     <div className="max-w-[720px]">
       {danhSach.length === 0 ? (
-        <p className="mb-5 border border-dashed border-border-soft bg-subtle px-5 py-6 text-[14px] text-muted">
+        <p className="mb-5 rounded-card bg-sand px-5 py-6 text-[14px] text-muted">
           Chưa có địa chỉ nào. Lưu sẵn một địa chỉ thì lần sau đặt hàng không phải gõ lại.
         </p>
       ) : (
@@ -48,7 +48,7 @@ export function AddressBook({ danhSach }: { danhSach: DiaChi[] }) {
                 <p className="text-[14.5px] font-extrabold">
                   {d.label}
                   {d.isDefault ? (
-                    <span className="ml-2 bg-neutral-900 px-2 py-0.5 font-mono text-[10px] font-bold text-bg">
+                    <span className="ml-2 rounded-full bg-neutral-900 px-2 py-0.5 text-[10px] font-bold text-bg">
                       MẶC ĐỊNH
                     </span>
                   ) : null}
@@ -87,7 +87,7 @@ export function AddressBook({ danhSach }: { danhSach: DiaChi[] }) {
                     // Xoá địa chỉ không lấy lại được, nên hỏi một câu.
                     if (confirm(`Xoá địa chỉ “${d.label}”?`)) xoaDiaChiAction(d.id);
                   }}
-                  className="min-h-11 text-[13px] font-semibold text-accent-700 underline"
+                  className="min-h-11 text-[13px] font-semibold underline decoration-1 underline-offset-4"
                 >
                   Xoá
                 </button>
@@ -112,7 +112,7 @@ export function AddressBook({ danhSach }: { danhSach: DiaChi[] }) {
             setDangSua(null);
             setMoForm(true);
           }}
-          className="flex h-12 items-center border-2 border-divider px-6 text-[14px] font-extrabold"
+          className="flex h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
         >
           + THÊM ĐỊA CHỈ
         </button>
@@ -131,11 +131,11 @@ function AddressForm({ dangSua, xong }: { dangSua: DiaChi | null; xong: () => vo
   }, [state.ok, xong]);
 
   return (
-    <form action={luu} key={dangSua?.id ?? "moi"} className="grid gap-4 border-2 border-divider p-5 sm:grid-cols-2">
+    <form action={luu} key={dangSua?.id ?? "moi"} className="grid gap-4 p-5 sm:grid-cols-2 rounded-card bg-surface shadow-soft">
       {dangSua ? <input type="hidden" name="id" value={dangSua.id} /> : null}
 
       {state.message && !state.ok ? (
-        <p role="alert" className="border-2 border-accent bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800 sm:col-span-2">
+        <p role="alert" className="rounded-2xl bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800 sm:col-span-2">
           {state.message}
         </p>
       ) : null}
@@ -158,7 +158,7 @@ function AddressForm({ dangSua, xong }: { dangSua: DiaChi | null; xong: () => vo
         <select
           name="province"
           defaultValue={cu("province") || PROVINCES[0]}
-          className="h-11 w-full border border-border-soft bg-surface px-3 text-[15px] lg:h-10 lg:text-[14px]"
+          className="h-11 w-full px-4 text-[15px] lg:h-10 lg:text-[14px] rounded-full bg-field transition-[background-color,box-shadow] focus:bg-surface focus:ring-4 focus:ring-ring"
         >
           {PROVINCES.map((p) => (
             <option key={p} value={p}>
@@ -185,7 +185,7 @@ function AddressForm({ dangSua, xong }: { dangSua: DiaChi | null; xong: () => vo
           type="checkbox"
           name="isDefault"
           defaultChecked={dangSua?.isDefault ?? false}
-          className="h-[18px] w-[18px] accent-accent"
+          className="h-[18px] w-[18px] accent-neutral-900"
         />
         Dùng làm địa chỉ mặc định
       </label>
@@ -194,14 +194,14 @@ function AddressForm({ dangSua, xong }: { dangSua: DiaChi | null; xong: () => vo
         <button
           type="submit"
           disabled={pending}
-          className="flex h-12 items-center bg-accent px-7 text-[14px] font-extrabold text-bg disabled:opacity-60"
+          className="flex h-12 items-center bg-accent px-7 text-[14px] font-semibold text-bg disabled:opacity-60 rounded-full justify-center transition-colors hover:bg-accent-600"
         >
           {pending ? "Đang lưu…" : dangSua ? "CẬP NHẬT" : "LƯU ĐỊA CHỈ"}
         </button>
         <button
           type="button"
           onClick={xong}
-          className="flex h-12 items-center border-2 border-divider px-6 text-[14px] font-extrabold"
+          className="flex h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
         >
           Huỷ
         </button>

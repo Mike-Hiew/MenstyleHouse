@@ -65,10 +65,10 @@ export function WelcomeDialog() {
         role="dialog"
         aria-modal="true"
         aria-label="Mời đăng ký thành viên"
-        className="grid max-h-[90vh] w-full max-w-[840px] overflow-y-auto border-2 border-divider bg-bg lg:grid-cols-[1fr_300px]"
+        className="grid max-h-[90vh] w-full max-w-[840px] overflow-y-auto rounded-panel bg-bg shadow-raised lg:grid-cols-[1fr_300px]"
       >
         <div className="p-6 lg:p-10">
-          <p className="label-tech mb-4 font-bold text-accent">
+          <p className="label-tech mb-4 font-bold text-muted">
             MEN STYLE HOUSE — THÀNH VIÊN
           </p>
           <h2 className="mb-3.5 text-[26px] leading-[1.05] lg:text-[38px]">
@@ -94,14 +94,14 @@ export function WelcomeDialog() {
             <Link
               href={{ pathname: "/dang-ky" }}
               onClick={close}
-              className="flex min-h-12 items-center bg-accent px-6 text-[14px] font-extrabold tracking-[0.02em] text-bg"
+              className="flex min-h-12 items-center bg-accent px-6 text-[14px] font-semibold text-bg rounded-full justify-center transition-colors hover:bg-accent-600"
             >
               ĐĂNG KÝ — TẶNG 100 ĐIỂM
             </Link>
             <button
               type="button"
               onClick={close}
-              className="flex min-h-12 items-center border border-border-soft px-6 text-[14px] font-extrabold"
+              className="flex min-h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
             >
               MUA VỚI TƯ CÁCH KHÁCH
             </button>
@@ -112,14 +112,14 @@ export function WelcomeDialog() {
             <Link
               href={{ pathname: "/dang-nhap" }}
               onClick={close}
-              className="font-extrabold text-accent-700 underline"
+              className="font-extrabold underline decoration-1 underline-offset-4"
             >
               Đăng nhập
             </Link>
           </p>
         </div>
 
-        <div className="flex flex-col justify-between bg-neutral-900 p-6 text-hairline lg:p-8">
+        <div className="flex flex-col justify-between bg-neutral-900 p-6 text-neutral-300 lg:p-8">
           <div>
             <p className="label-tech mb-4 font-bold text-neutral-400">KHÁCH VÃNG LAI</p>
             <ul className="grid gap-2.5">

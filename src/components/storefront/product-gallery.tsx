@@ -12,7 +12,7 @@ export function ProductGallery({ images, name }: { images: Shot[]; name: string 
 
   if (images.length === 0) {
     return (
-      <div className="flex aspect-[3/4] items-center justify-center bg-subtle text-[13px] text-muted">
+      <div className="flex aspect-[3/4] items-center justify-center rounded-card bg-subtle text-[13px] text-muted">
         Chưa có ảnh sản phẩm
       </div>
     );
@@ -31,7 +31,7 @@ export function ProductGallery({ images, name }: { images: Shot[]; name: string 
     >
       {images.length > 1 ? (
         <div
-          className="flex gap-2.5 overflow-x-auto lg:flex-col"
+          className="flex gap-2.5 overflow-x-auto p-0.5 lg:flex-col"
           role="tablist"
           aria-label={"Ảnh " + name}
         >
@@ -43,8 +43,10 @@ export function ProductGallery({ images, name }: { images: Shot[]; name: string 
               aria-label={"Xem ảnh " + (i + 1)}
               onClick={() => setActive(i)}
               className={cn(
-                "relative block aspect-[3/4] w-[68px] flex-none border-2 bg-subtle lg:w-auto",
-                i === active ? "border-divider" : "border-hairline hover:border-faint",
+                "relative block aspect-[3/4] w-[68px] flex-none overflow-hidden rounded-xl bg-subtle transition-[opacity,box-shadow] lg:w-auto",
+                i === active
+                  ? "shadow-[0_0_0_2px_var(--color-text)]"
+                  : "opacity-70 hover:opacity-100",
               )}
             >
               <Photo src={img.url} alt="" sizes="(min-width: 1024px) 88px, 68px" />
@@ -53,7 +55,7 @@ export function ProductGallery({ images, name }: { images: Shot[]; name: string 
         </div>
       ) : null}
 
-      <div className="relative aspect-[3/4] w-full bg-subtle">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-card bg-subtle">
         <Photo
           src={current.url}
           alt={current.alt}

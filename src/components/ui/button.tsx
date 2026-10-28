@@ -4,21 +4,25 @@ import { cn } from "@/lib/cn";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
+/**
+ * Storefront: nút hình viên thuốc, nhãn canh giữa. Admin đặt lại bo góc về 0
+ * và nhãn dồn trái qua `.theme-modernist .ui-btn` trong globals.css.
+ */
 const base =
-  "inline-flex items-center gap-2 font-semibold tracking-tight " +
-  "transition-colors select-none disabled:opacity-45 disabled:pointer-events-none " +
-  // Nhãn nút luôn dồn trái — quy tắc Modernist
-  "justify-start text-left";
+  "ui-btn inline-flex items-center justify-center gap-2 rounded-full text-center font-semibold " +
+  "tracking-tight transition-[background-color,box-shadow,transform] select-none " +
+  "active:scale-[0.97] disabled:opacity-45 disabled:pointer-events-none";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-accent text-white hover:bg-accent-600 active:bg-accent-700",
+    "bg-accent text-white hover:bg-accent-600 hover:shadow-raised active:bg-accent-700",
+  // `border-divider` trong suốt ở storefront nên chỉ còn nền đặc; admin hiện lại nét.
   secondary:
-    "bg-transparent text-text border-2 border-divider hover:bg-neutral-200 active:bg-neutral-300",
+    "bg-field text-text border-2 border-divider hover:bg-field-hover",
   ghost:
-    "bg-transparent text-text hover:bg-neutral-200 active:bg-neutral-300",
+    "bg-transparent text-text hover:bg-field-hover",
   danger:
-    "bg-transparent text-accent-700 border-2 border-accent hover:bg-accent-100 active:bg-accent-200",
+    "bg-accent-100 text-accent-700 border-2 border-divider hover:bg-accent-200",
 };
 
 /** Mobile cao hơn để đạt vùng chạm 44px; nút chính 48px theo docs/RESPONSIVE.md. */

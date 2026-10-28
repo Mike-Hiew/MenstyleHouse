@@ -35,36 +35,38 @@ export function ProductCard({
   const off = discountPercent(product);
 
   return (
-    <article className="relative">
-      <div className="relative aspect-[3/4] w-full bg-subtle">
+    <article className="group relative">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-card bg-subtle transition-[transform,box-shadow] duration-500 ease-[var(--ease-out-soft)] group-hover:-translate-y-1.5 group-hover:shadow-raised">
         {image ? (
           <Photo src={image.url} alt={image.alt} sizes="(min-width: 1024px) 25vw, 50vw" />
         ) : null}
 
         {badge ? (
-          <span className="absolute left-0 top-0 bg-neutral-900 px-2.5 py-2 font-mono text-[12px] font-bold leading-none text-bg">
+          <span className="absolute left-3.5 top-3.5 rounded-full bg-surface/80 px-3 py-1.5 text-[12px] font-semibold leading-none text-text backdrop-blur-md">
             {badge}
           </span>
         ) : off !== null ? (
-          <span className="absolute left-0 top-0 bg-accent px-2.5 py-2 font-mono text-[12px] font-bold leading-none text-bg">
+          <span className="absolute left-3.5 top-3.5 rounded-full bg-accent px-3 py-1.5 text-[12px] font-semibold leading-none text-bg">
             −{off}%
           </span>
         ) : null}
 
         {/* Không phải nút riêng: sản phẩm nhiều màu/size nên phải mở trang chi
             tiết để chọn. Cả thẻ là một liên kết nên bấm vào đây cũng mở đúng chỗ. */}
-        <span className="absolute bottom-0 right-0 h-9 bg-neutral-900 px-3.5 text-[12px] font-extrabold leading-9 text-bg">
-          + GIỎ
+        <span className="absolute bottom-3 right-3 h-9 rounded-full bg-surface/80 px-4 text-[12px] font-semibold leading-9 text-text backdrop-blur-md">
+          + Giỏ
         </span>
       </div>
 
-      <div className="pt-3.5">
-        <div className="label-tech tracking-[0.08em] text-neutral-400">{product.category.name}</div>
-        <h3 className="my-2 text-[14.5px] font-semibold leading-[1.35]">{product.name}</h3>
+      <div className="px-1 pt-3.5">
+        <div className="text-[12px] font-medium text-muted">{product.category.name}</div>
+        <h3 className="my-1.5 text-[15px] font-semibold leading-[1.35]">{product.name}</h3>
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <span className="text-[15px] font-extrabold">{formatVnd(effectivePrice(product))}</span>
+          <span className={cn("text-[15px] font-semibold", product.salePrice && "text-accent")}>
+            {formatVnd(effectivePrice(product))}
+          </span>
           {product.salePrice ? (
-            <span className="text-[12.5px] text-neutral-400 line-through">
+            <span className="text-[13px] text-muted line-through">
               {formatVnd(product.basePrice)}
             </span>
           ) : null}
@@ -73,7 +75,7 @@ export function ProductCard({
 
       <Link
         href={{ pathname: "/san-pham/" + product.slug }}
-        className="absolute inset-0 focus-visible:outline-2 focus-visible:outline-accent"
+        className="absolute inset-0 rounded-card focus-visible:outline-2 focus-visible:outline-accent"
       >
         <span className="sr-only">{product.name}</span>
       </Link>
@@ -95,7 +97,7 @@ export function GridDensityToggle({
   onChange: (v: 1 | 2) => void;
 }) {
   return (
-    <div className="flex border border-border-soft lg:hidden" role="group" aria-label="Mật độ lưới">
+    <div className="flex lg:hidden rounded-full bg-field p-1" role="group" aria-label="Mật độ lưới">
       {([2, 1] as const).map((n) => (
         <button
           key={n}
@@ -104,8 +106,8 @@ export function GridDensityToggle({
           aria-label={n === 2 ? "Hiện 2 cột" : "Hiện 1 cột"}
           onClick={() => onChange(n)}
           className={cn(
-            "flex h-11 w-11 items-center justify-center",
-            value === n ? "bg-neutral-900 text-bg" : "hover:bg-subtle",
+            "flex h-10 w-10 items-center justify-center rounded-full",
+            value === n ? "bg-neutral-900 text-bg" : "hover:bg-field-hover",
           )}
         >
           {n === 2 ? <Columns2 size={17} /> : <Square size={17} />}

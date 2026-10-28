@@ -39,7 +39,7 @@ export default function SupportPage() {
         <Container className="pb-16 pt-6">
           <Crumbs parts={["TRANG CHỦ", "LIÊN HỆ & HỖ TRỢ"]} />
 
-          <div className="grid items-start gap-12 lg:grid-cols-[1fr_320px]">
+          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[1fr_320px]">
             <div>
               <h1 className="mb-3 text-[32px] leading-[1.1] lg:text-[44px]">Liên hệ &amp; hỗ trợ</h1>
               <p className="mb-8 max-w-[560px] text-[15px] leading-[1.7] text-muted">
@@ -51,9 +51,9 @@ export default function SupportPage() {
             </div>
 
             <aside>
-              <div className="border-2 border-divider bg-surface p-5">
+              <div className="p-5 rounded-card bg-surface shadow-soft">
                 <p className="label-tech mb-3 font-bold">GỌI TRỰC TIẾP</p>
-                <p className="font-mono text-[20px] font-bold">1900 6060</p>
+                <p className="tabular-nums text-[20px] font-bold">1900 6060</p>
                 <p className="mt-1 text-[13px] text-muted">8:00 – 21:00 mỗi ngày</p>
                 <p className="mt-4 border-t border-hairline pt-4 text-[13.5px] leading-[1.7] text-muted">
                   142 Nguyễn Văn Trỗi, P.8

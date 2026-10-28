@@ -105,7 +105,7 @@ export default async function AccountPage({
             <form action={logoutAction}>
               <button
                 type="submit"
-                className="flex min-h-11 items-center text-[13px] font-extrabold text-accent-700 underline"
+                className="flex min-h-11 items-center text-[13px] font-extrabold underline decoration-1 underline-offset-4"
               >
                 Đăng xuất
               </button>
@@ -115,7 +115,7 @@ export default async function AccountPage({
           {staff ? (
             <Link
               href={{ pathname: "/admin" }}
-              className="mb-6 flex flex-wrap items-center gap-4 border-2 border-divider bg-subtle px-5 py-4"
+              className="mb-6 flex flex-wrap items-center gap-4 px-5 py-4 rounded-card bg-surface shadow-soft"
             >
               <span className="flex-1">
                 <span className="block text-[15px] font-extrabold">Khu quản trị</span>
@@ -123,7 +123,7 @@ export default async function AccountPage({
                   Bạn đang đăng nhập với vai trò {ROLE_LABEL[staff.role]}.
                 </span>
               </span>
-              <span className="flex min-h-11 flex-none items-center bg-accent px-5 text-[13px] font-extrabold text-bg">
+              <span className="flex min-h-11 flex-none items-center justify-center rounded-full bg-neutral-900 px-5 text-[13px] font-semibold text-bg">
                 MỞ QUẢN TRỊ →
               </span>
             </Link>
@@ -131,12 +131,12 @@ export default async function AccountPage({
 
           <div className="grid gap-8 lg:grid-cols-[240px_1fr] lg:gap-10">
             <aside className="self-start">
-              <section className="mb-5 bg-neutral-900 p-5 text-bg">
+              <section className="mb-5 rounded-card bg-neutral-900 p-5 text-bg">
                 <p className="label-tech mb-1.5 text-neutral-400">ĐIỂM THƯỞNG</p>
                 <p className="text-[38px] font-extrabold leading-none tracking-[-0.03em]">
                   {points.balance}
                 </p>
-                <p className="mt-2 text-[12.5px] leading-[1.6] text-hairline">
+                <p className="mt-2 text-[12.5px] leading-[1.6] text-neutral-300">
                   Đã chi {formatVnd(hang.chiTieu)} trong 12 tháng.
                   {hang.bat
                     ? hang.tiep
@@ -159,10 +159,10 @@ export default async function AccountPage({
                   >
                     {t.ten}
                     {t.key === "yeu-thich" && yeuThich.length > 0 ? (
-                      <span className="ml-auto font-mono text-[12px]">{yeuThich.length}</span>
+                      <span className="ml-auto tabular-nums text-[12px]">{yeuThich.length}</span>
                     ) : null}
                     {t.key === "dia-chi" && diaChi.length > 0 ? (
-                      <span className="ml-auto font-mono text-[12px]">{diaChi.length}</span>
+                      <span className="ml-auto tabular-nums text-[12px]">{diaChi.length}</span>
                     ) : null}
                   </Link>
                 ))}
@@ -174,7 +174,7 @@ export default async function AccountPage({
                 <>
                   <h2 className="mb-4 border-b-2 border-divider pb-3 text-[20px]">Lịch sử đơn hàng</h2>
                   {orders.length === 0 ? (
-                    <p className="border border-dashed border-border-soft bg-subtle px-5 py-10 text-[14px] text-muted">
+                    <p className="rounded-card bg-sand px-5 py-10 text-[14px] text-muted">
                       Bạn chưa có đơn nào.{" "}
                       <Link href="/san-pham" className="font-semibold underline">
                         Xem sản phẩm
@@ -221,7 +221,7 @@ export default async function AccountPage({
                         <span className="label-tech ml-auto">{formatDate(e.createdAt)}</span>
                         <span
                           className={
-                            "w-16 text-right font-mono text-[13px] font-bold " +
+                            "w-16 text-right tabular-nums text-[13px] font-bold " +
                             (e.delta >= 0 ? "text-text" : "text-accent-700")
                           }
                         >
@@ -273,7 +273,7 @@ export default async function AccountPage({
                     Sản phẩm yêu thích
                   </h2>
                   {yeuThich.length === 0 ? (
-                    <p className="border border-dashed border-border-soft bg-subtle px-5 py-10 text-[14px] text-muted">
+                    <p className="rounded-card bg-sand px-5 py-10 text-[14px] text-muted">
                       Chưa có sản phẩm nào. Bấm{" "}
                       <strong className="font-extrabold">YÊU THÍCH</strong> ở trang sản phẩm để lưu
                       lại xem sau.

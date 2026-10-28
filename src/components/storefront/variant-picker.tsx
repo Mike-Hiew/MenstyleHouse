@@ -105,16 +105,21 @@ export function VariantPicker({
 
   return (
     <div>
-      <div className="flex flex-wrap items-baseline gap-3.5 border-t-2 border-divider pt-5">
-        <span className="text-[34px] font-extrabold leading-none tracking-[-0.02em]">
+      <div className="flex flex-wrap items-baseline gap-3.5 pt-2">
+        <span
+          className={cn(
+            "text-[34px] font-extrabold leading-none tracking-[-0.02em]",
+            salePrice && "text-accent",
+          )}
+        >
           {formatVnd(unitPrice)}
         </span>
         {salePrice ? (
           <>
-            <span className="text-[17px] text-neutral-400 line-through">
+            <span className="text-[17px] text-muted line-through">
               {formatVnd(basePrice + (selected?.priceDelta ?? 0))}
             </span>
-            <span className="bg-accent px-2.5 py-1.5 font-mono text-[12px] font-bold leading-none text-bg">
+            <span className="rounded-full bg-accent px-2.5 py-1.5 text-[12px] font-bold leading-none text-bg">
               −{off}%
             </span>
           </>
@@ -124,7 +129,7 @@ export function VariantPicker({
       <p
         className={cn(
           "mb-7 mt-2.5 text-[13px] font-semibold",
-          colorStock === 0 ? "text-accent-700" : "text-muted",
+          colorStock === 0 ? "text-text" : "text-muted",
         )}
       >
         <StockText variant={selected} chosen={Boolean(size)} colorStock={colorStock} />
@@ -143,11 +148,16 @@ export function VariantPicker({
             title={c.stock === 0 ? c.color + " — hết hàng" : c.color}
             onClick={() => setColor(c.color)}
             className={cn(
-              "h-11 w-11 border-2 p-[3px]",
-              c.color === color ? "border-divider" : "border-hairline hover:border-faint",
+              "h-11 w-11 rounded-full p-1 transition-shadow",
+              c.color === color
+                ? "shadow-[inset_0_0_0_2px_var(--color-text)]"
+                : "shadow-[inset_0_0_0_1px_rgba(21,20,19,0.1)] hover:shadow-[inset_0_0_0_1px_rgba(21,20,19,0.3)]",
             )}
           >
-            <span className="block h-full w-full" style={{ background: c.hex }} />
+            <span
+              className="block h-full w-full rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]"
+              style={{ background: c.hex }}
+            />
           </button>
         ))}
       </div>
@@ -159,9 +169,9 @@ export function VariantPicker({
           <button
             type="button"
             onClick={() => setChartOpen(true)}
-            className="-my-2 flex min-h-11 items-center px-1 text-[12.5px] font-extrabold text-accent lg:my-0 lg:min-h-0 lg:px-0"
+            className="-my-2 flex min-h-11 items-center px-1 text-[13px] font-semibold underline decoration-1 underline-offset-4 hover:text-muted lg:my-0 lg:min-h-0 lg:px-0"
           >
-            BẢNG SIZE
+            Bảng size
           </button>
         ) : null}
       </div>
@@ -179,10 +189,8 @@ export function VariantPicker({
               title={out ? s + " — hết hàng ở màu " + color : s}
               onClick={() => setSize(s)}
               className={cn(
-                "min-w-[62px] border px-2 py-3.5 text-[13px] font-extrabold",
-                s === size
-                  ? "border-divider bg-neutral-900 text-bg"
-                  : "border-border-soft hover:bg-subtle",
+                "h-[50px] min-w-[62px] rounded-lg px-3 text-[13.5px] font-bold transition-colors",
+                s === size ? "bg-neutral-900 text-bg" : "bg-field hover:bg-field-hover",
                 out && "line-through opacity-40",
               )}
             >
@@ -204,16 +212,16 @@ export function VariantPicker({
       <div
         className={cn(
           "z-40 mb-3 flex gap-3",
-          "max-lg:sticky max-lg:bottom-0 max-lg:-mx-4 max-lg:border-t-2 max-lg:border-divider max-lg:bg-bg max-lg:px-4 max-lg:py-3",
+          "max-lg:sticky max-lg:bottom-0 max-lg:-mx-4 max-lg:bg-bg/85 max-lg:px-4 max-lg:py-3 max-lg:backdrop-blur-xl",
           "max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]",
         )}
       >
-        <div className="flex items-center border border-border-soft">
+        <div className="flex items-center rounded-full bg-field px-1">
           <button
             type="button"
             aria-label="Giảm số lượng"
             onClick={() => setQty((n) => Math.max(1, n - 1))}
-            className="h-[54px] w-[46px] text-[19px]"
+            className="h-11 w-11 rounded-full text-[19px] hover:bg-field-hover"
           >
             −
           </button>
@@ -222,7 +230,7 @@ export function VariantPicker({
             type="button"
             aria-label="Tăng số lượng"
             onClick={() => setQty((n) => Math.min(selected?.stock || 99, n + 1))}
-            className="h-[54px] w-[46px] text-[19px]"
+            className="h-11 w-11 rounded-full text-[19px] hover:bg-field-hover"
           >
             +
           </button>
@@ -234,9 +242,9 @@ export function VariantPicker({
           type="button"
           onClick={() => add("stay")}
           disabled={saving}
-          className="h-[54px] flex-1 bg-accent pl-[22px] text-left text-[15px] font-extrabold tracking-[0.03em] text-bg"
+          className="h-[54px] flex-1 rounded-full bg-accent px-6 text-[15px] font-semibold text-bg transition-[background-color,box-shadow,transform] hover:bg-accent-600 hover:shadow-raised active:scale-[0.97] justify-center"
         >
-          THÊM VÀO GIỎ
+          Thêm vào giỏ
         </button>
       </div>
 
@@ -245,25 +253,39 @@ export function VariantPicker({
         type="button"
         onClick={() => add("checkout")}
         disabled={saving}
-        className="mb-7 hidden h-[54px] w-full bg-neutral-900 pl-[22px] text-left text-[15px] font-extrabold text-bg lg:block"
+        className="mb-7 hidden h-[54px] w-full rounded-full bg-neutral-900 px-6 text-[15px] font-semibold text-bg transition-[box-shadow,transform] hover:shadow-raised active:scale-[0.97] lg:block"
       >
-        ĐẶT HÀNG NGAY
+        Đặt hàng ngay
       </button>
 
       {/* ── Mục gập ── */}
-      <div className="border-t-2 border-divider">
+      <div className="flex flex-col gap-1.5">
         {accordions.map((a, i) => {
           const open = openPanel === i;
           return (
-            <div key={a.title} className="border-b border-hairline">
+            <div
+              key={a.title}
+              className={cn(
+                "rounded-[18px] px-[18px] transition-[background-color,box-shadow]",
+                open ? "bg-surface shadow-soft" : "bg-[rgba(21,20,19,0.04)]",
+              )}
+            >
               <button
                 type="button"
                 aria-expanded={open}
                 onClick={() => setOpenPanel(open ? -1 : i)}
-                className="flex w-full items-center justify-between py-4 text-left text-[14px] font-extrabold"
+                className="flex w-full items-center justify-between py-4 text-left text-[14px] font-semibold"
               >
                 {a.title}
-                <span className="text-[18px] text-faint">{open ? "−" : "+"}</span>
+                <span
+                  aria-hidden
+                  className={cn(
+                    "text-[18px] leading-none transition-transform duration-300",
+                    open && "rotate-45",
+                  )}
+                >
+                  +
+                </span>
               </button>
               {open ? (
                 <p className="mb-4 whitespace-pre-line text-[14px] leading-[1.7] text-muted">
@@ -310,7 +332,7 @@ export function VariantPicker({
                         key={i}
                         className={cn(
                           "border-b border-hairline py-2.5 text-center",
-                          i < r.values.length - 1 && "font-mono",
+                          i < r.values.length - 1 && "tabular-nums",
                         )}
                       >
                         {v}
