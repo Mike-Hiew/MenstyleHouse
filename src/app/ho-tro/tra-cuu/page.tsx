@@ -66,24 +66,24 @@ export default async function TicketLookupPage({
               defaultValue={ma}
               aria-label="Mã yêu cầu hỗ trợ"
               placeholder="TIC-2026-00007"
-              className="h-12 min-w-0 flex-1 border-2 border-divider bg-surface px-3.5 font-mono text-[16px] lg:text-[14px]"
+              className="h-12 min-w-0 flex-1 px-4.5 font-mono text-[16px] lg:text-[14px] rounded-full bg-field transition-[background-color,box-shadow] focus:bg-surface focus:ring-4 focus:ring-ring"
             />
             <button
               type="submit"
-              className="h-12 flex-none bg-accent px-6 text-[14px] font-extrabold text-bg"
+              className="h-12 flex-none bg-accent px-6 text-[14px] font-semibold text-bg rounded-full justify-center transition-colors hover:bg-accent-600"
             >
               TÌM
             </button>
           </form>
 
           {chan ? (
-            <p role="alert" className="max-w-[520px] border-2 border-accent bg-accent-100 px-5 py-5 text-[14px] font-semibold text-accent-800">
+            <p role="alert" className="max-w-[520px] rounded-2xl bg-accent-100 px-5 py-5 text-[14px] font-semibold text-accent-800">
               Bạn đã tra khá nhiều lần. Thử lại sau một giờ, hoặc gọi 1900 6060.
             </p>
           ) : null}
 
           {ma !== "" && !chan && !yc ? (
-            <div className="max-w-[520px] border border-dashed border-border-soft bg-subtle px-5 py-8">
+            <div className="max-w-[520px] rounded-card bg-sand px-5 py-8">
               <h2 className="mb-2 text-[18px]">Không tìm thấy yêu cầu nào</h2>
               <p className="text-[14px] text-muted">
                 Kiểm tra lại mã giúp nhé. Chưa gửi yêu cầu bao giờ?{" "}

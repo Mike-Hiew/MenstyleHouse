@@ -1,51 +1,73 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Modernist tokens ── */
-  --color-bg: #f3f2f2;
+  /*
+   * ── Token v2: borderless editorial ──
+   *
+   * Khối tách nhau bằng khoảng trắng, tông nền và bóng mềm — không kẻ viền.
+   * Admin vẫn giữ hệ Modernist cũ: mọi token ở đây được đặt lại trong
+   * `.theme-modernist` cuối file, nên đổi ở đây không làm admin đổi theo.
+   */
+  --color-bg: #f3f1ed;
   --color-surface: #ffffff;
-  --color-subtle: #eae9e9;
-  --color-text: #201e1d;
-  --color-muted: #605d5d;
-  --color-faint: #7d7979;
-  --color-divider: #201e1d;
-  --color-hairline: #d7d3d3;
-  --color-border-soft: rgba(32, 30, 29, 0.4);
+  --color-subtle: #e9e4dc;
+  --color-sand: #e9e4dc;
+  --color-stone: #ddd7ce;
+  --color-text: #151413;
+  --color-muted: #726c66;
+  --color-faint: #8a847e;
+  /* Viền: nét đậm biến mất, nét mảnh chỉ còn là một vệt tông. */
+  --color-divider: transparent;
+  --color-hairline: rgba(21, 20, 19, 0.07);
+  --color-border-soft: transparent;
 
-  --color-accent: #ec3013;
-  --color-accent-100: #fde4df;
-  --color-accent-200: #f9bdb1;
-  --color-accent-300: #f59182;
-  --color-accent-400: #f16049;
-  --color-accent-500: #ec3013;
-  --color-accent-600: #ae1800;
-  --color-accent-700: #8d1300;
-  --color-accent-800: #7a1404;
-  --color-accent-900: #530d02;
+  /* Ô nhập, chip, nút phụ: nền đặc thay cho viền. */
+  --color-field: rgba(21, 20, 19, 0.06);
+  --color-field-hover: rgba(21, 20, 19, 0.1);
+  --color-ring: rgba(21, 20, 19, 0.14);
+  --color-scrim: rgba(21, 20, 19, 0.28);
+  /* Nét viền khi focus ô nhập — storefront dùng vòng sáng thay cho nét. */
+  --color-focus-line: transparent;
 
-  --color-neutral-100: #f3f2f2;
-  --color-neutral-200: #e2e0df;
-  --color-neutral-300: #d7d3d3;
-  --color-neutral-400: #9c9795;
-  --color-neutral-500: #605d5d;
-  --color-neutral-600: #4e4a48;
-  --color-neutral-700: #383533;
-  --color-neutral-800: #2a2726;
-  --color-neutral-900: #201e1d;
+  --color-accent: #e8341a;
+  --color-accent-100: #fde5e0;
+  --color-accent-200: #f8bfb3;
+  --color-accent-300: #f39483;
+  --color-accent-400: #ee6650;
+  --color-accent-500: #e8341a;
+  --color-accent-600: #c9270f;
+  --color-accent-700: #a31f0b;
+  --color-accent-800: #7f1a0a;
+  --color-accent-900: #531005;
 
-  --font-heading: Archivo, ui-sans-serif, system-ui, sans-serif;
-  --font-body: Archivo, ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --color-ok: #2e7d57;
 
-  /* Không bo góc, không đổ bóng — quy tắc hệ thống */
+  --color-neutral-100: #f3f1ed;
+  --color-neutral-200: #e9e4dc;
+  --color-neutral-300: #ddd7ce;
+  --color-neutral-400: #a39d96;
+  --color-neutral-500: #726c66;
+  --color-neutral-600: #57524d;
+  --color-neutral-700: #3b3835;
+  --color-neutral-800: #262422;
+  --color-neutral-900: #151413;
+
+  --font-heading: var(--font-archivo), Archivo, ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-archivo), Archivo, ui-sans-serif, system-ui, sans-serif;
+  /* Chỉ dùng cho mã sản phẩm, SKU, mã đơn. */
+  --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+
+  /* Ảnh và thẻ 24px, panel 32px; nút, chip, ô nhập bo tròn hẳn. */
   --radius-none: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
-  --radius-3xl: 0px;
-  --radius-full: 0px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-card: 24px;
+  --radius-panel: 32px;
+  --radius-full: 9999px;
 
   --shadow-2xs: none;
   --shadow-xs: none;
@@ -54,9 +76,22 @@
   --shadow-lg: none;
   --shadow-xl: none;
   --shadow-2xl: none;
+  --shadow-soft: 0 1px 2px rgba(20, 18, 16, 0.04), 0 8px 24px -12px rgba(20, 18, 16, 0.14);
+  --shadow-raised: 0 30px 60px -24px rgba(20, 18, 16, 0.28);
+
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Bo góc bị vô hiệu hoá toàn cục: rounded-* không còn tác dụng. */
+/*
+ * Nhãn kỹ thuật (`label-tech`): storefront là chữ sans, admin vẫn mono. Đặt
+ * thành biến để một utility dùng được cho cả hai.
+ */
+:root {
+  --font-label: var(--font-body);
+  --label-tracking: 0.06em;
+  --scrim-blur: 8px;
+  --photo-filter: none;
+}
 
 @layer base {
   html {
@@ -87,7 +122,7 @@
 
   :focus-visible {
     outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
 
   ::selection {
@@ -106,15 +141,16 @@
   border-bottom: 2px solid var(--color-divider);
 }
 
+/* Ảnh đen trắng là luật Modernist — chỉ còn áp trong admin; storefront v2 để ảnh màu. */
 @utility grayscale-photo {
-  filter: grayscale(1) contrast(1.08);
+  filter: var(--photo-filter);
 }
 
 @utility label-tech {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 11px;
   line-height: 1.2;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--label-tracking);
   text-transform: uppercase;
   color: var(--color-faint);
 }
@@ -134,5 +170,215 @@
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+  }
+}
+
+/*
+ * ── Admin: giữ hệ Modernist ──
+ *
+ * Storefront chuyển sang kiểu không viền (token ở `@theme` phía trên), còn khu
+ * quản trị chưa đổi — nó sẽ có bản riêng theo `docs/mockup/glassy-v2.html`.
+ * Tailwind v4 sinh mọi utility qua `var(--…)`, nên đặt lại biến ở đây là đủ
+ * để cả cây admin trở về đúng token cũ mà không phải sửa class nào.
+ */
+.theme-modernist {
+  --color-bg: #f3f2f2;
+  --color-surface: #ffffff;
+  --color-subtle: #eae9e9;
+  --color-sand: #eae9e9;
+  --color-stone: #d7d3d3;
+  --color-text: #201e1d;
+  --color-muted: #605d5d;
+  --color-faint: #7d7979;
+  --color-divider: #201e1d;
+  --color-hairline: #d7d3d3;
+  --color-border-soft: rgba(32, 30, 29, 0.4);
+
+  --color-field: #ffffff;
+  --color-field-hover: #eae9e9;
+  --color-ring: transparent;
+  --color-focus-line: #ec3013;
+  --color-scrim: rgba(32, 30, 29, 0.55);
+  --scrim-blur: 0px;
+  --photo-filter: grayscale(1) contrast(1.08);
+
+  --color-accent: #ec3013;
+  --color-accent-100: #fde4df;
+  --color-accent-200: #f9bdb1;
+  --color-accent-300: #f59182;
+  --color-accent-400: #f16049;
+  --color-accent-500: #ec3013;
+  --color-accent-600: #ae1800;
+  --color-accent-700: #8d1300;
+  --color-accent-800: #7a1404;
+  --color-accent-900: #530d02;
+
+  --color-neutral-100: #f3f2f2;
+  --color-neutral-200: #e2e0df;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #9c9795;
+  --color-neutral-500: #605d5d;
+  --color-neutral-600: #4e4a48;
+  --color-neutral-700: #383533;
+  --color-neutral-800: #2a2726;
+  --color-neutral-900: #201e1d;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-card: 0px;
+  --radius-panel: 0px;
+  --radius-full: 0px;
+
+  --shadow-soft: none;
+  --shadow-raised: none;
+
+  --font-label: var(--font-mono);
+  --label-tracking: 0.1em;
+
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Nhãn nút trong admin dồn trái — quy tắc Modernist. */
+.theme-modernist .ui-btn {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/*
+ * Thanh trượt màu mực (bộ gợi ý size). `--p` là phần trăm đã kéo, đặt inline
+ * từ component — WebKit không có pseudo-element cho phần đã kéo như Firefox.
+ */
+.range-ink {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 30px;
+  background: transparent;
+  --p: 50%;
+}
+.range-ink::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--color-text) var(--p), rgba(21, 20, 19, 0.08) var(--p));
+}
+.range-ink::-moz-range-track {
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(21, 20, 19, 0.08);
+}
+.range-ink::-moz-range-progress {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--color-text);
+}
+.range-ink::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -11px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25), 0 0 0 6px rgba(21, 20, 19, 0.05);
+  transition: transform 0.2s;
+}
+.range-ink:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.range-ink::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+.range-ink:focus-visible {
+  outline-offset: 4px;
+  border-radius: 9999px;
+}
+
+/*
+ * Hero v2 (mục 6). Giá trị mặc định = trạng thái đầu của hiệu ứng, nên lần vẽ
+ * đầu (trước khi JS chạy) đã đúng hình. JS chỉ ghi đè khi cuộn, từ md: trở lên.
+ */
+.hero-stage {
+  --hero-t: 13%;
+  --hero-r: 3%;
+  --hero-b: 6%;
+  --hero-l: 52%;
+  --hero-rr: 32px;
+  --hero-w: 62;
+  --hero-fade: 1;
+  --hero-over: 0;
+}
+.hero-stretch {
+  color: var(--color-accent);
+}
+@media (min-width: 768px) {
+  .hero-stretch {
+    font-variation-settings: "wdth" var(--hero-w);
+  }
+}
+
+/* Dòng mới trượt vào ngăn kéo giỏ; huy hiệu giỏ nảy khi vừa thêm hàng. */
+@keyframes cart-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+/* Chữ size lớn ở bộ gợi ý size đổi giá trị: mờ rồi hiện lại. */
+@keyframes size-swap {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(16px) scale(0.96);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Vòng sáng quanh điểm chấm trên ảnh lookbook. */
+@keyframes ping-soft {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+@keyframes bump {
+  35% {
+    transform: scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

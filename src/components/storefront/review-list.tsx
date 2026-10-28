@@ -12,7 +12,7 @@ export type ReviewItem = {
 export function Stars({ value }: { value: number }) {
   const full = Math.round(value);
   return (
-    <span className="font-mono tracking-[2px] text-accent" aria-hidden>
+    <span className="tracking-[2px] text-text" aria-hidden>
       {"★".repeat(full) + "☆".repeat(Math.max(0, 5 - full))}
     </span>
   );
@@ -32,12 +32,12 @@ export function ReviewSection({
       <h2 className="mb-6 text-[28px]">Đánh giá từ khách đã mua</h2>
 
       {ratingCount === 0 ? (
-        <p className="border border-dashed border-border-soft bg-subtle px-8 py-14 text-[14px] text-muted">
+        <p className="rounded-card bg-sand px-8 py-14 text-[14px] text-muted">
           Sản phẩm chưa có đánh giá nào. Đánh giá chỉ mở cho khách đã mua hàng.
         </p>
       ) : (
         <div className="grid items-start gap-8 lg:grid-cols-[220px_1fr]">
-          <div className="bg-subtle p-6">
+          <div className="rounded-card bg-sand p-6">
             <div className="text-[44px] font-extrabold leading-none tracking-[-0.03em]">
               {ratingAvg.toFixed(1)}
             </div>

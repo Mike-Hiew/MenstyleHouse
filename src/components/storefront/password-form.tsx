@@ -20,8 +20,8 @@ export function PasswordForm() {
         <p
           role={state.ok ? "status" : "alert"}
           className={
-            "sm:col-span-2 border-2 px-4 py-3 text-[14px] font-semibold " +
-            (state.ok ? "border-divider bg-surface" : "border-accent bg-accent-100 text-accent-800")
+            "sm:col-span-2 rounded-2xl px-4 py-3 text-[14px] font-semibold " +
+            (state.ok ? "bg-surface shadow-soft" : "bg-accent-100 text-accent-800")
           }
         >
           {state.message}
@@ -46,7 +46,7 @@ export function PasswordForm() {
         <button
           type="submit"
           disabled={pending}
-          className="flex h-12 items-center border-2 border-divider px-7 text-[14px] font-extrabold disabled:opacity-60"
+          className="flex h-12 items-center px-7 text-[14px] font-extrabold disabled:opacity-60 rounded-full bg-field hover:bg-field-hover"
         >
           {pending ? "Đang đổi…" : "ĐỔI MẬT KHẨU"}
         </button>

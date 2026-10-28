@@ -66,10 +66,8 @@ export function FilterFields({ value, onChange, facets, lockCategory }: FilterFi
                 onClick={() => onChange(toggleValue(value, "size", s.value))}
                 className={cn(
                   // Ô size là đích chạm thật: tối thiểu 44px trên mobile.
-                  "flex h-11 min-w-11 items-center justify-center border px-3.5 text-[12px] font-extrabold lg:h-9 lg:min-w-9",
-                  on
-                    ? "border-accent bg-accent text-bg"
-                    : "border-border-soft hover:bg-subtle",
+                  "flex h-11 min-w-11 items-center justify-center rounded-xl px-3.5 text-[12.5px] font-bold transition-colors lg:h-10 lg:min-w-10",
+                  on ? "bg-neutral-900 text-bg" : "bg-field hover:bg-field-hover",
                   out && "opacity-40",
                 )}
               >
@@ -97,12 +95,17 @@ export function FilterFields({ value, onChange, facets, lockCategory }: FilterFi
                   title={c.label + " · " + c.count}
                   onClick={() => onChange(toggleValue(value, "mau", c.value))}
                   className={cn(
-                    "h-11 w-11 border-2 p-[3px]",
-                    on ? "border-accent" : "border-hairline hover:border-faint",
+                    "h-11 w-11 rounded-full p-1 transition-shadow",
+                    on
+                      ? "shadow-[inset_0_0_0_2px_var(--color-text)]"
+                      : "shadow-[inset_0_0_0_1px_rgba(21,20,19,0.1)] hover:shadow-[inset_0_0_0_1px_rgba(21,20,19,0.3)]",
                     out && "opacity-30",
                   )}
                 >
-                  <span className="block h-full w-full" style={{ background: c.hex }} />
+                  <span
+                    className="block h-full w-full rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]"
+                    style={{ background: c.hex }}
+                  />
                 </button>
               );
             })}
@@ -167,10 +170,10 @@ function CountRow({
         checked={checked}
         disabled={off}
         onChange={onToggle}
-        className="h-[18px] w-[18px] flex-none accent-accent"
+        className="h-[18px] w-[18px] flex-none accent-neutral-900"
       />
       <span className="flex-1">{label}</span>
-      <span className="font-mono text-[12px] text-faint">{count}</span>
+      <span className="text-[12px] tabular-nums text-faint">{count}</span>
     </label>
   );
 }
@@ -233,7 +236,7 @@ function PriceSlider({
         onPointerUp={(e) => commit(Number(e.currentTarget.value))}
         onKeyUp={(e) => commit(Number(e.currentTarget.value))}
         onBlur={(e) => commit(Number(e.currentTarget.value))}
-        className="h-11 w-full accent-accent lg:h-8"
+        className="h-11 w-full accent-neutral-900 lg:h-8"
       />
     </section>
   );
@@ -250,7 +253,7 @@ export function FilterSidebar({
   return (
     <aside
       aria-label="Bộ lọc sản phẩm"
-      className="hidden self-start border-t-2 border-divider pt-4 lg:sticky lg:top-[120px] lg:block"
+      className="hidden self-start rounded-card bg-surface p-5 shadow-soft lg:sticky lg:top-[120px] lg:block"
     >
       <h2 className="mb-4 text-[16px] font-extrabold">Bộ lọc</h2>
       <FilterFields
@@ -262,7 +265,7 @@ export function FilterSidebar({
       <button
         type="button"
         onClick={onClear}
-        className="w-full border border-border-soft px-3.5 py-2.5 text-left text-[13px] font-extrabold hover:bg-subtle"
+        className="w-full rounded-full bg-field px-3.5 py-2.5 text-center text-[13px] font-semibold hover:bg-field-hover"
       >
         XOÁ BỘ LỌC
       </button>
@@ -279,7 +282,7 @@ export function SortSelect({ value, onChange }: { value: SortKey; onChange: (v: 
       aria-label="Sắp xếp"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="hidden border border-border-soft bg-bg px-3.5 py-2.5 text-[13px] font-semibold lg:block"
+      className="hidden px-3.5 py-2.5 text-[13px] font-semibold lg:block rounded-full bg-field hover:bg-field-hover"
     >
       {SORT_ENTRIES.map(([key, label]) => (
         <option key={key} value={key}>

@@ -73,12 +73,12 @@ export function AccountMenu({ ban, vaiTro }: { ban: ThanhVien; vaiTro: string | 
           mo ? "border-divider bg-subtle" : "border-border-soft hover:bg-subtle",
         )}
       >
-        <span className="grid h-7 w-7 flex-none place-items-center bg-neutral-900 font-heading text-[11px] font-extrabold text-bg">
+        <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-neutral-900 font-heading text-[11px] font-extrabold text-bg">
           {chuTat(ban.name)}
         </span>
         <span>
           <span className="block max-w-[120px] truncate text-[12.5px] font-bold">{ban.name}</span>
-          <span className="block font-mono text-[10px] font-bold leading-[1.3] text-accent-600">
+          <span className="block text-[10.5px] font-semibold leading-[1.3] text-muted">
             {ban.points} điểm{ban.hang ? " · " + ban.hang : ""}
           </span>
         </span>
@@ -93,7 +93,7 @@ export function AccountMenu({ ban, vaiTro }: { ban: ThanhVien; vaiTro: string | 
         <div
           role="menu"
           aria-label="Tài khoản"
-          className="absolute right-0 top-[calc(100%+6px)] z-90 w-[280px] border-2 border-divider bg-bg shadow-[6px_6px_0_0_rgba(32,30,29,0.12)]"
+          className="absolute right-0 top-[calc(100%+6px)] z-90 w-[280px] overflow-hidden rounded-2xl bg-bg shadow-raised"
         >
           <div className="bg-neutral-900 p-4 text-bg">
             <p className="text-[14.5px] font-extrabold leading-tight">{ban.name}</p>
@@ -105,7 +105,7 @@ export function AccountMenu({ ban, vaiTro }: { ban: ThanhVien; vaiTro: string | 
               <span className="text-[30px] font-extrabold leading-none tracking-[-0.03em]">
                 {ban.points}
               </span>
-              <span className="text-[12px] text-hairline">điểm thưởng</span>
+              <span className="text-[12px] text-neutral-300">điểm thưởng</span>
             </div>
 
             {ban.hang ? (
@@ -145,7 +145,7 @@ export function AccountMenu({ ban, vaiTro }: { ban: ThanhVien; vaiTro: string | 
             <button
               type="submit"
               role="menuitem"
-              className="flex min-h-12 w-full items-center gap-2.5 px-4 text-left text-[13.5px] font-extrabold text-accent-700 hover:bg-subtle"
+              className="flex min-h-12 w-full items-center gap-2.5 px-4 text-left text-[13.5px] font-semibold hover:bg-subtle"
             >
               <LogOut size={16} className="flex-none" aria-hidden />
               Đăng xuất

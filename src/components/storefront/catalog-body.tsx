@@ -105,7 +105,7 @@ export function CatalogBody({
               {remaining > 0 ? (
                 <Link
                   href={{ pathname: basePath, query: setShown(current, shown + PAGE_STEP).toString() }}
-                  className="mt-8 flex min-h-12 w-full items-center border border-border-soft pl-5 text-[14px] font-extrabold hover:bg-subtle"
+                  className="mt-8 flex min-h-12 w-full items-center justify-center rounded-full bg-field text-[14px] font-semibold hover:bg-field-hover"
                 >
                   TẢI THÊM SẢN PHẨM (còn {remaining})
                 </Link>
@@ -122,18 +122,18 @@ export function CatalogBody({
         <button
           type="button"
           onClick={openFilter}
-          className="flex h-[50px] flex-1 items-center justify-center gap-2 bg-accent text-[14px] font-extrabold text-bg"
+          className="flex h-[50px] flex-1 items-center justify-center gap-2 bg-accent text-[14px] font-semibold text-bg rounded-full transition-colors hover:bg-accent-600"
         >
           <SlidersHorizontal size={16} aria-hidden />
           Lọc
           {activeCount > 0 ? (
-            <span className="bg-bg px-1.5 py-0.5 font-mono text-[12px] text-text">{activeCount}</span>
+            <span className="grid h-6 min-w-6 place-items-center rounded-full bg-bg px-1.5 text-[12px] text-text">{activeCount}</span>
           ) : null}
         </button>
         <button
           type="button"
           onClick={() => setSheet("sap-xep")}
-          className="flex h-[50px] flex-1 items-center justify-center gap-2 border border-divider text-[14px] font-extrabold"
+          className="flex h-[50px] flex-1 items-center justify-center gap-2 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
         >
           <ArrowUpDown size={16} aria-hidden />
           Sắp xếp
@@ -149,14 +149,14 @@ export function CatalogBody({
             <button
               type="button"
               onClick={() => setDraft(clearFilters(draft))}
-              className="h-12 flex-1 border border-border-soft text-[14px] font-extrabold"
+              className="h-12 flex-1 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
             >
               Xoá lọc
             </button>
             <button
               type="button"
               onClick={applyDraft}
-              className="h-12 flex-[2] bg-accent text-[14px] font-extrabold text-bg"
+              className="h-12 flex-[2] bg-accent text-[14px] font-semibold text-bg rounded-full justify-center transition-colors hover:bg-accent-600"
             >
               Áp dụng
             </button>
@@ -191,7 +191,7 @@ export function CatalogBody({
               }}
               className={cn(
                 "flex min-h-12 w-full items-center border-b border-hairline text-left text-[15px]",
-                sort === key ? "font-extrabold text-accent-700" : "font-normal",
+                sort === key ? "font-extrabold" : "font-normal",
               )}
             >
               {label}

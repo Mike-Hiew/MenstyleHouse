@@ -39,16 +39,16 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-16 border-t-2 border-divider bg-subtle">
+    <footer className="mt-16 rounded-t-[40px] bg-neutral-900 text-bg">
       <Container className="grid grid-cols-1 gap-8 py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-0">
         <div className="md:pr-8">
           <div className="mb-3.5 flex items-center gap-2.5">
-            <span className="block h-5 w-5 bg-accent" aria-hidden />
+            <span className="block h-4 w-4 rounded-[4px] bg-accent" aria-hidden />
             <span className="text-[16px] font-extrabold uppercase tracking-[-0.02em]">
               Men Style House
             </span>
           </div>
-          <p className="text-[13.5px] leading-[1.7] text-muted">
+          <p className="text-[13.5px] leading-[1.7] text-bg/60">
             Đồ nam cơ bản, form chuẩn người Việt.
             <br />
             142 Nguyễn Văn Trỗi, Phú Nhuận, TP.HCM
@@ -59,13 +59,13 @@ export function SiteFooter() {
 
         {COLUMNS.map((col) => (
           <nav key={col.title} aria-label={col.title}>
-            <h2 className="label-tech mb-3.5 font-bold tracking-[0.12em]">{col.title}</h2>
+            <h2 className="mb-3.5 text-[13px] font-medium text-bg/50">{col.title}</h2>
             <ul className="flex flex-col gap-2.5">
               {col.links.map((l) => (
                 <li key={l.label}>
                   <Link
                     href={l.href as Route}
-                    className="flex min-h-11 items-center text-[13.5px] hover:text-accent-700 lg:min-h-0"
+                    className="flex min-h-11 items-center text-[13.5px] text-bg/85 transition-colors hover:text-bg lg:min-h-0"
                   >
                     {l.label}
                   </Link>
@@ -76,10 +76,10 @@ export function SiteFooter() {
         ))}
       </Container>
 
-      <div className="border-t border-hairline">
-        <Container className="label-tech flex flex-wrap justify-between gap-2 py-4.5 font-bold">
-          <span>© 2026 MEN STYLE HOUSE — MST 0316 998 221</span>
-          <span>GIÁ ĐÃ GỒM VAT</span>
+      <div className="border-t border-bg/10">
+        <Container className="flex flex-wrap justify-between gap-2 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-[12.5px] text-bg/45">
+          <span>© 2026 Men Style House — MST 0316 998 221</span>
+          <span>Giá đã gồm VAT</span>
         </Container>
       </div>
     </footer>

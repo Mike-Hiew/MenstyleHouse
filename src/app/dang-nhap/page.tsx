@@ -30,7 +30,7 @@ export default async function Page({
           <h1 className="mb-3 text-[28px] lg:text-[40px]">Đăng nhập</h1>
           <p className="mb-7 max-w-[420px] text-[14px] text-muted">Đăng nhập để xem điểm thưởng và đơn hàng của bạn.</p>
           {vuaDatLai ? (
-            <p className="mb-5 max-w-[420px] border-2 border-divider bg-surface px-4 py-3 text-[14px] font-semibold">
+            <p className="mb-5 max-w-[420px] px-4 py-3 text-[14px] font-semibold rounded-card bg-surface shadow-soft">
               Đã đổi mật khẩu. Bạn đăng nhập lại bằng mật khẩu mới nhé.
             </p>
           ) : null}

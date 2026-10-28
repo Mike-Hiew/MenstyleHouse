@@ -171,6 +171,9 @@ model Product {
   status         ProductStatus  @default(DRAFT)
   material       String?
   careNote       String?
+  /// Chip thông số dưới giá ở trang sản phẩm, ví dụ ["250gsm", "May đôi"].
+  /// "Đổi size 15 ngày" là chính sách chung nên không ghi ở đây.
+  specs          String[]       @default([])
   ratingAvg      Float          @default(0)
   ratingCount    Int            @default(0)
   images         ProductImage[]
@@ -190,6 +193,11 @@ model ProductImage {
   url       String
   alt       String
   sort      Int     @default(0)
+  /// Ảnh này thuộc màu nào (khớp `Variant.color`). Trống = dùng cho mọi màu.
+  /// Trang sản phẩm đổi bộ ảnh theo màu khách chọn.
+  color     String?
+  /// Ảnh mặc trên người: thẻ sản phẩm đổi sang ảnh này khi rê chuột.
+  onBody    Boolean @default(false)
 
   /// Nhiều ảnh dùng chung một blob được: hai sản phẩm cùng một tấm lookbook thì
   /// chỉ lưu bytes một lần. Đặt `@unique` ở đây là vô hiệu hoá luôn việc dùng

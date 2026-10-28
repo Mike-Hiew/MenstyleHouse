@@ -52,7 +52,7 @@ export default async function TrackOrderPage({
               required
               aria-label="Mã đơn hàng"
               placeholder="MSH-2026-00148"
-              className="h-12 w-full border-2 border-divider bg-surface px-3 font-mono text-[16px] lg:text-[14px]"
+              className="h-12 w-full px-4 font-mono text-[16px] lg:text-[14px] rounded-full bg-field transition-[background-color,box-shadow] focus:bg-surface focus:ring-4 focus:ring-ring"
             />
             <input
               name="sdt"
@@ -62,11 +62,11 @@ export default async function TrackOrderPage({
               maxLength={4}
               aria-label="4 số cuối điện thoại"
               placeholder="4 số cuối SĐT"
-              className="h-12 w-full border-2 border-divider bg-surface px-3 text-[16px] sm:w-[160px] lg:text-[14px]"
+              className="h-12 w-full px-4 text-[16px] sm:w-[160px] lg:text-[14px] rounded-full bg-field transition-[background-color,box-shadow] focus:bg-surface focus:ring-4 focus:ring-ring"
             />
             <button
               type="submit"
-              className="h-12 flex-none bg-accent px-6 text-[14px] font-extrabold text-bg hover:bg-accent-600"
+              className="h-12 flex-none bg-accent px-6 text-[14px] font-semibold text-bg hover:bg-accent-600 rounded-full justify-center"
             >
               TÌM
             </button>
@@ -75,7 +75,7 @@ export default async function TrackOrderPage({
           {limited ? (
             <div
               role="alert"
-              className="max-w-[560px] border-2 border-accent bg-accent-100 px-5 py-6 text-[14px] font-semibold text-accent-800"
+              className="max-w-[560px] rounded-2xl bg-accent-100 px-5 py-6 text-[14px] font-semibold text-accent-800"
             >
               Bạn đã tra cứu quá nhiều lần. Thử lại sau một giờ, hoặc gọi 1900 6060.
             </div>
@@ -84,12 +84,12 @@ export default async function TrackOrderPage({
           {submitted && !limited && !order ? (
             <div
               role="alert"
-              className="max-w-[560px] border border-dashed border-border-soft bg-subtle px-5 py-10"
+              className="max-w-[560px] rounded-card bg-sand px-5 py-10"
             >
               <h2 className="mb-2 text-[18px]">Không tìm thấy đơn nào</h2>
               <p className="text-[14px] text-muted">
                 Kiểm tra lại mã đơn và 4 số cuối điện thoại đặt hàng. Nếu vẫn không ra, gọi
-                <span className="font-mono"> 1900 6060</span>.
+                <span> 1900 6060</span>.
               </p>
             </div>
           ) : null}

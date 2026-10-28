@@ -9,6 +9,7 @@ import { useOverlay } from "@/components/ui/overlay";
 import { AccountMenu, chuTat, type ThanhVien } from "./account-menu";
 import { logoutAction } from "@/app/(tai-khoan)/actions";
 import { Container } from "./shell";
+import { useCartDrawer } from "./cart-drawer";
 
 /**
  * Một cây DOM, gập theo breakpoint (`docs/RESPONSIVE.md`).
@@ -37,6 +38,9 @@ const ACCOUNT = [
 
 export type HeaderMember = ThanhVien;
 
+/** Huy hiệu nảy khi vừa thêm hàng — chỉ sau lần thêm đầu, không phải mỗi lần tải trang. */
+const BUMP = "motion-safe:animate-[bump_.55s_var(--ease-out-soft)]";
+
 export function SiteHeader({
   categories = [],
   cartCount = 0,
@@ -56,6 +60,10 @@ export function SiteHeader({
   staffRole?: string | null;
 }) {
   const pathname = usePathname();
+  const drawer = useCartDrawer();
+  // Đang ở trang giỏ hoặc thanh toán thì nút giỏ vẫn chỉ là link, mở thêm
+  // ngăn kéo đè lên đúng nội dung ấy chỉ tổ rối.
+  const drawerHere = drawer && !/^\/(gio-hang|thanh-toan)(\/|$)/.test(pathname);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
 
@@ -65,15 +73,15 @@ export function SiteHeader({
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <header className="sticky top-0 z-70 bg-bg">
-      <div className="border-b border-hairline">
-        <Container className="py-1.5 text-center text-[11px] font-bold uppercase tracking-[0.08em] text-muted lg:text-[12px]">
+    <header className="sticky top-0 z-70 bg-bg/85 backdrop-blur-xl">
+      <div className="bg-sand/70">
+        <Container className="py-1.5 text-center text-[11.5px] font-semibold text-muted lg:text-[12.5px]">
           Miễn phí giao từ 500.000 ₫
         </Container>
       </div>
 
-      <div className="border-b-2 border-divider">
-        <Container className="flex items-center gap-1 py-2 lg:gap-8 lg:py-4">
+      <div className="shadow-[0_1px_0_rgba(21,20,19,0.05)]">
+        <Container className="flex items-center gap-1 py-2 lg:gap-8 lg:py-3">
           <button
             type="button"
             aria-label="Mở menu"
@@ -85,20 +93,20 @@ export function SiteHeader({
           </button>
 
           <Link href="/" className="flex min-h-11 min-w-0 items-center gap-2" aria-label="Về trang chủ">
-            <span className="block h-[18px] w-[18px] flex-none bg-accent lg:h-[22px] lg:w-[22px]" aria-hidden />
+            <span className="block h-[14px] w-[14px] flex-none rounded-[4px] bg-accent lg:h-[16px] lg:w-[16px]" aria-hidden />
             <span className="truncate text-[13.5px] font-extrabold uppercase tracking-[-0.03em] sm:text-[15px] lg:text-[18px]">
               Men Style House
             </span>
           </Link>
 
-          <nav className="hidden gap-6 lg:flex">
+          <nav className="hidden gap-1 lg:flex">
             {NAV.map((n) => (
               <Link
                 key={n.href}
                 href={{ pathname: n.href }}
                 className={cn(
-                  "border-b-2 py-1 text-[13px] font-semibold uppercase tracking-[0.04em]",
-                  isActive(n.href) ? "border-accent" : "border-transparent hover:border-hairline",
+                  "rounded-full px-3.5 py-2 text-[13.5px] font-medium transition-colors",
+                  isActive(n.href) ? "bg-field font-semibold" : "hover:bg-field",
                 )}
               >
                 {n.label}
@@ -111,7 +119,7 @@ export function SiteHeader({
               action="/san-pham"
               method="get"
               role="search"
-              className="hidden w-[220px] items-center gap-2 border border-border-soft bg-subtle px-3 py-2.5 lg:flex"
+              className="hidden w-[220px] items-center gap-2 px-3 py-2.5 lg:flex rounded-full bg-field"
             >
               <Search size={14} className="flex-none text-faint" aria-hidden />
               <input
@@ -137,7 +145,7 @@ export function SiteHeader({
               <Link
                 href={{ pathname: "/admin" }}
                 title={"Bạn đang đăng nhập với vai trò " + staffRole}
-                className="hidden min-h-11 items-center gap-2 border-2 border-divider px-3.5 text-[12.5px] font-extrabold lg:flex"
+                className="hidden min-h-11 items-center gap-2 px-3.5 text-[12.5px] font-extrabold lg:flex rounded-full bg-field hover:bg-field-hover"
               >
                 <ShieldCheck size={15} aria-hidden />
                 QUẢN TRỊ
@@ -155,10 +163,8 @@ export function SiteHeader({
                   key={a.href}
                   href={{ pathname: a.href }}
                   className={cn(
-                    "px-3.5 py-2.5 text-[13px]",
-                    i === 0
-                      ? "border border-border-soft font-semibold"
-                      : "bg-neutral-900 font-extrabold text-bg",
+                    "rounded-full px-4 py-2.5 text-[13px] font-semibold",
+                    i === 0 ? "bg-field hover:bg-field-hover" : "bg-neutral-900 text-bg",
                   )}
                 >
                   {a.label}
@@ -170,16 +176,39 @@ export function SiteHeader({
             {/* Mobile: icon 44px kèm huy hiệu như mockup. Desktop: nút đỏ có chữ. */}
             <Link
               href={{ pathname: "/gio-hang" }}
+              data-cart-target
               aria-label={"Giỏ hàng, " + cartCount + " sản phẩm"}
-              className="relative flex h-11 w-11 items-center justify-center lg:h-11 lg:w-auto lg:bg-accent lg:px-4 lg:text-[13px] lg:font-extrabold lg:tracking-[0.02em] lg:text-bg"
+              aria-haspopup={drawerHere ? "dialog" : undefined}
+              onClick={(e) => {
+                // Ctrl/⌘/Shift-click vẫn mở trang giỏ ở tab mới như link thường.
+                if (!drawerHere || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                e.preventDefault();
+                drawer.open();
+              }}
+              className="relative flex h-11 w-11 items-center justify-center rounded-full lg:h-11 lg:w-auto lg:gap-2 lg:bg-neutral-900 lg:pl-4 lg:pr-2 lg:text-[13.5px] lg:font-semibold lg:text-bg"
             >
               <ShoppingBag size={20} className="lg:hidden" aria-hidden />
               {cartCount > 0 ? (
-                <span className="absolute right-0.5 top-1 min-w-[16px] bg-accent px-1 text-center font-mono text-[10px] font-bold leading-4 text-bg lg:hidden">
+                <span
+                  key={"m" + (drawer?.bump ?? 0)}
+                  className={cn(
+                    "absolute right-0.5 top-1 min-w-[17px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[17px] text-bg lg:hidden",
+                    drawer?.bump && BUMP,
+                  )}
+                >
                   {cartCount}
                 </span>
               ) : null}
-              <span className="hidden lg:inline">GIỎ ({cartCount})</span>
+              <span className="hidden lg:inline">Giỏ</span>
+              <span
+                key={"d" + (drawer?.bump ?? 0)}
+                className={cn(
+                  "hidden h-[26px] min-w-[26px] place-items-center rounded-full bg-accent px-1.5 text-[12px] lg:grid",
+                  drawer?.bump && BUMP,
+                )}
+              >
+                {cartCount}
+              </span>
             </Link>
           </div>
         </Container>
@@ -194,11 +223,11 @@ export function SiteHeader({
                 autoFocus
                 aria-label="Tìm sản phẩm"
                 placeholder="Tìm áo phông, jeans…"
-                className="h-12 w-full border border-border-soft bg-subtle px-3 text-[16px] outline-none"
+                className="h-12 w-full px-3 text-[16px] outline-none rounded-full bg-field"
               />
               <button
                 type="submit"
-                className="h-12 flex-none bg-neutral-900 px-4 text-[14px] font-extrabold text-bg"
+                className="h-12 flex-none rounded-full bg-neutral-900 px-5 text-[14px] font-semibold text-bg"
               >
                 Tìm
               </button>
@@ -240,7 +269,7 @@ function NavDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-80 flex bg-neutral-900/55 lg:hidden"
+      className="fixed inset-0 z-80 flex bg-scrim backdrop-blur-[var(--scrim-blur)] lg:hidden"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -248,7 +277,7 @@ function NavDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Menu"
-        className="flex h-full w-[86%] max-w-[340px] flex-col border-r-2 border-divider bg-bg"
+        className="m-2.5 flex w-[86%] max-w-[340px] flex-col overflow-hidden rounded-[28px] bg-bg shadow-raised"
       >
         <div className="flex flex-none items-center justify-between border-b-2 border-divider px-4 py-3">
           <span className="text-[15px] font-extrabold uppercase tracking-[-0.03em]">
@@ -271,7 +300,7 @@ function NavDrawer({
             <Link
               href={{ pathname: "/admin" }}
               onClick={onClose}
-              className="flex min-h-[52px] items-center gap-2.5 border-b-2 border-divider bg-subtle px-4 text-[14px] font-extrabold"
+              className="mx-3 mb-2 flex min-h-[52px] items-center gap-2.5 rounded-2xl bg-field px-4 text-[14px] font-extrabold"
             >
               <ShieldCheck size={17} aria-hidden />
               KHU QUẢN TRỊ
@@ -285,7 +314,7 @@ function NavDrawer({
               href={{ pathname: n.href }}
               className={cn(
                 "flex min-h-12 items-center border-b border-hairline px-4 text-[15px] font-semibold",
-                isActive(n.href) && "text-accent-700",
+                isActive(n.href) && "bg-field",
               )}
             >
               {n.label}
@@ -321,14 +350,14 @@ function NavDrawer({
             <Link
               href={"/tai-khoan" as const}
               onClick={onClose}
-              className="flex items-center gap-3 bg-neutral-900 p-4 text-bg"
+              className="m-3 flex items-center gap-3 rounded-2xl bg-neutral-900 p-4 text-bg"
             >
-              <span className="grid h-9 w-9 flex-none place-items-center bg-bg font-heading text-[12px] font-extrabold text-text">
+              <span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-bg font-heading text-[12px] font-extrabold text-text">
                 {chuTat(member.name)}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[14px] font-extrabold">{member.name}</span>
-                <span className="block font-mono text-[11px] font-bold text-hairline">
+                <span className="block text-[11.5px] font-semibold text-neutral-400">
                   {member.points} điểm{member.hang ? " · HẠNG " + member.hang : ""}
                 </span>
               </span>
@@ -336,7 +365,7 @@ function NavDrawer({
             <form action={logoutAction}>
               <button
                 type="submit"
-                className="flex min-h-12 w-full items-center px-4 text-left text-[14px] font-extrabold text-accent-700"
+                className="flex min-h-12 w-full items-center px-4 text-left text-[14px] font-semibold"
               >
                 Đăng xuất
               </button>
@@ -349,10 +378,8 @@ function NavDrawer({
                 key={a.href}
                 href={{ pathname: a.href }}
                 className={cn(
-                  "flex h-12 flex-1 items-center justify-center text-[14px]",
-                  i === 0
-                    ? "border border-border-soft font-semibold"
-                    : "bg-neutral-900 font-extrabold text-bg",
+                  "flex h-12 flex-1 items-center justify-center rounded-full text-[14px] font-semibold",
+                  i === 0 ? "bg-field" : "bg-neutral-900 text-bg",
                 )}
               >
                 {a.label}

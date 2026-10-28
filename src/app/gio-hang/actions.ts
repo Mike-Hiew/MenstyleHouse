@@ -2,8 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { addToCart, readCart, removeCartItem, setCartCoupon, updateCartItem } from "@/server/cart";
+import {
+  addToCart,
+  readCart,
+  readCartCoupon,
+  removeCartItem,
+  setCartCoupon,
+  updateCartItem,
+  type CartLine,
+} from "@/server/cart";
 import { applyCoupon, findCouponByCode } from "@/server/coupons";
+import { getSettings } from "@/server/settings";
+import { pointsFor } from "@/lib/money";
 
 /**
  * Server Actions cho giỏ hàng. Dữ liệu vào luôn qua Zod ở server kể cả khi
@@ -35,6 +45,34 @@ export async function addToCartAction(form: FormData): Promise<ActionResult> {
 
   revalidatePath("/gio-hang");
   return { ok: true };
+}
+
+const manySchema = z.array(z.string().min(1)).min(1).max(10);
+
+export type AddManyResult = { ok: true; added: number; skipped: number } | { ok: false; message: string };
+
+/**
+ * Thêm nhiều biến thể cùng lúc, mỗi món 1 cái — nút "Thêm cả bộ vào giỏ" của
+ * khối Mặc thử nguyên bộ. Đi qua đúng `addToCart` như thêm từng món; món nào
+ * hết hàng thì bỏ qua và báo lại số món bỏ qua, không làm hỏng cả lượt.
+ */
+export async function addManyToCartAction(variantIds: string[]): Promise<AddManyResult> {
+  const parsed = manySchema.safeParse(variantIds);
+  if (!parsed.success) return { ok: false, message: "Chưa chọn món nào." };
+
+  let added = 0;
+  for (const id of new Set(parsed.data)) {
+    try {
+      const cart = await addToCart(id, 1);
+      if (cart.lines.some((l) => l.variantId === id)) added++;
+    } catch {
+      // Biến thể không tồn tại (cấu hình bộ đồ cũ, hoặc id bị sửa tay) — bỏ qua món đó.
+    }
+  }
+
+  revalidatePath("/gio-hang");
+  if (added === 0) return { ok: false, message: "Các món này đang hết hàng." };
+  return { ok: true, added, skipped: new Set(parsed.data).size - added };
 }
 
 export async function updateCartItemAction(form: FormData): Promise<ActionResult> {
@@ -86,4 +124,36 @@ export async function applyCouponAction(
   await setCartCoupon(coupon?.id ?? null);
   revalidatePath("/gio-hang");
   return { ok: true, message: res.message, discount: res.discount };
+}
+
+/* ── Ngăn kéo giỏ ─────────────────────────────────────────── */
+
+export type CartDrawerData = {
+  lines: CartLine[];
+  count: number;
+  subtotal: number;
+  coupon: { code: string; discount: number } | null;
+  payable: number;
+  /** Ngưỡng free ship lấy từ cài đặt cửa hàng — không viết cứng 500.000 ₫. */
+  freeShipFrom: number;
+  points: number;
+};
+
+/**
+ * Đọc giỏ cho ngăn kéo. Cùng cách tính với trang `/gio-hang` để hai nơi không
+ * bao giờ ra hai con số khác nhau.
+ */
+export async function readCartDrawerAction(): Promise<CartDrawerData> {
+  const [cart, coupon, caiDat] = await Promise.all([readCart(), readCartCoupon(), getSettings()]);
+  const subtotal = cart?.subtotal ?? 0;
+  const payable = Math.max(0, subtotal - (coupon?.discount ?? 0));
+  return {
+    lines: cart?.lines ?? [],
+    count: cart?.count ?? 0,
+    subtotal,
+    coupon,
+    payable,
+    freeShipFrom: caiDat.freeShipFrom,
+    points: pointsFor(payable),
+  };
 }

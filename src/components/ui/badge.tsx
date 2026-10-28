@@ -5,7 +5,7 @@ type Tone = "accent" | "neutral" | "outline" | "ok" | "warn";
 const tones: Record<Tone, string> = {
   accent: "bg-accent-100 text-accent-800",
   neutral: "bg-neutral-200 text-neutral-800",
-  outline: "border-2 border-divider text-text",
+  outline: "border-2 border-divider bg-field text-text",
   ok: "bg-neutral-900 text-white",
   warn: "bg-accent text-white",
 };
@@ -22,7 +22,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em]",
+        "inline-flex items-center rounded-full px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em]",
         tones[tone],
         className,
       )}

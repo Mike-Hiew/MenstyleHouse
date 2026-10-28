@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useId } from "react";
 import { cn } from "@/lib/cn";
 import { applyCouponAction, type CouponState } from "@/app/gio-hang/actions";
 
@@ -8,25 +8,32 @@ import { applyCouponAction, type CouponState } from "@/app/gio-hang/actions";
  * Ô mã giảm giá ở tóm tắt đơn. Theo mockup: input dính liền nút đen "ÁP DỤNG"
  * (viền phải của input bị bỏ để hai khối liền nhau), thông báo hiện ngay dưới.
  */
-export function CouponBox() {
+export function CouponBox({ onApplied }: { onApplied?: () => void } = {}) {
   const [state, action, pending] = useActionState<CouponState, FormData>(applyCouponAction, {});
+  // Ngăn kéo giỏ và trang giỏ có thể cùng có mặt — id phải riêng từng ô.
+  const id = useId();
+
+  // Ngăn kéo cần đọc lại tổng tiền sau mỗi lần áp mã (đúng hay sai).
+  useEffect(() => {
+    if (state.message) onApplied?.();
+  }, [state, onApplied]);
 
   return (
     <form action={action}>
-      <div className="mb-2 flex">
-        <label htmlFor="coupon" className="sr-only">
+      <div className="mb-2 flex rounded-full bg-field p-1 focus-within:bg-surface focus-within:ring-4 focus-within:ring-ring">
+        <label htmlFor={id} className="sr-only">
           Mã giảm giá
         </label>
         <input
-          id="coupon"
+          id={id}
           name="code"
           placeholder="Nhập mã giảm giá"
-          className="h-11 min-w-0 flex-1 border border-r-0 border-border-soft bg-bg px-3 text-[16px] outline-none lg:text-[13px]"
+          className="h-10 min-w-0 flex-1 bg-transparent px-3.5 text-[16px] outline-none lg:text-[13px]"
         />
         <button
           type="submit"
           disabled={pending}
-          className="h-11 flex-none bg-neutral-900 px-4 text-[12.5px] font-extrabold text-bg disabled:opacity-60"
+          className="h-10 flex-none rounded-full bg-neutral-900 px-4 text-[12.5px] font-semibold text-bg disabled:opacity-60"
         >
           {pending ? "…" : "ÁP DỤNG"}
         </button>
@@ -47,7 +54,7 @@ export function CouponBox() {
             "mb-3.5 text-[12.5px] font-semibold",
             state.ok
               ? "text-muted"
-              : "border-2 border-accent bg-accent-100 px-3 py-2 text-accent-800",
+              : "rounded-2xl bg-accent-100 px-3 py-2 text-accent-800",
           )}
         >
           {state.message}

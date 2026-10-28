@@ -15,7 +15,7 @@ export function ResetForm({ token }: { token: string }) {
       {state.message ? (
         <p
           role="alert"
-          className="border-2 border-accent bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
+          className="rounded-2xl bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
         >
           {state.message}
         </p>
@@ -32,7 +32,7 @@ export function ResetForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="flex h-12 items-center justify-center bg-accent text-[15px] font-extrabold text-bg disabled:opacity-60"
+        className="flex h-12 items-center justify-center bg-accent text-[15px] font-semibold text-bg disabled:opacity-60 rounded-full transition-colors hover:bg-accent-600"
       >
         {pending ? "Đang lưu…" : "ĐẶT MẬT KHẨU MỚI"}
       </button>

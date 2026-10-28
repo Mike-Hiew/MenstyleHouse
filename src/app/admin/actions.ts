@@ -108,10 +108,17 @@ const productSchema = z.object({
   name: z.string().trim().min(2, "Nhập tên sản phẩm").max(160),
   description: z.string().trim().min(10, "Mô tả tối thiểu 10 ký tự").max(2000),
   basePrice: z.coerce.number().int().min(1000, "Giá tối thiểu 1.000 ₫").max(100_000_000),
-  salePrice: z.union([z.coerce.number().int().min(0).max(100_000_000), z.literal("")]).optional(),
+  /*
+   * `z.literal("")` phải đứng **trước**: `z.coerce.number()` biến chuỗi rỗng
+   * thành 0 và qua được `min(0)`, nên đặt nó trước thì ô "Giá sale" để trống
+   * lưu thành giá sale 0 ₫ — sản phẩm bán 0 đồng ở storefront và ở giỏ hàng.
+   */
+  salePrice: z.union([z.literal(""), z.coerce.number().int().min(0).max(100_000_000)]).optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]),
   material: z.string().trim().max(120).optional(),
   careNote: z.string().trim().max(300).optional(),
+  /** Chip thông số, phân tách bằng dấu phẩy: "250gsm, May đôi". */
+  specs: z.string().trim().max(300).optional(),
   categoryId: z.string().trim().min(1, "Chọn danh mục"),
   brandId: z.string().trim().optional(),
   seoTitle: z.string().trim().max(70).optional(),
@@ -119,6 +126,16 @@ const productSchema = z.object({
   /** Đè bảng size của danh mục; rỗng là dùng theo danh mục. */
   sizeChartId: z.string().trim().optional(),
 });
+
+/** "250gsm, May đôi,," → ["250gsm", "May đôi"]: bỏ ô trống, bỏ trùng, tối đa 6 chip. */
+function tachChip(raw: string | undefined): string[] {
+  const out: string[] = [];
+  for (const s of (raw ?? "").split(",")) {
+    const t = s.trim().slice(0, 40);
+    if (t && !out.includes(t)) out.push(t);
+  }
+  return out.slice(0, 6);
+}
 
 /**
  * Lưu sản phẩm. **Không** đụng tới `Variant.stock` ở đây — tồn kho chỉ đổi qua
@@ -167,6 +184,7 @@ export async function saveProductAction(
         status: rest.status,
         material: rest.material || null,
         careNote: rest.careNote || null,
+        specs: tachChip(rest.specs),
         categoryId: rest.categoryId,
         brandId: rest.brandId || null,
         seoTitle: rest.seoTitle || null,
@@ -233,6 +251,88 @@ export async function uploadImageAction(
   revalidatePath("/san-pham/" + slug);
   revalidateTag(TAG.catalog);
   return { ok: true, message: "Đã thêm ảnh." };
+}
+
+/**
+ * Gắn một ảnh với một màu (hoặc bỏ gắn: dùng cho mọi màu). Trang sản phẩm đổi
+ * bộ ảnh theo màu khách chọn. Màu phải là màu của chính sản phẩm đó — chặn ở
+ * server để form sửa tay không gắn được ảnh vào một màu không tồn tại.
+ */
+export async function setImageColorAction(
+  _prev: AdminActionState,
+  form: FormData,
+): Promise<AdminActionState> {
+  const slug = String(form.get("slug") ?? "");
+  const imageId = String(form.get("imageId") ?? "");
+  const color = String(form.get("color") ?? "").trim();
+
+  try {
+    await assertPermission("san-pham.sua");
+    const img = await db.productImage.findFirst({
+      where: { id: imageId, product: { slug } },
+      select: { productId: true },
+    });
+    if (!img) return { ok: false, message: "Không tìm thấy ảnh." };
+    if (color) {
+      const coMau = await db.variant.count({ where: { productId: img.productId, color } });
+      if (coMau === 0) return { ok: false, message: "Sản phẩm không có màu này." };
+    }
+    await db.productImage.update({ where: { id: imageId }, data: { color: color || null } });
+  } catch (e) {
+    if (e instanceof ForbiddenError) return { ok: false, message: e.message };
+    console.error(e);
+    return { ok: false, message: "Không lưu được màu của ảnh." };
+  }
+
+  revalidatePath("/admin/san-pham/" + slug);
+  revalidatePath("/san-pham/" + slug);
+  revalidateTag(TAG.catalog);
+  return { ok: true, message: color ? "Đã gắn ảnh với màu " + color + "." : "Ảnh dùng cho mọi màu." };
+}
+
+/**
+ * Đánh dấu ảnh mặc trên người: thẻ sản phẩm đổi sang ảnh này khi rê chuột.
+ * Mỗi sản phẩm chỉ một ảnh được đánh dấu — bật ảnh này là tắt ảnh khác, để
+ * thẻ luôn biết chắc đổi sang ảnh nào.
+ */
+export async function setImageOnBodyAction(
+  _prev: AdminActionState,
+  form: FormData,
+): Promise<AdminActionState> {
+  const slug = String(form.get("slug") ?? "");
+  const imageId = String(form.get("imageId") ?? "");
+  const onBody = form.get("onBody") === "1";
+
+  try {
+    await assertPermission("san-pham.sua");
+    const img = await db.productImage.findFirst({
+      where: { id: imageId, product: { slug } },
+      select: { productId: true },
+    });
+    if (!img) return { ok: false, message: "Không tìm thấy ảnh." };
+    await db.$transaction([
+      ...(onBody
+        ? [
+            db.productImage.updateMany({
+              where: { productId: img.productId, NOT: { id: imageId } },
+              data: { onBody: false },
+            }),
+          ]
+        : []),
+      db.productImage.update({ where: { id: imageId }, data: { onBody } }),
+    ]);
+  } catch (e) {
+    if (e instanceof ForbiddenError) return { ok: false, message: e.message };
+    console.error(e);
+    return { ok: false, message: "Không lưu được ảnh mặc trên người." };
+  }
+
+  revalidatePath("/admin/san-pham/" + slug);
+  revalidateTag(TAG.catalog);
+  return {
+    ok: true,
+    message: onBody ? "Đã đặt làm ảnh mặc trên người." : "Đã bỏ đánh dấu ảnh mặc trên người.",
+  };
 }
 
 export async function deleteImageAction(

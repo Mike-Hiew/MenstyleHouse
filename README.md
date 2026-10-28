@@ -1,7 +1,7 @@
 # Men Style House
 
 Hệ thống bán quần áo nam — Next.js 15 (App Router) + PostgreSQL + Prisma.
-Giao diện theo hệ thống thiết kế **Modernist**: nền #f3f2f2, chữ #201e1d, nhấn đỏ #ec3013, font Archivo, **không bo góc, không đổ bóng**.
+Giao diện storefront theo bản v2 "borderless editorial" (nền #F3F1ED, mực #151413, đỏ #E8341A, Archivo variable, bo góc + bóng mềm, không kẻ viền). Admin vẫn giữ hệ **Modernist** (không bo góc, không đổ bóng). Chi tiết token: `docs/TOKENS.md`.
 
 Mockup gốc và tài liệu bàn giao: `docs/` — mockup desktop `docs/mockup/mockup.html`,
 mockup mobile `docs/mockup/Men Style House Mobile.dc.html`.
@@ -23,7 +23,7 @@ Mở http://localhost:3000
 ```
 prisma/schema.prisma      Toàn bộ schema (DATA-MODEL.md)
 prisma/seed.ts            Dữ liệu mẫu, có hạt giống cố định
-src/app/globals.css       Token Modernist (Tailwind v4 @theme)
+src/app/globals.css       Token v2 (storefront) + .theme-modernist (admin), Tailwind v4 @theme
 src/lib/db.ts             Prisma client singleton
 src/lib/money.ts          Tiền = Int đồng. Không dùng Float.
 src/lib/inventory.ts      ĐIỂM VÀO DUY NHẤT để đổi tồn kho
