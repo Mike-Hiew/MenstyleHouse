@@ -6,6 +6,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { addToCartAction } from "@/app/gio-hang/actions";
+import { useCartDrawer } from "./cart-drawer";
 import { compareSizes } from "@/lib/catalog";
 import { formatVnd } from "@/lib/money";
 import type { SizeChart } from "@/lib/size-chart";
@@ -65,6 +66,7 @@ export function VariantPicker({
   const [openPanel, setOpenPanel] = React.useState(0);
   const toast = useToast();
   const router = useRouter();
+  const drawer = useCartDrawer();
   const [saving, startSaving] = React.useTransition();
 
   /** Chưa chọn size thì không thêm được — biến thể mới là thứ có tồn kho. */
@@ -76,6 +78,8 @@ export function VariantPicker({
     const form = new FormData();
     form.set("variantId", selected.id);
     form.set("qty", String(qty));
+    // Nút sắp bị khoá trong lúc lưu — nhớ lại để ngăn kéo trả focus về đây.
+    const pressed = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     startSaving(async () => {
       const res = await addToCartAction(form);
@@ -84,7 +88,11 @@ export function VariantPicker({
         return;
       }
       if (then === "checkout") router.push("/thanh-toan");
-      else {
+      else if (drawer) {
+        // Ảnh lớn của gallery bay về nút giỏ, rồi mở ngăn kéo.
+        router.refresh();
+        drawer.afterAdd(document.querySelector<HTMLElement>("[data-fly-source]"), pressed);
+      } else {
         router.refresh();
         toast("Đã thêm vào giỏ.");
       }

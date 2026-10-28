@@ -36,6 +36,8 @@ export function useOverlay(open: boolean, onClose: () => void) {
     };
 
     document.addEventListener("keydown", onKey);
+    // Đóng xong thì trả focus về nút đã mở lớp phủ, không để rơi về <body>.
+    const opener = document.activeElement as HTMLElement | null;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     panelRef.current?.querySelector<HTMLElement>("button,input,select,textarea")?.focus();
@@ -43,6 +45,7 @@ export function useOverlay(open: boolean, onClose: () => void) {
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
   }, [open, onClose]);
 

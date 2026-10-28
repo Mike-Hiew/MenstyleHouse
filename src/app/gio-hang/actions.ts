@@ -2,8 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { addToCart, readCart, removeCartItem, setCartCoupon, updateCartItem } from "@/server/cart";
+import {
+  addToCart,
+  readCart,
+  readCartCoupon,
+  removeCartItem,
+  setCartCoupon,
+  updateCartItem,
+  type CartLine,
+} from "@/server/cart";
 import { applyCoupon, findCouponByCode } from "@/server/coupons";
+import { getSettings } from "@/server/settings";
+import { pointsFor } from "@/lib/money";
 
 /**
  * Server Actions cho giỏ hàng. Dữ liệu vào luôn qua Zod ở server kể cả khi
@@ -86,4 +96,36 @@ export async function applyCouponAction(
   await setCartCoupon(coupon?.id ?? null);
   revalidatePath("/gio-hang");
   return { ok: true, message: res.message, discount: res.discount };
+}
+
+/* ── Ngăn kéo giỏ ─────────────────────────────────────────── */
+
+export type CartDrawerData = {
+  lines: CartLine[];
+  count: number;
+  subtotal: number;
+  coupon: { code: string; discount: number } | null;
+  payable: number;
+  /** Ngưỡng free ship lấy từ cài đặt cửa hàng — không viết cứng 500.000 ₫. */
+  freeShipFrom: number;
+  points: number;
+};
+
+/**
+ * Đọc giỏ cho ngăn kéo. Cùng cách tính với trang `/gio-hang` để hai nơi không
+ * bao giờ ra hai con số khác nhau.
+ */
+export async function readCartDrawerAction(): Promise<CartDrawerData> {
+  const [cart, coupon, caiDat] = await Promise.all([readCart(), readCartCoupon(), getSettings()]);
+  const subtotal = cart?.subtotal ?? 0;
+  const payable = Math.max(0, subtotal - (coupon?.discount ?? 0));
+  return {
+    lines: cart?.lines ?? [],
+    count: cart?.count ?? 0,
+    subtotal,
+    coupon,
+    payable,
+    freeShipFrom: caiDat.freeShipFrom,
+    points: pointsFor(payable),
+  };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useId } from "react";
 import { cn } from "@/lib/cn";
 import { applyCouponAction, type CouponState } from "@/app/gio-hang/actions";
 
@@ -8,17 +8,24 @@ import { applyCouponAction, type CouponState } from "@/app/gio-hang/actions";
  * Ô mã giảm giá ở tóm tắt đơn. Theo mockup: input dính liền nút đen "ÁP DỤNG"
  * (viền phải của input bị bỏ để hai khối liền nhau), thông báo hiện ngay dưới.
  */
-export function CouponBox() {
+export function CouponBox({ onApplied }: { onApplied?: () => void } = {}) {
   const [state, action, pending] = useActionState<CouponState, FormData>(applyCouponAction, {});
+  // Ngăn kéo giỏ và trang giỏ có thể cùng có mặt — id phải riêng từng ô.
+  const id = useId();
+
+  // Ngăn kéo cần đọc lại tổng tiền sau mỗi lần áp mã (đúng hay sai).
+  useEffect(() => {
+    if (state.message) onApplied?.();
+  }, [state, onApplied]);
 
   return (
     <form action={action}>
       <div className="mb-2 flex rounded-full bg-field p-1 focus-within:bg-surface focus-within:ring-4 focus-within:ring-ring">
-        <label htmlFor="coupon" className="sr-only">
+        <label htmlFor={id} className="sr-only">
           Mã giảm giá
         </label>
         <input
-          id="coupon"
+          id={id}
           name="code"
           placeholder="Nhập mã giảm giá"
           className="h-10 min-w-0 flex-1 bg-transparent px-3.5 text-[16px] outline-none lg:text-[13px]"
