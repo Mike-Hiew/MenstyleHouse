@@ -17,4 +17,6 @@ function flag(value: string | undefined, fallback: boolean): boolean {
 export const FLAGS = {
   /** Mục 2: ngăn kéo giỏ hàng + hiệu ứng bay vào giỏ. */
   cartDrawer: flag(process.env.NEXT_PUBLIC_FF_CART_DRAWER, true),
+  /** Mục 3: bộ gợi ý size (khối ở trang chủ + sheet ở trang sản phẩm). */
+  sizeFinder: flag(process.env.NEXT_PUBLIC_FF_SIZE_FINDER, true),
 } as const;

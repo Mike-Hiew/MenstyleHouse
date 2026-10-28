@@ -10,6 +10,8 @@ import { useCartDrawer } from "./cart-drawer";
 import { compareSizes } from "@/lib/catalog";
 import { formatVnd } from "@/lib/money";
 import type { SizeChart } from "@/lib/size-chart";
+import type { SizeRange } from "@/lib/size-finder";
+import { readSavedInput, recommendFor, SizeFinder } from "./size-finder";
 
 export type PickerVariant = {
   id: string;
@@ -34,12 +36,15 @@ export function VariantPicker({
   basePrice,
   salePrice,
   sizeChart,
+  fitRanges = [],
   accordions,
 }: {
   variants: PickerVariant[];
   basePrice: number;
   salePrice: number | null;
   sizeChart: SizeChart | null;
+  /** Khoảng chiều cao/cân nặng từng size; rỗng thì không hiện "Tìm size cho tôi". */
+  fitRanges?: SizeRange[];
   accordions: Accordion[];
 }) {
   const colors = React.useMemo(() => {
@@ -63,6 +68,16 @@ export function VariantPicker({
   const [size, setSize] = React.useState("");
   const [qty, setQty] = React.useState(1);
   const [chartOpen, setChartOpen] = React.useState(false);
+  const [finderOpen, setFinderOpen] = React.useState(false);
+  /** Size bộ gợi ý chọn — gắn nhãn "Hợp với bạn" lên nút size đó. */
+  const [recommended, setRecommended] = React.useState<string | null>(null);
+
+  // Khách đã thử bộ gợi ý (ở trang chủ hoặc sản phẩm khác) thì có nhãn ngay.
+  React.useEffect(() => {
+    if (fitRanges.length === 0) return;
+    const saved = readSavedInput();
+    if (saved) setRecommended(recommendFor(saved, fitRanges)?.size ?? null);
+  }, [fitRanges]);
   const [openPanel, setOpenPanel] = React.useState(0);
   const toast = useToast();
   const router = useRouter();
@@ -173,18 +188,32 @@ export function VariantPicker({
       {/* ── Size ── */}
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <div className="label-tech font-bold">SIZE{size ? " — " + size : ""}</div>
-        {sizeChart ? (
-          <button
-            type="button"
-            onClick={() => setChartOpen(true)}
-            className="-my-2 flex min-h-11 items-center px-1 text-[13px] font-semibold underline decoration-1 underline-offset-4 hover:text-muted lg:my-0 lg:min-h-0 lg:px-0"
-          >
-            Bảng size
-          </button>
-        ) : null}
+        <div className="flex items-center gap-4">
+          {fitRanges.length > 0 ? (
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setFinderOpen(true)}
+              className="-my-2 flex min-h-11 items-center px-1 text-[13px] font-semibold hover:text-muted lg:my-0 lg:min-h-0 lg:px-0"
+            >
+              Tìm size cho tôi →
+            </button>
+          ) : null}
+          {sizeChart ? (
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setChartOpen(true)}
+              className="-my-2 flex min-h-11 items-center px-1 text-[13px] font-semibold underline decoration-1 underline-offset-4 hover:text-muted lg:my-0 lg:min-h-0 lg:px-0"
+            >
+              Bảng size
+            </button>
+          ) : null}
+        </div>
       </div>
 
-      <div className="mb-2 flex flex-wrap gap-2">
+      {/* `pt-2.5`: chừa chỗ cho nhãn "Hợp với bạn" nhô lên trên nút. */}
+      <div className="mb-2 flex flex-wrap gap-2 pt-2.5">
         {sizes.map((s) => {
           const v = forColor.find((x) => x.size === s);
           const out = !v || v.stock === 0;
@@ -197,12 +226,17 @@ export function VariantPicker({
               title={out ? s + " — hết hàng ở màu " + color : s}
               onClick={() => setSize(s)}
               className={cn(
-                "h-[50px] min-w-[62px] rounded-lg px-3 text-[13.5px] font-bold transition-colors",
+                "relative h-[50px] min-w-[62px] rounded-lg px-3 text-[13.5px] font-bold transition-colors",
                 s === size ? "bg-neutral-900 text-bg" : "bg-field hover:bg-field-hover",
                 out && "line-through opacity-40",
               )}
             >
               {s}
+              {s === recommended ? (
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent px-[7px] py-0.5 text-[10px] font-semibold leading-[1.4] text-bg no-underline">
+                  Hợp với bạn
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -304,6 +338,39 @@ export function VariantPicker({
           );
         })}
       </div>
+
+      {fitRanges.length > 0 ? (
+        <Dialog
+          open={finderOpen}
+          onClose={() => setFinderOpen(false)}
+          title="Tìm size cho bạn"
+          width={620}
+        >
+          <SizeFinder
+            ranges={fitRanges}
+            label={sizeChart ? "Size gợi ý · " + sizeChart.title : "Size gợi ý"}
+            layout="stack"
+            onResult={(r) => setRecommended(r?.size ?? null)}
+            footer={(r) => {
+              const v = forColor.find((x) => x.size === r.size);
+              const conHang = Boolean(v && v.stock > 0);
+              return (
+                <button
+                  type="button"
+                  disabled={!conHang}
+                  onClick={() => {
+                    setSize(r.size);
+                    setFinderOpen(false);
+                  }}
+                  className="mt-1 flex h-12 items-center justify-center rounded-full bg-neutral-900 px-6 text-[14px] font-semibold text-bg"
+                >
+                  {conHang ? "Chọn size " + r.size : "Size " + r.size + " đang hết ở màu " + color}
+                </button>
+              );
+            }}
+          />
+        </Dialog>
+      ) : null}
 
       {sizeChart ? (
         <Dialog
