@@ -14,6 +14,7 @@ import { SizeFinder } from "@/components/storefront/size-finder";
 import { khoangGoiYTrangChu } from "@/server/size-charts";
 import { ShopTheLook } from "@/components/storefront/shop-the-look";
 import { FitLab } from "@/components/storefront/fit-lab";
+import { HeroStage } from "@/components/storefront/hero-stage";
 import { LOOKS } from "@/content/looks";
 import { FLAGS } from "@/lib/flags";
 
@@ -56,58 +57,112 @@ export default async function HomePage() {
       <Header />
 
       <main>
-        <section className="grid lg:grid-cols-2">
-          <Container className="max-w-[680px] px-8 py-16 lg:ml-auto lg:mr-0 lg:border-r-2 lg:border-border-soft">
-            <p className="mb-4 inline-flex items-center gap-2 text-[12.5px] font-semibold text-muted">
-              <i className="block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
-              BST 01 — Basic không nhàm
-            </p>
-            <h1 className="text-[52px] leading-[1.05]">
-              Đồ nam
-              <br />
-              mặc mỗi ngày,
-              <br />
-              đứng form cả năm.
-            </h1>
-            <p className="mt-6 text-[15px] leading-[1.7] text-muted">
-              Cotton 250gsm, đường may đôi, size S–XXL cho 45–90kg.
-              <br />
-              Đổi size miễn phí 15 ngày.
-            </p>
+        {FLAGS.heroStage ? (
+          // Mục 6 (v2): cùng nội dung hero, bọc trong sân khấu ghim khi cuộn.
+          <HeroStage
+            image={hero}
+            tag="Giảm đến 40% — tuần này"
+            product={
+              products[0]
+                ? {
+                    name: products[0].name,
+                    slug: products[0].slug,
+                    price: products[0].salePrice ?? products[0].basePrice,
+                  }
+                : null
+            }
+          >
+            <Container className="max-w-[680px] px-8 py-16 md:mr-0 md:ml-auto">
+              <p className="mb-4 inline-flex items-center gap-2 text-[12.5px] font-semibold text-muted">
+                <i className="block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+                BST 01 — Basic không nhàm
+              </p>
+              <h1 className="text-[52px] leading-[1.05]">
+                Đồ nam
+                <br />
+                mặc mỗi ngày,
+                <br />
+                <span className="hero-stretch">đứng form</span> cả năm.
+              </h1>
+              <p className="mt-6 text-[15px] leading-[1.7] text-muted">
+                Cotton 250gsm, đường may đôi, size S–XXL cho 45–90kg.
+                <br />
+                Đổi size miễn phí 15 ngày.
+              </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/san-pham" className={cta + " bg-accent text-bg hover:bg-accent-600"}>
-                Mua bộ sưu tập
-              </Link>
-              <Link
-                href={{ pathname: "/san-pham", query: "sap-xep=moi-nhat" }}
-                className={cta + " bg-field hover:bg-field-hover hover:shadow-none"}
-              >
-                Hàng mới về
-              </Link>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/san-pham" className={cta + " bg-accent text-bg hover:bg-accent-600"}>
+                  Mua bộ sưu tập
+                </Link>
+                <Link
+                  href={{ pathname: "/san-pham", query: "sap-xep=moi-nhat" }}
+                  className={cta + " bg-field hover:bg-field-hover hover:shadow-none"}
+                >
+                  Hàng mới về
+                </Link>
+              </div>
+
+              <dl className="mt-12 grid grid-cols-3 gap-4 pt-2">
+                <Stat value="40+" label="mẫu đang bán" />
+                <Stat value="4.8/5" label="từ 1.240 đánh giá" />
+                <Stat value="2–4 ngày" label="giao toàn quốc" />
+              </dl>
+            </Container>
+          </HeroStage>
+        ) : (
+          <section className="grid lg:grid-cols-2">
+            <Container className="max-w-[680px] px-8 py-16 lg:ml-auto lg:mr-0 lg:border-r-2 lg:border-border-soft">
+              <p className="mb-4 inline-flex items-center gap-2 text-[12.5px] font-semibold text-muted">
+                <i className="block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+                BST 01 — Basic không nhàm
+              </p>
+              <h1 className="text-[52px] leading-[1.05]">
+                Đồ nam
+                <br />
+                mặc mỗi ngày,
+                <br />
+                đứng form cả năm.
+              </h1>
+              <p className="mt-6 text-[15px] leading-[1.7] text-muted">
+                Cotton 250gsm, đường may đôi, size S–XXL cho 45–90kg.
+                <br />
+                Đổi size miễn phí 15 ngày.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/san-pham" className={cta + " bg-accent text-bg hover:bg-accent-600"}>
+                  Mua bộ sưu tập
+                </Link>
+                <Link
+                  href={{ pathname: "/san-pham", query: "sap-xep=moi-nhat" }}
+                  className={cta + " bg-field hover:bg-field-hover hover:shadow-none"}
+                >
+                  Hàng mới về
+                </Link>
+              </div>
+
+              <dl className="mt-12 grid grid-cols-3 gap-4 pt-2">
+                <Stat value="40+" label="mẫu đang bán" />
+                <Stat value="4.8/5" label="từ 1.240 đánh giá" />
+                <Stat value="2–4 ngày" label="giao toàn quốc" />
+              </dl>
+            </Container>
+
+            <div className="relative mx-4 min-h-[320px] overflow-hidden rounded-panel bg-subtle lg:my-4 lg:mr-4 lg:ml-0">
+              {hero ? (
+                <Photo
+                  src={hero.url}
+                  alt={hero.alt}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  priority
+                />
+              ) : null}
+              <span className="absolute bottom-4 left-4 rounded-full bg-accent px-4 py-2.5 text-[13px] font-semibold text-bg shadow-raised">
+                Giảm đến 40% — tuần này
+              </span>
             </div>
-
-            <dl className="mt-12 grid grid-cols-3 gap-4 pt-2">
-              <Stat value="40+" label="mẫu đang bán" />
-              <Stat value="4.8/5" label="từ 1.240 đánh giá" />
-              <Stat value="2–4 ngày" label="giao toàn quốc" />
-            </dl>
-          </Container>
-
-          <div className="relative mx-4 min-h-[320px] overflow-hidden rounded-panel bg-subtle lg:my-4 lg:mr-4 lg:ml-0">
-            {hero ? (
-              <Photo
-                src={hero.url}
-                alt={hero.alt}
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                priority
-              />
-            ) : null}
-            <span className="absolute bottom-4 left-4 rounded-full bg-accent px-4 py-2.5 text-[13px] font-semibold text-bg shadow-raised">
-              Giảm đến 40% — tuần này
-            </span>
-          </div>
-        </section>
+          </section>
+        )}
 
         <nav aria-label="Danh mục" className="mt-6">
           <ul className="mx-auto grid max-w-[1320px] grid-cols-2 gap-2 px-4 sm:grid-cols-4 lg:grid-cols-8 lg:px-8">

@@ -302,6 +302,29 @@
   border-radius: 9999px;
 }
 
+/*
+ * Hero v2 (mục 6). Giá trị mặc định = trạng thái đầu của hiệu ứng, nên lần vẽ
+ * đầu (trước khi JS chạy) đã đúng hình. JS chỉ ghi đè khi cuộn, từ md: trở lên.
+ */
+.hero-stage {
+  --hero-t: 13%;
+  --hero-r: 3%;
+  --hero-b: 6%;
+  --hero-l: 52%;
+  --hero-rr: 32px;
+  --hero-w: 62;
+  --hero-fade: 1;
+  --hero-over: 0;
+}
+.hero-stretch {
+  color: var(--color-accent);
+}
+@media (min-width: 768px) {
+  .hero-stretch {
+    font-variation-settings: "wdth" var(--hero-w);
+  }
+}
+
 /* Dòng mới trượt vào ngăn kéo giỏ; huy hiệu giỏ nảy khi vừa thêm hàng. */
 @keyframes cart-in {
   from {

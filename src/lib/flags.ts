@@ -39,6 +39,12 @@ export const FLAGS = {
    */
   fitLab: flag(process.env.NEXT_PUBLIC_FF_FIT_LAB, false),
   /**
+   * Mục 6 — hero ghim khi cuộn: ảnh nở ra tràn màn hình, chữ "đứng form" giãn
+   * bề ngang, cuối cùng hiện tiêu đề trắng + thẻ sản phẩm. Chỉ từ tablet trở
+   * lên; điện thoại luôn là hero cũ.
+   */
+  heroStage: flag(process.env.NEXT_PUBLIC_FF_HERO_STAGE, true),
+  /**
    * Mục 7 — trang đặt hàng thành công dạng hoá đơn in nhiệt (chữ mono, mép
    * răng cưa, mã QR dẫn về trang tra cứu). Tắt: trang cũ.
    */
