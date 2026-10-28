@@ -25,7 +25,7 @@ export function CancelOrderButton({ code }: { code: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 text-[12.5px] font-semibold text-accent-700 underline disabled:opacity-60 lg:min-h-0"
+        className="min-h-11 text-[12.5px] font-semibold underline decoration-1 underline-offset-4 disabled:opacity-60 lg:min-h-0"
       >
         {pending ? "Đang huỷ…" : "Huỷ đơn"}
       </button>

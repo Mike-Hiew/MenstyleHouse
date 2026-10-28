@@ -82,6 +82,7 @@ export default async function AdminProductEditPage({ params }: Params) {
               sizeChartId: product.sizeChartId,
               material: product.material,
               careNote: product.careNote,
+              specs: product.specs,
               code: product.code,
               seoTitle: product.seoTitle,
               seoDescription: product.seoDescription,
@@ -109,12 +110,15 @@ export default async function AdminProductEditPage({ params }: Params) {
 
           <ProductImages
             slug={product.slug}
+            colors={[...new Set(product.variants.map((v) => v.color))]}
             images={product.images.map((i) => ({
               id: i.id,
               url: i.url,
               alt: i.alt,
               sort: i.sort,
               blobId: i.blobId,
+              color: i.color,
+              onBody: i.onBody,
             }))}
           />
         </div>

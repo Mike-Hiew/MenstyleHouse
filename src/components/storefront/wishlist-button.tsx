@@ -28,7 +28,7 @@ export function WishlistButton({
     return (
       <a
         href="/dang-nhap"
-        className="flex h-12 items-center gap-2 border-2 border-divider px-5 text-[13px] font-extrabold"
+        className="flex h-12 items-center gap-2 px-5 text-[13px] font-extrabold rounded-full bg-field hover:bg-field-hover"
       >
         <Heart size={17} aria-hidden />
         ĐĂNG NHẬP ĐỂ LƯU
@@ -49,8 +49,8 @@ export function WishlistButton({
         })
       }
       className={cn(
-        "flex h-12 items-center gap-2 border-2 px-5 text-[13px] font-extrabold disabled:opacity-60",
-        thich ? "border-accent bg-accent-100 text-accent-800" : "border-divider",
+        "flex h-12 items-center gap-2 rounded-full px-5 text-[13px] font-semibold transition-colors disabled:opacity-60",
+        thich ? "bg-neutral-900 text-bg" : "bg-field hover:bg-field-hover",
       )}
     >
       <Heart size={17} fill={thich ? "currentColor" : "none"} aria-hidden />

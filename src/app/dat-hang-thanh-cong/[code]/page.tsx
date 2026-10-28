@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { getOrderByCode } from "@/server/orders";
+import { placedHere } from "@/server/order-access";
+import { currentUserId } from "@/auth";
 import { formatVnd } from "@/lib/money";
+import { FLAGS } from "@/lib/flags";
+import { getSettings } from "@/server/settings";
+import { OrderReceipt } from "@/components/storefront/order-receipt";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +47,11 @@ export default async function OrderPlacedPage({ params }: Params) {
   const order = await getOrderByCode(decodeURIComponent(code));
   if (!order) notFound();
 
+  // Mã đơn đoán được, nên chỉ người vừa đặt (cookie có chữ ký) hoặc chủ đơn
+  // đang đăng nhập mới xem chi tiết. Người khác chỉ thấy mã và lời nhắc tra cứu.
+  const owner = order.userId ? order.userId === (await currentUserId()) : false;
+  if (!owner && !(await placedHere(order.code))) return <OrderPlacedMinimal code={order.code} />;
+
   const facts = [
     { k: "MÃ ĐƠN", v: order.code },
     { k: "TỔNG TIỀN", v: formatVnd(order.total) },
@@ -49,11 +60,80 @@ export default async function OrderPlacedPage({ params }: Params) {
 
   const timeline = timelineFor(order.createdAt, order.carrier);
 
+  if (FLAGS.receipt) {
+    const [shop, h] = await Promise.all([getSettings(), headers()]);
+    const origin =
+      (h.get("x-forwarded-proto") ?? "https") + "://" + (h.get("x-forwarded-host") ?? h.get("host"));
+    return (
+      <>
+        <Header />
+        <main className="mx-auto grid w-full max-w-[1100px] grid-cols-1 gap-x-14 px-4 pb-20 pt-10 lg:grid-cols-[1fr_380px] lg:px-8 lg:pt-12">
+          <div>
+            <div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-ok text-[30px] font-semibold text-bg">
+              ✓
+            </div>
+
+            <h1 className="mb-3 text-[30px] leading-[1.1] lg:text-[44px]">Đặt hàng thành công</h1>
+            <p className="mb-7 text-[16px] text-muted">
+              Cảm ơn bạn. Shop sẽ gọi xác nhận trong 30 phút (giờ hành chính).
+            </p>
+          </div>
+          <div className="mb-10 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mb-0">
+            <OrderReceipt order={order} shop={shop} origin={origin} />
+          </div>
+          <div>
+            <h2 className="mb-[18px] text-[22px]">Dự kiến hành trình</h2>
+            <ol className="mb-8">
+              {timeline.map((t, i) => (
+                <li key={t.title} className="flex gap-4 pb-5">
+                  <div className="flex w-3.5 flex-none flex-col items-center">
+                    <span
+                      className={"block h-3 w-3 rounded-full " + (t.done ? "bg-neutral-900" : "bg-stone")}
+                      aria-hidden
+                    />
+                    {i < timeline.length - 1 ? (
+                      <span className="mt-1 block w-0.5 flex-1 bg-stone" aria-hidden />
+                    ) : null}
+                  </div>
+                  <div className="pb-1">
+                    <p className={"text-[14.5px] font-extrabold " + (t.done ? "" : "text-muted")}>
+                      {t.title}
+                    </p>
+                    <p className="tabular-nums text-[12.5px] text-faint">{t.when}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={{
+                  pathname: "/tra-cuu-don",
+                  query: "ma=" + order.code + "&sdt=" + order.phone.slice(-4),
+                }}
+                className="flex min-h-12 items-center bg-neutral-900 px-6 text-[14px] font-semibold text-bg rounded-full justify-center"
+              >
+                TRA CỨU ĐƠN NÀY
+              </Link>
+              <Link
+                href="/"
+                className="flex min-h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
+              >
+                Về trang chủ
+              </Link>
+            </div>
+          </div>
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
       <main className="mx-auto w-full max-w-[820px] px-4 pb-20 pt-10 lg:px-8 lg:pt-12">
-        <div className="mb-5 grid h-14 w-14 place-items-center bg-accent text-[30px] font-extrabold text-bg">
+        <div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-ok text-[30px] font-semibold text-bg">
           ✓
         </div>
 
@@ -83,18 +163,18 @@ export default async function OrderPlacedPage({ params }: Params) {
             <li key={t.title} className="flex gap-4 pb-5">
               <div className="flex w-3.5 flex-none flex-col items-center">
                 <span
-                  className={"block h-3 w-3 " + (t.done ? "bg-accent" : "bg-hairline")}
+                  className={"block h-3 w-3 rounded-full " + (t.done ? "bg-neutral-900" : "bg-stone")}
                   aria-hidden
                 />
                 {i < timeline.length - 1 ? (
-                  <span className="mt-1 block w-0.5 flex-1 bg-hairline" aria-hidden />
+                  <span className="mt-1 block w-0.5 flex-1 bg-stone" aria-hidden />
                 ) : null}
               </div>
               <div className="pb-1">
                 <p className={"text-[14.5px] font-extrabold " + (t.done ? "" : "text-muted")}>
                   {t.title}
                 </p>
-                <p className="font-mono text-[12.5px] text-faint">{t.when}</p>
+                <p className="tabular-nums text-[12.5px] text-faint">{t.when}</p>
               </div>
             </li>
           ))}
@@ -106,13 +186,43 @@ export default async function OrderPlacedPage({ params }: Params) {
               pathname: "/tra-cuu-don",
               query: "ma=" + order.code + "&sdt=" + order.phone.slice(-4),
             }}
-            className="flex min-h-12 items-center bg-neutral-900 px-6 text-[14px] font-extrabold text-bg"
+            className="flex min-h-12 items-center bg-neutral-900 px-6 text-[14px] font-semibold text-bg rounded-full justify-center"
           >
             TRA CỨU ĐƠN NÀY
           </Link>
           <Link
             href="/"
-            className="flex min-h-12 items-center border border-border-soft px-6 text-[14px] font-extrabold"
+            className="flex min-h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
+          >
+            Về trang chủ
+          </Link>
+        </div>
+      </main>
+      <SiteFooter />
+    </>
+  );
+}
+
+/** Bản rút gọn cho người mở link mà không phải người đặt: không lộ gì ngoài mã. */
+function OrderPlacedMinimal({ code }: { code: string }) {
+  return (
+    <>
+      <Header />
+      <main className="mx-auto w-full max-w-[820px] px-4 pb-20 pt-10 lg:px-8 lg:pt-12">
+        <h1 className="mb-3 text-[30px] leading-[1.1] lg:text-[44px]">Đơn {code}</h1>
+        <p className="mb-7 text-[16px] text-muted">
+          Để xem chi tiết và trạng thái đơn, tra cứu bằng mã đơn và 4 số cuối điện thoại đặt hàng.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={{ pathname: "/tra-cuu-don", query: { ma: code } }}
+            className="flex min-h-12 items-center justify-center rounded-full bg-neutral-900 px-6 text-[14px] font-semibold text-bg"
+          >
+            TRA CỨU ĐƠN NÀY
+          </Link>
+          <Link
+            href="/"
+            className="flex min-h-12 items-center rounded-full bg-field px-6 text-[14px] font-extrabold hover:bg-field-hover"
           >
             Về trang chủ
           </Link>

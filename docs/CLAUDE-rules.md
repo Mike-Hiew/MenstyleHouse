@@ -8,17 +8,22 @@ Cửa hàng thời trang nam, storefront + admin, quy mô vài trăm đơn/ngày
 ## Stack
 Next.js 15 (App Router, TypeScript) · Tailwind v4 · PostgreSQL + Prisma · Auth.js v5 · Vercel.
 
-## Hệ thiết kế — Modernist
-Phẳng, kiến trúc, tương phản cao. Ba luật tuyệt đối:
-- `border-radius: 0` ở **mọi** phần tử.
-- Không `box-shadow`, không gradient.
-- Phân tầng bằng viền và nền, không bằng bóng.
+## Hệ thiết kế — hai bộ token
 
-Màu: nền `#f3f2f2` · khối phụ `#eae9e9` · chữ `#201e1d` · chữ phụ `#605d5d` · mờ `#7d7979` · kẻ `#d7d3d3` · viền `rgba(32,30,29,.4)` · nhấn `#ec3013` · nhấn đậm `#ae1800` · cảnh báo nhạt `#ffe0d9`.
+Token đầy đủ: `docs/TOKENS.md`.
 
-Chữ: **Archivo** cho UI (heading luôn 800, `tracking: -.015em`), **JetBrains Mono** cho SKU / mã đơn / nhãn kỹ thuật (viết hoa, 10–11px, `tracking: .1em`, màu `#7d7979`).
+**Storefront — v2 "borderless editorial".** Khối tách nhau bằng khoảng trắng, tông nền
+và bóng mềm (`shadow-soft` / `shadow-raised`), **không kẻ viền**. Ảnh/thẻ `rounded-card`
+(24px), panel `rounded-panel` (32px), nút · chip · ô nhập `rounded-full`. Ô nhập nền đặc
+`bg-field`, focus nền trắng + vòng `ring-ring`. Đỏ `#E8341A` chỉ cho nút chính và giá sale.
+Archivo variable (trục `wdth`); JetBrains Mono chỉ cho mã sản phẩm / SKU / mã đơn.
 
-Ảnh sản phẩm luôn `grayscale(1) contrast(1.08)`.
+**Admin — Modernist** (bọc trong `.theme-modernist`). Phẳng, tương phản cao:
+`border-radius: 0`, không `box-shadow`, phân tầng bằng viền và nền. Ảnh sản phẩm
+`grayscale(1) contrast(1.08)`. Nhãn kỹ thuật mono, viết hoa.
+
+Viết class dùng chung cho cả hai bằng token (ví dụ `border-2 border-divider bg-field`) —
+đừng viết màu hay bo góc cứng trong `components/ui/*`, vì admin cũng dùng chúng.
 
 ## Quy tắc code
 

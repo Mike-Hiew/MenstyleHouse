@@ -29,7 +29,7 @@ export default async function AcceptInvitePage({
       <main>
         <Container narrow className="pb-16 pt-10">
           {!moi ? (
-            <div className="max-w-[520px] border-2 border-divider bg-surface p-7">
+            <div className="max-w-[520px] p-7 rounded-card bg-surface shadow-soft">
               <h1 className="mb-3 text-[26px] leading-[1.2]">Lời mời không dùng được</h1>
               <p className="mb-6 text-[14.5px] leading-[1.7] text-muted">
                 Đường dẫn đã hết hạn, đã được dùng, hoặc bị thu hồi. Nhờ người mời tạo lại giúp một
@@ -37,7 +37,7 @@ export default async function AcceptInvitePage({
               </p>
               <Link
                 href={{ pathname: "/" }}
-                className="flex min-h-12 w-fit items-center border-2 border-divider px-6 text-[14px] font-extrabold"
+                className="flex min-h-12 w-fit items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
               >
                 Về trang chủ
               </Link>
@@ -51,7 +51,7 @@ export default async function AcceptInvitePage({
                   {nhanVaiTro(moi.role, await danhSachVaiTro())}
                 </strong>
                 . Đặt mật khẩu để bắt đầu — đăng nhập sau này bằng{" "}
-                <strong className="font-mono text-text">{moi.email}</strong>.
+                <strong className="text-text">{moi.email}</strong>.
               </p>
 
               <AcceptInviteForm token={token} />

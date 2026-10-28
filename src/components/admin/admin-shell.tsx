@@ -106,7 +106,8 @@ export function AdminShell({
   };
 
   return (
-    <div className="flex min-h-screen">
+    // `theme-modernist`: admin giữ token cũ trong khi storefront đã sang v2.
+    <div className="theme-modernist flex min-h-screen">
       <aside
         className={cn(
           "sticky top-0 hidden h-screen flex-none overflow-y-auto bg-neutral-900 text-bg lg:block",

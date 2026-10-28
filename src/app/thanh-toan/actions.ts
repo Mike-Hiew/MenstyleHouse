@@ -6,6 +6,7 @@ import { checkoutSchema, placeOrder, CartEmptyError, OutOfStockError } from "@/s
 import { getSettings } from "@/server/settings";
 import { mailXacNhanDon } from "@/server/mail-templates";
 import { db } from "@/lib/db";
+import { rememberPlacedOrder } from "@/server/order-access";
 
 export type CheckoutState = {
   /** Lỗi theo từng trường, khớp `name` của input. */
@@ -104,6 +105,9 @@ export async function placeOrderAction(
       console.error("[mail] không gửi được xác nhận đơn", code, e);
     }
   }
+
+  // Đánh dấu trình duyệt này vừa đặt đơn, để trang thành công hiện đầy đủ.
+  await rememberPlacedOrder(code);
 
   // redirect ném lỗi điều hướng nên phải nằm ngoài try/catch.
   redirect(("/dat-hang-thanh-cong/" + code) as Route);

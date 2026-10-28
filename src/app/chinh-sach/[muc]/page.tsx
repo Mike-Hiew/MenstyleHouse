@@ -59,10 +59,10 @@ export default async function PolicyPage({ params }: { params: Promise<{ muc: st
 
           <p className="mt-10 border-t border-hairline pt-5 text-[14px] text-muted">
             Còn thắc mắc?{" "}
-            <Link href="/ho-tro" className="font-semibold text-accent-700 underline">
+            <Link href="/ho-tro" className="font-semibold underline decoration-1 underline-offset-4">
               Gửi yêu cầu hỗ trợ
             </Link>{" "}
-            hoặc gọi <span className="font-mono">{s.hotline}</span>.
+            hoặc gọi <span>{s.hotline}</span>.
           </p>
         </Container>
       </main>
@@ -101,7 +101,7 @@ function DoiTra({ s }: { s: CaiDat }) {
 
       <Muc2>Cách đổi trả</Muc2>
       <p>
-        Gọi <span className="font-mono">{s.hotline}</span> hoặc gửi yêu cầu ở trang Hỗ trợ, kèm mã
+        Gọi <span>{s.hotline}</span> hoặc gửi yêu cầu ở trang Hỗ trợ, kèm mã
         đơn. Cửa hàng hẹn lấy hàng tại nhà hoặc bạn mang tới {s.address}.
       </p>
 
@@ -147,7 +147,7 @@ function BaoMat({ s }: { s: CaiDat }) {
       <Muc2>Quyền của bạn</Muc2>
       <p>
         Xem và sửa thông tin trong trang Tài khoản. Muốn xoá tài khoản, gọi{" "}
-        <span className="font-mono">{s.hotline}</span> — cửa hàng giữ lại phần dữ liệu bắt buộc theo
+        <span>{s.hotline}</span> — cửa hàng giữ lại phần dữ liệu bắt buộc theo
         quy định về hoá đơn, phần còn lại xoá.
       </p>
     </>
@@ -175,7 +175,7 @@ function VanChuyen({ s }: { s: CaiDat }) {
       <Muc2>Nhận hàng</Muc2>
       <p>
         Kiểm hàng trước khi thanh toán. Nếu sai mẫu hay thiếu hàng, từ chối nhận và gọi{" "}
-        <span className="font-mono">{s.hotline}</span> — cửa hàng xử lý ngay.
+        <span>{s.hotline}</span> — cửa hàng xử lý ngay.
       </p>
     </>
   );

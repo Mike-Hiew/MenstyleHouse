@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<string, string> = {
 /** Khối chi tiết đơn dùng chung cho trang cảm ơn và trang tra cứu. */
 export function OrderSummary({ order }: { order: OrderDetail }) {
   return (
-    <div className="grid items-start gap-8 lg:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_320px]">
       <div>
         {/*
           Mã đơn phải nằm ngay đầu kết quả. Bản trước không in mã ở đâu cả, nên
@@ -39,7 +39,7 @@ export function OrderSummary({ order }: { order: OrderDetail }) {
         <ul>
           {order.items.map((it) => (
             <li key={it.id} className="flex gap-4 border-b border-hairline py-4">
-              <div className="relative h-[112px] w-[84px] flex-none bg-subtle">
+              <div className="relative h-[112px] w-[84px] flex-none overflow-hidden rounded-xl bg-subtle">
                 {it.imageUrl ? <Photo src={it.imageUrl} alt={it.productName} sizes="84px" /> : null}
               </div>
               <div className="min-w-0 flex-1">
@@ -72,10 +72,10 @@ export function OrderSummary({ order }: { order: OrderDetail }) {
         ) : null}
       </div>
 
-      <aside className="border-2 border-divider bg-surface p-5">
+      <aside className="p-5 rounded-card bg-surface shadow-soft">
         <h2 className="mb-4 text-[16px] font-extrabold">Giao đến</h2>
         <p className="text-[14px] font-semibold">{order.receiver}</p>
-        <p className="font-mono text-[13px] text-muted">{order.phone}</p>
+        <p className="tabular-nums text-[13px] text-muted">{order.phone}</p>
         <p className="mt-2 text-[13.5px] leading-[1.6] text-muted">
           {order.street}, {order.ward}, {order.district}, {order.province}
         </p>
@@ -115,7 +115,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
       <dt className="text-muted">{label}</dt>
-      <dd className="font-mono">{value}</dd>
+      <dd className="tabular-nums">{value}</dd>
     </div>
   );
 }

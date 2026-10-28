@@ -29,7 +29,7 @@ export function BottomSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end bg-neutral-900/55"
+      className="fixed inset-0 z-50 flex items-end bg-scrim backdrop-blur-[var(--scrim-blur)]"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -39,18 +39,18 @@ export function BottomSheet({
         aria-label={title}
         style={{ maxHeight }}
         className={cn(
-          "flex w-full flex-col border-t-2 border-divider bg-bg",
+          "flex w-full flex-col overflow-hidden rounded-t-panel border-t-2 border-divider bg-bg shadow-raised",
           // Chừa chỗ cho thanh gạch dưới của iPhone.
           "pb-[env(safe-area-inset-bottom)]",
         )}
       >
         <div className="flex flex-none items-center justify-between border-b-2 border-divider px-4 py-3.5">
-          <h2 className="text-[17px] font-extrabold">{title}</h2>
+          <h2 className="text-[19px] font-extrabold">{title}</h2>
           <button
             type="button"
             aria-label="Đóng"
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-field"
           >
             <X size={20} />
           </button>

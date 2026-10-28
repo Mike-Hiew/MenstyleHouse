@@ -45,31 +45,31 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
+/**
+ * `chart`: slug bảng size mà migration `nap_bang_size` đã nạp và gán cho danh
+ * mục này. Seed xoá rồi tạo lại danh mục, nên phải gán lại — không thì DB vừa
+ * seed không có bảng size nào ở trang sản phẩm.
+ */
 const CATEGORIES = [
-  { name: "Áo phông", slug: "ao-phong", sizes: ["S", "M", "L", "XL", "XXL"] },
-  { name: "Áo sơ mi", slug: "ao-so-mi", sizes: ["S", "M", "L", "XL", "XXL"] },
-  { name: "Áo polo", slug: "ao-polo", sizes: ["S", "M", "L", "XL"] },
-  { name: "Áo hoodie", slug: "ao-hoodie", sizes: ["M", "L", "XL", "XXL"] },
-  { name: "Áo khoác", slug: "ao-khoac", sizes: ["M", "L", "XL", "XXL"] },
-  { name: "Quần jeans", slug: "quan-jeans", sizes: ["29", "30", "31", "32", "34", "36"] },
-  { name: "Quần short", slug: "quan-short", sizes: ["29", "30", "31", "32", "34"] },
-  { name: "Phụ kiện", slug: "phu-kien", sizes: ["Freesize"] },
+  { name: "Áo phông", slug: "ao-phong", sizes: ["S", "M", "L", "XL", "XXL"], chart: "ao" },
+  { name: "Áo sơ mi", slug: "ao-so-mi", sizes: ["S", "M", "L", "XL", "XXL"], chart: "ao" },
+  { name: "Áo polo", slug: "ao-polo", sizes: ["S", "M", "L", "XL"], chart: "ao" },
+  { name: "Áo hoodie", slug: "ao-hoodie", sizes: ["M", "L", "XL", "XXL"], chart: "ao" },
+  { name: "Áo khoác", slug: "ao-khoac", sizes: ["M", "L", "XL", "XXL"], chart: "ao" },
+  { name: "Quần jeans", slug: "quan-jeans", sizes: ["29", "30", "31", "32", "34", "36"], chart: "quan-dai" },
+  { name: "Quần short", slug: "quan-short", sizes: ["29", "30", "31", "32", "34"], chart: "quan-short" },
+  { name: "Phụ kiện", slug: "phu-kien", sizes: ["Freesize"], chart: null },
 ];
 
-/**
- * Danh mục nào dùng bảng size nào — giữ khớp với
- * `20260809070000_nap_bang_size/migration.sql`.
- *
- * Phụ kiện cố ý vắng mặt: chỉ có Freesize thì bày bảng đo làm gì.
- */
-const BANG_SIZE_THEO_DANH_MUC: Record<string, string> = {
-  "ao-phong": "ao",
-  "ao-so-mi": "ao",
-  "ao-polo": "ao",
-  "ao-hoodie": "ao",
-  "ao-khoac": "ao",
-  "quan-jeans": "quan-dai",
-  "quan-short": "quan-short",
+/** Chip thông số dưới giá ở trang sản phẩm, theo nhóm hàng. */
+const SPECS: Record<string, string[]> = {
+  "ao-phong": ["Cotton 250gsm", "May đôi", "Co rút 0,8%"],
+  "ao-so-mi": ["Oxford 140gsm", "Đã giặt trước"],
+  "ao-polo": ["Cá sấu 220gsm", "May đôi"],
+  "ao-hoodie": ["Nỉ bông 360gsm", "Mũ hai lớp"],
+  "ao-khoac": ["Chống gió nhẹ", "Lót lưới"],
+  "quan-jeans": ["Denim 12oz", "Co giãn 2%"],
+  "quan-short": ["Linen pha cotton", "Lưng thun"],
 };
 
 const BRANDS = ["MSH Basic", "MSH Heritage", "Nordfelt", "Tân Bình Denim", "Kojima", "Lữ Hành"];
@@ -199,7 +199,7 @@ async function main() {
           name: c.name,
           slug: c.slug,
           sort: i,
-          sizeChartId: bangTheoSlug.get(BANG_SIZE_THEO_DANH_MUC[c.slug] ?? "") ?? null,
+          sizeChartId: (c.chart && bangTheoSlug.get(c.chart)) || null,
         },
       }),
     ),
@@ -255,7 +255,7 @@ async function main() {
   }
 
   // ── Kho & nhà cung cấp ────────────────────────────────────
-  const warehouses = await Promise.all([
+  await Promise.all([
     db.warehouse.create({ data: { name: "Kho Tân Bình", address: "128 Trường Chinh, Q. Tân Bình, TP.HCM", isMain: true } }),
     db.warehouse.create({ data: { name: "Kho Long Biên", address: "45 Ngọc Lâm, Q. Long Biên, Hà Nội" } }),
     db.warehouse.create({ data: { name: "Kho Hoà Khánh", address: "12 Âu Cơ, Q. Liên Chiểu, Đà Nẵng" } }),
@@ -299,6 +299,7 @@ async function main() {
         status: i < 36 ? "ACTIVE" : "DRAFT",
         material: pick(MATERIALS),
         careNote: pick(CARE),
+        specs: SPECS[cat.slug] ?? [],
         images: {
           create: photos.slice(0, 3).map((p, k) => ({
             url: photoUrl(p),

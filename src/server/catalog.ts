@@ -72,9 +72,19 @@ export function productWhere(q: CatalogQuery, scope: Scope = {}): Prisma.Product
 /* ── Danh sách sản phẩm ───────────────────────────────────── */
 
 export const cardInclude = Prisma.validator<Prisma.ProductInclude>()({
-  images: { orderBy: { sort: "asc" }, take: 1 },
+  /*
+   * Mọi ảnh, ảnh thường đứng trước ảnh mặc trên người: `images[0]` vẫn là ảnh
+   * chính của thẻ, còn ảnh mặc trên người (nếu có) để đổi sang khi rê chuột.
+   * Mỗi sản phẩm vài ảnh, chỉ là chuỗi URL — không đáng tách truy vấn.
+   */
+  images: { orderBy: [{ onBody: "asc" }, { sort: "asc" }] },
   category: { select: { name: true, slug: true } },
   brand: { select: { name: true } },
+  // Màu nền thẻ (theo màu đầu tiên) và nút chọn size thêm nhanh (v2).
+  variants: {
+    select: { id: true, color: true, colorHex: true, size: true, stock: true },
+    orderBy: [{ color: "asc" }, { size: "asc" }],
+  },
 });
 
 export type ProductCardData = Prisma.ProductGetPayload<{ include: typeof cardInclude }>;
