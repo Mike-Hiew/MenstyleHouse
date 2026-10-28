@@ -25,7 +25,7 @@ export function ReviewForm({ productId }: { productId: string }) {
     return (
       <p
         role="status"
-        className="mt-6 border-2 border-divider bg-surface px-5 py-4 text-[14px] font-semibold"
+        className="mt-6 px-5 py-4 text-[14px] font-semibold rounded-card bg-surface shadow-soft"
       >
         {state.message}
       </p>
@@ -37,7 +37,7 @@ export function ReviewForm({ productId }: { productId: string }) {
       <button
         type="button"
         onClick={() => setMo(true)}
-        className="mt-6 flex h-12 items-center border-2 border-divider px-6 text-[14px] font-extrabold"
+        className="mt-6 flex h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
       >
         VIẾT ĐÁNH GIÁ
       </button>
@@ -45,7 +45,7 @@ export function ReviewForm({ productId }: { productId: string }) {
   }
 
   return (
-    <form action={gui} className="mt-6 grid max-w-[640px] gap-4 border-2 border-divider p-5 sm:grid-cols-2">
+    <form action={gui} className="mt-6 grid max-w-[640px] gap-4 p-5 sm:grid-cols-2 rounded-card bg-surface shadow-soft">
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="rating" value={sao} />
 
@@ -57,7 +57,7 @@ export function ReviewForm({ productId }: { productId: string }) {
       {state.message ? (
         <p
           role="alert"
-          className="border-2 border-accent bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800 sm:col-span-2"
+          className="rounded-2xl bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800 sm:col-span-2"
         >
           {state.message}
         </p>
@@ -75,8 +75,8 @@ export function ReviewForm({ productId }: { productId: string }) {
               aria-label={n + " sao"}
               onClick={() => setSao(n)}
               className={cn(
-                "flex h-11 w-11 items-center justify-center border",
-                n <= sao ? "border-accent bg-accent-100 text-accent" : "border-hairline text-neutral-400",
+                "flex h-11 w-11 items-center justify-center rounded-full transition-colors",
+                n <= sao ? "bg-neutral-900 text-bg" : "bg-field text-neutral-400 hover:bg-field-hover",
               )}
             >
               <Star size={18} fill={n <= sao ? "currentColor" : "none"} aria-hidden />
@@ -114,7 +114,7 @@ export function ReviewForm({ productId }: { productId: string }) {
             name="body"
             rows={4}
             defaultValue={state.values?.body ?? ""}
-            className="w-full border border-border-soft bg-surface px-3 py-2.5 text-[15px] outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent lg:text-[14px]"
+            className="w-full px-4 py-2.5 text-[15px] outline-none lg:text-[14px] rounded-2xl bg-field transition-[background-color,box-shadow] focus:bg-surface focus:ring-4 focus:ring-ring"
           />
         </Field>
       </div>
@@ -123,14 +123,14 @@ export function ReviewForm({ productId }: { productId: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="flex h-12 items-center bg-accent px-7 text-[14px] font-extrabold text-bg disabled:opacity-60"
+          className="flex h-12 items-center bg-accent px-7 text-[14px] font-semibold text-bg disabled:opacity-60 rounded-full justify-center transition-colors hover:bg-accent-600"
         >
           {pending ? "Đang gửi…" : "GỬI ĐÁNH GIÁ"}
         </button>
         <button
           type="button"
           onClick={() => setMo(false)}
-          className="flex h-12 items-center border-2 border-divider px-6 text-[14px] font-extrabold"
+          className="flex h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
         >
           Thôi
         </button>

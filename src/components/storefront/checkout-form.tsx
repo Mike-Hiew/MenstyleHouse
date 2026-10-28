@@ -158,7 +158,7 @@ export function CheckoutForm({
       <input type="hidden" name="carrier" value={carrier} />
       <input type="hidden" name="province" value={province} />
 
-      {/* Thanh bước: kẻ trên 4px, nhãn mono — đúng mockup. */}
+      {/* Thanh bước: kẻ trên 4px — đúng mockup. */}
       <ol className="mb-8 grid grid-cols-2 gap-0.5 sm:grid-cols-4" aria-label="Các bước thanh toán">
         {STEPS.map((label, i) => {
           const active = i === step;
@@ -169,7 +169,7 @@ export function CheckoutForm({
               aria-current={active ? "step" : undefined}
               className={cn(
                 "border-t-4 pt-2.5",
-                active ? "border-accent" : done ? "border-divider" : "border-hairline",
+                active ? "border-neutral-900" : done ? "border-neutral-400" : "border-stone",
               )}
             >
               <span className="label-tech block font-bold text-neutral-400">BƯỚC {i + 1}</span>
@@ -186,12 +186,12 @@ export function CheckoutForm({
         })}
       </ol>
 
-      <div className="grid items-start gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_320px]">
         <div>
           {state.message ? (
             <p
               role="alert"
-              className="mb-5 border-2 border-accent bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
+              className="mb-5 rounded-2xl bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
             >
               {state.message}
             </p>
@@ -202,7 +202,7 @@ export function CheckoutForm({
             <h2 className="mb-5 text-[24px]">Thông tin nhận hàng</h2>
 
             {!isMember ? (
-              <div className="mb-6 flex flex-wrap items-center gap-5 border-2 border-border-soft px-5 py-4">
+              <div className="mb-6 flex flex-wrap items-center gap-5 px-5 py-4 rounded-card bg-surface shadow-soft">
                 <div className="min-w-[220px] flex-1">
                   <p className="mb-1 text-[14.5px] font-extrabold">
                     Bạn đang đặt hàng với tư cách khách vãng lai
@@ -214,7 +214,7 @@ export function CheckoutForm({
                 </div>
                 <Link
                   href={{ pathname: "/dang-ky" }}
-                  className="flex min-h-11 flex-none items-center bg-accent px-4 text-[13px] font-extrabold text-bg"
+                  className="flex min-h-11 flex-none items-center justify-center rounded-full bg-neutral-900 px-5 text-[13px] font-semibold text-bg"
                 >
                   ĐĂNG KÝ NHANH
                 </Link>
@@ -229,8 +229,8 @@ export function CheckoutForm({
                     <label
                       key={a.id}
                       className={cn(
-                        "flex cursor-pointer gap-3 border p-4",
-                        addrId === a.id ? "border-accent bg-accent-100" : "border-border-soft",
+                        "flex cursor-pointer gap-3 rounded-2xl transition-[background-color,box-shadow] p-4",
+                        addrId === a.id ? "bg-surface shadow-[inset_0_0_0_2px_var(--color-text)]" : "bg-field hover:bg-field-hover",
                       )}
                     >
                       <input
@@ -238,13 +238,13 @@ export function CheckoutForm({
                         name="savedaddr"
                         checked={addrId === a.id}
                         onChange={() => setAddrId(a.id)}
-                        className="mt-0.5 h-[17px] w-[17px] flex-none accent-accent"
+                        className="mt-0.5 h-[17px] w-[17px] flex-none accent-neutral-900"
                       />
                       <span className="flex-1">
                         <span className="mb-1.5 flex items-center gap-2">
                           <strong className="text-[14px]">{a.label}</strong>
                           {a.isDefault ? (
-                            <span className="bg-accent px-1.5 py-0.5 text-[10px] font-extrabold text-bg">
+                            <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-[10px] font-bold text-bg">
                               MẶC ĐỊNH
                             </span>
                           ) : null}
@@ -258,8 +258,8 @@ export function CheckoutForm({
                 </div>
                 <label
                   className={cn(
-                    "mt-3 flex cursor-pointer items-center gap-3 border px-4 py-3.5",
-                    addrId === "new" ? "border-accent bg-accent-100" : "border-border-soft",
+                    "mt-3 flex cursor-pointer items-center gap-3 rounded-2xl transition-[background-color,box-shadow] px-4 py-3.5",
+                    addrId === "new" ? "bg-surface shadow-[inset_0_0_0_2px_var(--color-text)]" : "bg-field hover:bg-field-hover",
                   )}
                 >
                   <input
@@ -267,7 +267,7 @@ export function CheckoutForm({
                     name="savedaddr"
                     checked={addrId === "new"}
                     onChange={() => setAddrId("new")}
-                    className="h-[17px] w-[17px] accent-accent"
+                    className="h-[17px] w-[17px] accent-neutral-900"
                   />
                   <span className="text-[14px] font-semibold">Giao tới địa chỉ khác</span>
                 </label>
@@ -367,7 +367,7 @@ export function CheckoutForm({
                     defaultValue={cu("note") ?? ""}
                     rows={3}
                     placeholder="Giao giờ hành chính, gọi trước khi đến…"
-                    className={inputCls(err("note"))}
+                    className={inputCls(err("note"), true)}
                   />
                 </FieldRow>
               </Cell>
@@ -384,13 +384,13 @@ export function CheckoutForm({
                 name="vatRequested"
                 checked={vat}
                 onChange={(e) => setVat(e.target.checked)}
-                className="mt-[3px] h-4 w-4 accent-accent"
+                className="mt-[3px] h-4 w-4 accent-neutral-900"
               />
               <span>Xuất hoá đơn công ty (VAT)</span>
             </label>
 
             {vat ? (
-              <div className="mt-4 grid gap-4 bg-subtle p-5 sm:grid-cols-2">
+              <div className="mt-4 grid gap-4 rounded-card bg-sand p-5 sm:grid-cols-2">
                 <Cell span={2}>
                   <FieldRow label="Tên công ty" error={err("vatBuyerName")}>
                     <input
@@ -444,8 +444,8 @@ export function CheckoutForm({
               <label
                 key={q.carrier}
                 className={cn(
-                  "flex min-h-[60px] cursor-pointer items-center gap-3 border-2 px-4",
-                  carrier === q.carrier ? "border-accent bg-accent-100" : "border-border-soft",
+                  "flex min-h-[60px] cursor-pointer items-center gap-3 rounded-2xl px-4 transition-[background-color,box-shadow]",
+                  carrier === q.carrier ? "bg-surface shadow-[inset_0_0_0_2px_var(--color-text)]" : "bg-field hover:bg-field-hover",
                 )}
               >
                 <input
@@ -453,13 +453,13 @@ export function CheckoutForm({
                   name="carrierChoice"
                   checked={carrier === q.carrier}
                   onChange={() => setCarrier(q.carrier)}
-                  className="h-[18px] w-[18px] accent-accent"
+                  className="h-[18px] w-[18px] accent-neutral-900"
                 />
                 <span className="flex-1">
                   <span className="block text-[14px] font-semibold">{q.name}</span>
                   <span className="block text-[12.5px] text-muted">Dự kiến {q.etaText}</span>
                 </span>
-                <span className="font-mono text-[14px] font-bold">
+                <span className="tabular-nums text-[14px] font-bold">
                   {q.fee === 0 ? "Miễn phí" : formatVnd(q.fee)}
                 </span>
               </label>
@@ -476,8 +476,8 @@ export function CheckoutForm({
               <label
                 key={o.value}
                 className={cn(
-                  "flex min-h-[60px] cursor-pointer items-center gap-3.5 border-2 px-4",
-                  pay === o.value ? "border-accent bg-accent-100" : "border-border-soft",
+                  "flex min-h-[60px] cursor-pointer items-center gap-3.5 rounded-2xl px-4 transition-[background-color,box-shadow]",
+                  pay === o.value ? "bg-surface shadow-[inset_0_0_0_2px_var(--color-text)]" : "bg-field hover:bg-field-hover",
                 )}
               >
                 <input
@@ -486,9 +486,9 @@ export function CheckoutForm({
                   value={o.value}
                   checked={pay === o.value}
                   onChange={() => setPay(o.value)}
-                  className="h-[17px] w-[17px] accent-accent"
+                  className="h-[17px] w-[17px] accent-neutral-900"
                 />
-                <span className="label-tech h-[30px] w-11 flex-none bg-neutral-900 text-center leading-[30px] text-bg">
+                <span className="label-tech h-[30px] w-11 flex-none rounded-full bg-neutral-900 text-center leading-[30px] text-bg">
                   {o.tag}
                 </span>
                 <span className="flex-1">
@@ -500,7 +500,7 @@ export function CheckoutForm({
 
             {pay === "BANK_TRANSFER" ? (
               /* Mockup: ảnh QR 150×150 bên trái, thông tin tài khoản bên phải. */
-              <div className="mt-2 flex flex-wrap items-center gap-6 bg-subtle p-5 text-[14px] leading-[1.9]">
+              <div className="mt-2 flex flex-wrap items-center gap-6 rounded-card bg-sand p-5 text-[14px] leading-[1.9]">
                 {nganHang.qrUrl ? (
                   <span className="relative h-[150px] w-[150px] flex-none bg-white">
                     <Image
@@ -541,7 +541,7 @@ export function CheckoutForm({
               <button
                 type="button"
                 onClick={() => setStep((s) => (s - 1) as 1 | 2)}
-                className="h-12 flex-1 border-2 border-divider text-[14px] font-extrabold lg:flex-none lg:px-8"
+                className="h-12 flex-1 text-[14px] font-extrabold lg:flex-none lg:px-8 rounded-full bg-field hover:bg-field-hover"
               >
                 Quay lại
               </button>
@@ -551,7 +551,7 @@ export function CheckoutForm({
               <button
                 type="button"
                 onClick={() => setStep((s) => (s + 1) as 2 | 3)}
-                className="h-12 flex-1 bg-neutral-900 text-[14px] font-extrabold text-bg lg:flex-none lg:px-10"
+                className="h-12 flex-1 bg-neutral-900 text-[14px] font-semibold text-bg lg:flex-none lg:px-10 rounded-full justify-center"
               >
                 Tiếp tục
               </button>
@@ -559,7 +559,7 @@ export function CheckoutForm({
               <button
                 type="submit"
                 disabled={pending}
-                className="h-12 flex-1 bg-accent text-[14px] font-extrabold text-bg disabled:opacity-60 lg:flex-none lg:px-10"
+                className="h-12 flex-1 bg-accent text-[14px] font-semibold text-bg disabled:opacity-60 lg:flex-none lg:px-10 rounded-full justify-center transition-colors hover:bg-accent-600"
               >
                 {pending ? "Đang đặt đơn…" : "ĐẶT ĐƠN"}
               </button>
@@ -567,7 +567,7 @@ export function CheckoutForm({
           </div>
         </div>
 
-        <aside className="border-t-2 border-divider pt-[18px] lg:sticky lg:top-[120px]">
+        <aside className="rounded-panel bg-surface p-6 shadow-soft lg:sticky lg:top-[120px]">
           <h2 className="mb-4 text-[16px] font-extrabold">Tóm tắt đơn</h2>
           <dl className="flex flex-col gap-2.5 border-t border-hairline py-3.5 text-[14px]">
             <Row label="Tạm tính" value={formatVnd(subtotal)} />
@@ -587,7 +587,7 @@ export function CheckoutForm({
               <input type="hidden" name="pointsToUse" value={diemDung} />
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <span className="label-tech font-bold">DÙNG ĐIỂM THƯỞNG</span>
-                <span className="font-mono text-[12px] text-muted">
+                <span className="tabular-nums text-[12px] text-muted">
                   còn {diem.soDiem} điểm
                 </span>
               </div>
@@ -599,7 +599,7 @@ export function CheckoutForm({
                 step={1}
                 value={diemDung}
                 onChange={(e) => setDungDiem(Number(e.target.value))}
-                className="h-11 w-full accent-accent"
+                className="h-11 w-full accent-neutral-900"
               />
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[13px]">
@@ -608,7 +608,7 @@ export function CheckoutForm({
                 <button
                   type="button"
                   onClick={() => setDungDiem(diemDung > 0 ? 0 : diem.toiDa)}
-                  className="min-h-11 text-[12.5px] font-extrabold text-accent-700 underline"
+                  className="min-h-11 text-[12.5px] font-extrabold underline decoration-1 underline-offset-4"
                 >
                   {diemDung > 0 ? "Bỏ dùng" : "Dùng tối đa"}
                 </button>
@@ -650,10 +650,11 @@ function FieldRow({
   );
 }
 
-function inputCls(error?: string) {
+function inputCls(error?: string, multiline = false) {
   return cn(
-    "w-full border bg-bg px-3.5 py-3 text-[16px] outline-none lg:text-[14px]",
-    error ? "border-accent" : "border-border-soft focus:border-accent",
+    multiline ? "rounded-2xl" : "rounded-full",
+    "w-full bg-field px-4 py-3 text-[16px] outline-none transition-[background-color,box-shadow] focus:bg-surface focus:ring-4 lg:text-[14px]",
+    error ? "ring-2 ring-accent/60 focus:ring-accent/30" : "focus:ring-ring",
   );
 }
 

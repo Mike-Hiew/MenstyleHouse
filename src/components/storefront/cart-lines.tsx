@@ -26,12 +26,12 @@ export function CartLines({ lines }: { lines: CartLine[] }) {
   };
 
   return (
-    <ul className={cn("border-t border-hairline", pending && "opacity-60")} aria-busy={pending}>
+    <ul className={cn("flex flex-col gap-2.5", pending && "opacity-60")} aria-busy={pending}>
       {lines.map((l) => (
-        <li key={l.itemId} className="flex gap-4 border-b border-hairline py-4 lg:gap-[18px]">
+        <li key={l.itemId} className="flex min-w-0 gap-3 rounded-card bg-surface p-3 shadow-soft lg:gap-[18px]">
           <Link
             href={{ pathname: "/san-pham/" + l.slug }}
-            className="relative h-[112px] w-[88px] flex-none bg-subtle"
+            className="relative h-[96px] w-[76px] flex-none overflow-hidden rounded-xl bg-subtle lg:h-[112px] lg:w-[88px]"
           >
             {l.imageUrl ? <Photo src={l.imageUrl} alt={l.productName} sizes="88px" /> : null}
           </Link>
@@ -39,7 +39,7 @@ export function CartLines({ lines }: { lines: CartLine[] }) {
           <div className="flex min-w-0 flex-1 flex-col">
             <Link
               href={{ pathname: "/san-pham/" + l.slug }}
-              className="mb-1 text-[15px] font-semibold hover:text-accent-700"
+              className="mb-1 text-[15px] font-semibold hover:text-muted"
             >
               {l.productName}
             </Link>
@@ -48,19 +48,19 @@ export function CartLines({ lines }: { lines: CartLine[] }) {
             </div>
 
             {l.qty > l.stock ? (
-              <p className="mb-2 text-[12.5px] font-semibold text-accent-700">
+              <p className="mb-2 text-[12.5px] font-semibold text-text">
                 Chỉ còn {l.stock} cái — số lượng sẽ được giảm khi đặt.
               </p>
             ) : null}
 
             <div className="mt-auto flex items-center gap-3.5">
-              <div className="flex items-center border border-border-soft">
+              <div className="flex items-center rounded-full bg-field px-1">
                 <button
                   type="button"
                   aria-label={"Giảm số lượng " + l.productName}
                   disabled={pending}
                   onClick={() => send(updateCartItemAction, l.itemId, l.qty - 1)}
-                  className="h-11 w-11 text-[16px] lg:h-[34px] lg:w-[34px]"
+                  className="h-11 w-11 rounded-full text-[16px] hover:bg-field-hover lg:h-[34px] lg:w-[34px]"
                 >
                   −
                 </button>
@@ -70,7 +70,7 @@ export function CartLines({ lines }: { lines: CartLine[] }) {
                   aria-label={"Tăng số lượng " + l.productName}
                   disabled={pending || l.qty >= l.stock}
                   onClick={() => send(updateCartItemAction, l.itemId, l.qty + 1)}
-                  className="h-11 w-11 text-[16px] disabled:opacity-40 lg:h-[34px] lg:w-[34px]"
+                  className="h-11 w-11 rounded-full text-[16px] hover:bg-field-hover disabled:opacity-40 lg:h-[34px] lg:w-[34px]"
                 >
                   +
                 </button>
@@ -88,7 +88,7 @@ export function CartLines({ lines }: { lines: CartLine[] }) {
             </div>
           </div>
 
-          <div className="flex-none text-[16px] font-extrabold">{formatVnd(l.lineTotal)}</div>
+          <div className="flex-none text-[14.5px] font-extrabold lg:text-[16px]">{formatVnd(l.lineTotal)}</div>
         </li>
       ))}
     </ul>

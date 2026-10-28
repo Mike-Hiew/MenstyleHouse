@@ -18,12 +18,12 @@ export default function GlobalError({
 
   return (
     <main className="flex min-h-[70vh] items-center justify-center px-6 py-20">
-      <div className="flex max-w-lg flex-col items-center gap-4 border-2 border-divider bg-surface px-8 py-14 text-center">
+      <div className="flex max-w-lg flex-col items-center gap-4 px-8 py-14 text-center rounded-card bg-surface shadow-soft">
         <TriangleAlert size={40} className="text-accent" aria-hidden />
         <h1 className="text-[26px]">Trang gặp sự cố</h1>
         <p className="text-[14px] text-neutral-600">
           Hệ thống không tải được dữ liệu. Bạn thử lại giúp, nếu vẫn lỗi thì gọi
-          <span className="font-mono"> 1900 6789</span>.
+          <span> 1900 6789</span>.
         </p>
         {error.digest ? (
           <p className="font-mono text-[12px] text-neutral-400">Mã lỗi: {error.digest}</p>
@@ -32,7 +32,7 @@ export default function GlobalError({
           <Button onClick={reset}>Thử lại</Button>
           <Link
             href="/"
-            className="inline-flex h-11 items-center border-2 border-divider px-4 text-[14px] font-semibold hover:bg-neutral-200"
+            className="inline-flex h-11 items-center px-4 text-[14px] font-semibold rounded-full bg-field hover:bg-field-hover"
           >
             Về trang chủ
           </Link>

@@ -19,7 +19,7 @@ export function AcceptInviteForm({ token }: { token: string }) {
       {state.message ? (
         <p
           role="alert"
-          className="border-2 border-accent bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
+          className="rounded-2xl bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
         >
           {state.message}
         </p>
@@ -44,7 +44,7 @@ export function AcceptInviteForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 h-12 bg-accent text-[14px] font-extrabold text-bg disabled:opacity-60 sm:w-fit sm:px-10"
+        className="mt-2 h-12 bg-accent text-[14px] font-semibold text-bg disabled:opacity-60 sm:w-fit sm:px-10 rounded-full justify-center transition-colors hover:bg-accent-600"
       >
         {pending ? "Đang tạo…" : "TẠO TÀI KHOẢN"}
       </button>
@@ -53,4 +53,4 @@ export function AcceptInviteForm({ token }: { token: string }) {
 }
 
 const o =
-  "w-full border border-border-soft bg-bg px-3.5 py-3 text-[16px] outline-none focus:border-accent lg:text-[14px]";
+  "w-full rounded-full bg-field px-4 py-3 text-[16px] outline-none transition-[background-color,box-shadow] focus:bg-surface focus:ring-4 focus:ring-ring lg:text-[14px]";

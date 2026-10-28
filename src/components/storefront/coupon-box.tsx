@@ -13,7 +13,7 @@ export function CouponBox() {
 
   return (
     <form action={action}>
-      <div className="mb-2 flex">
+      <div className="mb-2 flex rounded-full bg-field p-1 focus-within:bg-surface focus-within:ring-4 focus-within:ring-ring">
         <label htmlFor="coupon" className="sr-only">
           Mã giảm giá
         </label>
@@ -21,12 +21,12 @@ export function CouponBox() {
           id="coupon"
           name="code"
           placeholder="Nhập mã giảm giá"
-          className="h-11 min-w-0 flex-1 border border-r-0 border-border-soft bg-bg px-3 text-[16px] outline-none lg:text-[13px]"
+          className="h-10 min-w-0 flex-1 bg-transparent px-3.5 text-[16px] outline-none lg:text-[13px]"
         />
         <button
           type="submit"
           disabled={pending}
-          className="h-11 flex-none bg-neutral-900 px-4 text-[12.5px] font-extrabold text-bg disabled:opacity-60"
+          className="h-10 flex-none rounded-full bg-neutral-900 px-4 text-[12.5px] font-semibold text-bg disabled:opacity-60"
         >
           {pending ? "…" : "ÁP DỤNG"}
         </button>
@@ -47,7 +47,7 @@ export function CouponBox() {
             "mb-3.5 text-[12.5px] font-semibold",
             state.ok
               ? "text-muted"
-              : "border-2 border-accent bg-accent-100 px-3 py-2 text-accent-800",
+              : "rounded-2xl bg-accent-100 px-3 py-2 text-accent-800",
           )}
         >
           {state.message}

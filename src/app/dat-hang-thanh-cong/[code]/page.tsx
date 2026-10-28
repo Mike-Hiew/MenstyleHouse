@@ -53,7 +53,7 @@ export default async function OrderPlacedPage({ params }: Params) {
     <>
       <Header />
       <main className="mx-auto w-full max-w-[820px] px-4 pb-20 pt-10 lg:px-8 lg:pt-12">
-        <div className="mb-5 grid h-14 w-14 place-items-center bg-accent text-[30px] font-extrabold text-bg">
+        <div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-ok text-[30px] font-semibold text-bg">
           ✓
         </div>
 
@@ -83,18 +83,18 @@ export default async function OrderPlacedPage({ params }: Params) {
             <li key={t.title} className="flex gap-4 pb-5">
               <div className="flex w-3.5 flex-none flex-col items-center">
                 <span
-                  className={"block h-3 w-3 " + (t.done ? "bg-accent" : "bg-hairline")}
+                  className={"block h-3 w-3 rounded-full " + (t.done ? "bg-neutral-900" : "bg-stone")}
                   aria-hidden
                 />
                 {i < timeline.length - 1 ? (
-                  <span className="mt-1 block w-0.5 flex-1 bg-hairline" aria-hidden />
+                  <span className="mt-1 block w-0.5 flex-1 bg-stone" aria-hidden />
                 ) : null}
               </div>
               <div className="pb-1">
                 <p className={"text-[14.5px] font-extrabold " + (t.done ? "" : "text-muted")}>
                   {t.title}
                 </p>
-                <p className="font-mono text-[12.5px] text-faint">{t.when}</p>
+                <p className="tabular-nums text-[12.5px] text-faint">{t.when}</p>
               </div>
             </li>
           ))}
@@ -106,13 +106,13 @@ export default async function OrderPlacedPage({ params }: Params) {
               pathname: "/tra-cuu-don",
               query: "ma=" + order.code + "&sdt=" + order.phone.slice(-4),
             }}
-            className="flex min-h-12 items-center bg-neutral-900 px-6 text-[14px] font-extrabold text-bg"
+            className="flex min-h-12 items-center bg-neutral-900 px-6 text-[14px] font-semibold text-bg rounded-full justify-center"
           >
             TRA CỨU ĐƠN NÀY
           </Link>
           <Link
             href="/"
-            className="flex min-h-12 items-center border border-border-soft px-6 text-[14px] font-extrabold"
+            className="flex min-h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
           >
             Về trang chủ
           </Link>

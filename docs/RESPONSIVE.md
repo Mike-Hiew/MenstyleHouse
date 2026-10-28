@@ -67,7 +67,7 @@ Sheet dùng chung cho cả Lọc và Sắp xếp — một component `<BottomShe
 
 ### Chi tiết sản phẩm
 Desktop hai cột (gallery trái, thông tin phải) → mobile một cột dọc.
-Gallery thành carousel vuốt ngang, chỉ báo là các vạch ngang ở đáy ảnh (không phải chấm tròn — hệ thống không bo góc).
+Gallery thành carousel vuốt ngang, chỉ báo là các vạch ngang ở đáy ảnh (không phải chấm tròn).
 Nút **Thêm vào giỏ** dính đáy màn hình (`sticky bottom-0`) cùng bộ đếm số lượng.
 
 ### Giỏ hàng

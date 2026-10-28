@@ -126,7 +126,7 @@ export default async function ProductPage({ params }: Params) {
                 {product.ratingCount > 0 ? (
                   <>
                     <Stars value={product.ratingAvg} />
-                    <a href="#danh-gia" className="hover:text-accent-700">
+                    <a href="#danh-gia" className="hover:text-muted">
                       {product.ratingAvg.toFixed(1)} · {product.ratingCount} đánh giá
                     </a>
                   </>
@@ -176,7 +176,7 @@ export default async function ProductPage({ params }: Params) {
               <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
                 {related.map((p) => (
                   <Link key={p.id} href={{ pathname: "/san-pham/" + p.slug }} className="group">
-                    <div className="relative aspect-[3/4] w-full bg-subtle">
+                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-card bg-subtle transition-[transform,box-shadow] duration-500 group-hover:-translate-y-1.5 group-hover:shadow-raised">
                       {p.images[0] ? (
                         <Photo
                           src={p.images[0].url}
@@ -185,7 +185,7 @@ export default async function ProductPage({ params }: Params) {
                         />
                       ) : null}
                     </div>
-                    <h3 className="mb-1.5 mt-3 text-[14.5px] font-semibold leading-[1.35] group-hover:text-accent-700">
+                    <h3 className="mb-1.5 mt-3 text-[14.5px] font-semibold leading-[1.35] group-hover:text-muted">
                       {p.name}
                     </h3>
                     <span className="text-[15px] font-extrabold">

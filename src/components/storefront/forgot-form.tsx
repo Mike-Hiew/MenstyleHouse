@@ -16,12 +16,12 @@ export function ForgotForm() {
 
   if (state.ok) {
     return (
-      <div className="border-2 border-divider bg-surface p-6">
+      <div className="p-6 rounded-card bg-surface shadow-soft">
         <h2 className="mb-3 text-[20px] font-extrabold">Đã gửi nếu tài khoản tồn tại</h2>
         <p className="mb-6 text-[14.5px] leading-[1.7] text-muted">{state.message}</p>
         <Link
           href={{ pathname: "/dang-nhap" }}
-          className="flex min-h-12 w-fit items-center border-2 border-divider px-6 text-[14px] font-extrabold"
+          className="flex min-h-12 w-fit items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
         >
           Về trang đăng nhập
         </Link>
@@ -34,7 +34,7 @@ export function ForgotForm() {
       {state.message ? (
         <p
           role="alert"
-          className="border-2 border-accent bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
+          className="rounded-2xl bg-accent-100 px-4 py-3 text-[14px] font-semibold text-accent-800"
         >
           {state.message}
         </p>
@@ -51,14 +51,14 @@ export function ForgotForm() {
       <button
         type="submit"
         disabled={pending}
-        className="flex h-12 items-center justify-center bg-accent text-[15px] font-extrabold text-bg disabled:opacity-60"
+        className="flex h-12 items-center justify-center bg-accent text-[15px] font-semibold text-bg disabled:opacity-60 rounded-full transition-colors hover:bg-accent-600"
       >
         {pending ? "Đang gửi…" : "GỬI ĐƯỜNG DẪN ĐẶT LẠI"}
       </button>
 
       <p className="text-[13.5px] text-muted">
         Nhớ ra rồi?{" "}
-        <Link href={{ pathname: "/dang-nhap" }} className="font-semibold text-accent-700 underline">
+        <Link href={{ pathname: "/dang-nhap" }} className="font-semibold underline decoration-1 underline-offset-4">
           Đăng nhập
         </Link>
       </p>
