@@ -12,6 +12,7 @@ import { formatVnd } from "@/lib/money";
 import type { SizeChart } from "@/lib/size-chart";
 import type { SizeRange } from "@/lib/size-finder";
 import { readSavedInput, recommendFor, SizeFinder } from "./size-finder";
+import { useProductColor } from "./product-stage";
 
 export type PickerVariant = {
   id: string;
@@ -37,6 +38,8 @@ export function VariantPicker({
   salePrice,
   sizeChart,
   fitRanges = [],
+  specs,
+  floatingBar = false,
   accordions,
 }: {
   variants: PickerVariant[];
@@ -45,6 +48,13 @@ export function VariantPicker({
   sizeChart: SizeChart | null;
   /** Khoảng chiều cao/cân nặng từng size; rỗng thì không hiện "Tìm size cho tôi". */
   fitRanges?: SizeRange[];
+  /**
+   * Chip thông số dưới giá (v2). `undefined` = không hiện khối chip (cờ tắt);
+   * mảng rỗng vẫn hiện chip chính sách "Đổi size 15 ngày".
+   */
+  specs?: string[];
+  /** Thanh mua nổi ở đáy màn hình trên mobile (v2), thay cho khối dính đáy cũ. */
+  floatingBar?: boolean;
   accordions: Accordion[];
 }) {
   const colors = React.useMemo(() => {
@@ -62,9 +72,14 @@ export function VariantPicker({
     [variants],
   );
 
-  const [color, setColor] = React.useState(
+  // Có `ProductColorProvider` (v2) thì màu dùng chung với gallery để đổi bộ
+  // ảnh theo màu; không có thì giữ trạng thái riêng như cũ.
+  const [ownColor, setOwnColor] = React.useState(
     () => (colors.find((c) => c.stock > 0) ?? colors[0])?.color ?? "",
   );
+  const stage = useProductColor();
+  const color = stage?.color ?? ownColor;
+  const setColor = stage?.setColor ?? setOwnColor;
   const [size, setSize] = React.useState("");
   const [qty, setQty] = React.useState(1);
   const [chartOpen, setChartOpen] = React.useState(false);
@@ -80,6 +95,17 @@ export function VariantPicker({
   }, [fitRanges]);
   const [openPanel, setOpenPanel] = React.useState(0);
   const toast = useToast();
+  const sizesRef = React.useRef<HTMLDivElement>(null);
+  // Thanh mua nổi chỉ hiện khi khối nút mua trong trang đã cuộn khỏi màn hình.
+  const actionsRef = React.useRef<HTMLDivElement>(null);
+  const [actionsVisible, setActionsVisible] = React.useState(true);
+  React.useEffect(() => {
+    const el = actionsRef.current;
+    if (!floatingBar || !el) return;
+    const io = new IntersectionObserver(([e]) => setActionsVisible(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, [floatingBar]);
   const router = useRouter();
   const drawer = useCartDrawer();
   const [saving, startSaving] = React.useTransition();
@@ -88,6 +114,8 @@ export function VariantPicker({
   const add = (then: "stay" | "checkout") => {
     if (!selected) {
       toast("Chọn size trước khi thêm vào giỏ.", "error");
+      // Bấm từ thanh nổi thì khối size đang ở ngoài màn hình — đưa khách tới đó.
+      sizesRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     const form = new FormData();
@@ -158,6 +186,16 @@ export function VariantPicker({
         <StockText variant={selected} chosen={Boolean(size)} colorStock={colorStock} />
       </p>
 
+      {specs ? (
+        <ul className="-mt-4 mb-7 flex flex-wrap gap-1.5" aria-label="Thông số">
+          {[...specs, "Đổi size 15 ngày"].map((s) => (
+            <li key={s} className="rounded-full bg-field px-3 py-[7px] text-[12.5px] font-semibold">
+              {s}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       {/* ── Màu ── */}
       <div className="label-tech mb-2.5 font-bold">MÀU — {color}</div>
       <div className="mb-6 flex flex-wrap gap-2">
@@ -213,7 +251,7 @@ export function VariantPicker({
       </div>
 
       {/* `pt-2.5`: chừa chỗ cho nhãn "Hợp với bạn" nhô lên trên nút. */}
-      <div className="mb-2 flex flex-wrap gap-2 pt-2.5">
+      <div ref={sizesRef} className="mb-2 flex flex-wrap gap-2 pt-2.5">
         {sizes.map((s) => {
           const v = forColor.find((x) => x.size === s);
           const out = !v || v.stock === 0;
@@ -252,10 +290,12 @@ export function VariantPicker({
           Dưới `lg:` khối này dính đáy màn hình để nút mua luôn trong tầm ngón
           tay; từ `lg:` trở lên nó nằm đúng trong luồng như mockup desktop. */}
       <div
+        ref={actionsRef}
         className={cn(
           "z-40 mb-3 flex gap-3",
-          "max-lg:sticky max-lg:bottom-0 max-lg:-mx-4 max-lg:bg-bg/85 max-lg:px-4 max-lg:py-3 max-lg:backdrop-blur-xl",
-          "max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]",
+          // Bản cũ: dính đáy màn hình. Bản v2 có thanh nổi riêng nên để trong luồng.
+          !floatingBar &&
+            "max-lg:sticky max-lg:bottom-0 max-lg:-mx-4 max-lg:bg-bg/85 max-lg:px-4 max-lg:py-3 max-lg:backdrop-blur-xl max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]",
         )}
       >
         <div className="flex items-center rounded-full bg-field px-1">
@@ -299,6 +339,39 @@ export function VariantPicker({
       >
         Đặt hàng ngay
       </button>
+
+      {/* ── Thanh mua nổi (mobile, v2) ──
+          Giá + "Thêm vào giỏ", dùng đúng hàm `add` của nút trong trang. Chỉ
+          hiện khi nút trong trang đã cuộn khỏi màn hình, để không có hai nút
+          mua cùng lúc trước mắt khách. */}
+      {floatingBar ? (
+        <div
+          aria-hidden={actionsVisible}
+          className={cn(
+            "fixed inset-x-2.5 bottom-[max(10px,env(safe-area-inset-bottom))] z-[62] flex items-center gap-2.5 rounded-full bg-surface/70 py-2 pl-5 pr-2 shadow-raised backdrop-blur-xl lg:hidden",
+            "transition-[transform,opacity] duration-500 ease-[var(--ease-out-soft)]",
+            actionsVisible ? "pointer-events-none translate-y-[140%] opacity-0" : "translate-y-0 opacity-100",
+          )}
+        >
+          <div className="min-w-0">
+            <b className={cn("block text-[17px] font-extrabold leading-tight", salePrice && "text-accent")}>
+              {formatVnd(unitPrice)}
+            </b>
+            <span className="block truncate text-[12px] text-muted">
+              {size ? "Size " + size + " · " + color : "Chưa chọn size"}
+            </span>
+          </div>
+          <button
+            type="button"
+            tabIndex={actionsVisible ? -1 : 0}
+            onClick={() => add("stay")}
+            disabled={saving}
+            className="ml-auto h-12 flex-1 rounded-full bg-accent px-5 text-[14.5px] font-semibold text-bg transition-[background-color,transform] hover:bg-accent-600 active:scale-[0.97]"
+          >
+            Thêm vào giỏ
+          </button>
+        </div>
+      ) : null}
 
       {/* ── Mục gập ── */}
       <div className="flex flex-col gap-1.5">

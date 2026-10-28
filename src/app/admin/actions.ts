@@ -116,6 +116,8 @@ const productSchema = z.object({
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]),
   material: z.string().trim().max(120).optional(),
   careNote: z.string().trim().max(300).optional(),
+  /** Chip thông số, phân tách bằng dấu phẩy: "250gsm, May đôi". */
+  specs: z.string().trim().max(300).optional(),
   categoryId: z.string().trim().min(1, "Chọn danh mục"),
   brandId: z.string().trim().optional(),
   seoTitle: z.string().trim().max(70).optional(),
@@ -123,6 +125,16 @@ const productSchema = z.object({
   /** Đè bảng size của danh mục; rỗng là dùng theo danh mục. */
   sizeChartId: z.string().trim().optional(),
 });
+
+/** "250gsm, May đôi,," → ["250gsm", "May đôi"]: bỏ ô trống, bỏ trùng, tối đa 6 chip. */
+function tachChip(raw: string | undefined): string[] {
+  const out: string[] = [];
+  for (const s of (raw ?? "").split(",")) {
+    const t = s.trim().slice(0, 40);
+    if (t && !out.includes(t)) out.push(t);
+  }
+  return out.slice(0, 6);
+}
 
 /**
  * Lưu sản phẩm. **Không** đụng tới `Variant.stock` ở đây — tồn kho chỉ đổi qua
@@ -171,6 +183,7 @@ export async function saveProductAction(
         status: rest.status,
         material: rest.material || null,
         careNote: rest.careNote || null,
+        specs: tachChip(rest.specs),
         categoryId: rest.categoryId,
         brandId: rest.brandId || null,
         seoTitle: rest.seoTitle || null,
@@ -237,6 +250,43 @@ export async function uploadImageAction(
   revalidatePath("/san-pham/" + slug);
   revalidateTag(TAG.catalog);
   return { ok: true, message: "Đã thêm ảnh." };
+}
+
+/**
+ * Gắn một ảnh với một màu (hoặc bỏ gắn: dùng cho mọi màu). Trang sản phẩm đổi
+ * bộ ảnh theo màu khách chọn. Màu phải là màu của chính sản phẩm đó — chặn ở
+ * server để form sửa tay không gắn được ảnh vào một màu không tồn tại.
+ */
+export async function setImageColorAction(
+  _prev: AdminActionState,
+  form: FormData,
+): Promise<AdminActionState> {
+  const slug = String(form.get("slug") ?? "");
+  const imageId = String(form.get("imageId") ?? "");
+  const color = String(form.get("color") ?? "").trim();
+
+  try {
+    await assertPermission("san-pham.sua");
+    const img = await db.productImage.findFirst({
+      where: { id: imageId, product: { slug } },
+      select: { productId: true },
+    });
+    if (!img) return { ok: false, message: "Không tìm thấy ảnh." };
+    if (color) {
+      const coMau = await db.variant.count({ where: { productId: img.productId, color } });
+      if (coMau === 0) return { ok: false, message: "Sản phẩm không có màu này." };
+    }
+    await db.productImage.update({ where: { id: imageId }, data: { color: color || null } });
+  } catch (e) {
+    if (e instanceof ForbiddenError) return { ok: false, message: e.message };
+    console.error(e);
+    return { ok: false, message: "Không lưu được màu của ảnh." };
+  }
+
+  revalidatePath("/admin/san-pham/" + slug);
+  revalidatePath("/san-pham/" + slug);
+  revalidateTag(TAG.catalog);
+  return { ok: true, message: color ? "Đã gắn ảnh với màu " + color + "." : "Ảnh dùng cho mọi màu." };
 }
 
 export async function deleteImageAction(

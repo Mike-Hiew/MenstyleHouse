@@ -2,7 +2,12 @@
 
 import { useActionState } from "react";
 import { cn } from "@/lib/cn";
-import { deleteImageAction, uploadImageAction, type AdminActionState } from "@/app/admin/actions";
+import {
+  deleteImageAction,
+  setImageColorAction,
+  uploadImageAction,
+  type AdminActionState,
+} from "@/app/admin/actions";
 import { Photo } from "@/components/ui/photo";
 
 export type ProductImageRow = {
@@ -11,6 +16,8 @@ export type ProductImageRow = {
   alt: string;
   sort: number;
   blobId: string | null;
+  /** Màu ảnh này thuộc về; `null` = dùng cho mọi màu. */
+  color: string | null;
 };
 
 /**
@@ -21,18 +28,22 @@ export type ProductImageRow = {
 export function ProductImages({
   slug,
   images,
+  colors,
 }: {
   slug: string;
   images: ProductImageRow[];
+  /** Các màu của sản phẩm, để gắn ảnh theo màu. */
+  colors: string[];
 }) {
   const [upState, upload, uploading] = useActionState<AdminActionState, FormData>(
     uploadImageAction,
     {},
   );
   const [delState, remove] = useActionState<AdminActionState, FormData>(deleteImageAction, {});
+  const [mauState, ganMau] = useActionState<AdminActionState, FormData>(setImageColorAction, {});
 
-  const notice = upState.message ?? delState.message;
-  const noticeOk = upState.message ? upState.ok : delState.ok;
+  const notice = upState.message ?? delState.message ?? mauState.message;
+  const noticeOk = upState.message ? upState.ok : delState.message ? delState.ok : mauState.ok;
 
   return (
     <section>
@@ -63,6 +74,27 @@ export function ProductImages({
               <div className="relative aspect-[3/4] bg-subtle">
                 <Photo src={img.url} alt={img.alt} sizes="(min-width: 640px) 200px, 45vw" />
               </div>
+              {/* Trang sản phẩm chỉ hiện ảnh của màu đang chọn (cộng ảnh dùng chung). */}
+              <form action={ganMau} className="border-t border-hairline px-2 py-1.5">
+                <input type="hidden" name="slug" value={slug} />
+                <input type="hidden" name="imageId" value={img.id} />
+                <label className="flex items-center gap-2 text-[12px]">
+                  <span className="label-tech flex-none">MÀU</span>
+                  <select
+                    name="color"
+                    defaultValue={img.color ?? ""}
+                    onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                    className="min-h-9 w-full min-w-0 border border-border-soft bg-surface px-1.5 text-[12.5px]"
+                  >
+                    <option value="">Mọi màu</option>
+                    {colors.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </form>
               <div className="flex items-center justify-between gap-2 border-t border-hairline px-2 py-1.5">
                 <span className="label-tech truncate">
                   {img.blobId ? "TRONG DB" : "LINK NGOÀI"}

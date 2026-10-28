@@ -5,6 +5,7 @@ import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { Container, Crumbs } from "@/components/storefront/shell";
 import { ProductGallery } from "@/components/storefront/product-gallery";
+import { ProductColorProvider } from "@/components/storefront/product-stage";
 import { VariantPicker } from "@/components/storefront/variant-picker";
 import { ReviewSection, Stars } from "@/components/storefront/review-list";
 import { ReviewForm } from "@/components/storefront/review-form";
@@ -101,7 +102,8 @@ export default async function ProductPage({ params }: Params) {
       <Header />
 
       <main>
-        <Container className="pb-16 pt-6">
+        {/* Chừa chỗ cho thanh mua nổi ở đáy màn hình trên mobile (v2). */}
+        <Container className={FLAGS.pdpExtras ? "pb-16 pt-6 max-lg:pb-28" : "pb-16 pt-6"}>
           <Crumbs parts={["TRANG CHỦ", "SẢN PHẨM", product.name.toUpperCase()]} />
 
           {/*
@@ -111,60 +113,73 @@ export default async function ProductPage({ params }: Params) {
             trên điện thoại. `grid-cols-1` cho ra `minmax(0, 1fr)` nên cột không
             vượt khung, và dải thumbnail cuộn đúng như thiết kế.
           */}
-          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2">
-            <ProductGallery images={product.images} name={product.name} />
-
-            <div>
-              <div className="label-tech font-bold tracking-[0.1em] text-neutral-400">
-                {product.brand ? product.brand.name + " · " : ""}
-                {product.category.name}
-              </div>
-
-              <h1 className="my-3 text-[26px] leading-[1.15] lg:text-[40px] lg:leading-[1.1]">
-                {product.name}
-              </h1>
-
-              <div className="mb-6 flex items-center gap-2.5 text-[13px] text-muted">
-                {product.ratingCount > 0 ? (
-                  <>
-                    <Stars value={product.ratingAvg} />
-                    <a href="#danh-gia" className="hover:text-muted">
-                      {product.ratingAvg.toFixed(1)} · {product.ratingCount} đánh giá
-                    </a>
-                  </>
-                ) : (
-                  <span>Chưa có đánh giá</span>
-                )}
-              </div>
-
-              <VariantPicker
-                variants={product.variants.map((v) => ({
-                  id: v.id,
-                  sku: v.sku,
-                  color: v.color,
-                  colorHex: v.colorHex,
-                  size: v.size,
-                  stock: v.stock,
-                  lowStockAt: v.lowStockAt,
-                  priceDelta: v.priceDelta,
-                }))}
-                basePrice={product.basePrice}
-                salePrice={product.salePrice}
-                sizeChart={bangSize}
-                fitRanges={FLAGS.sizeFinder && bangSize ? fitRangesFromChart(bangSize) : []}
-                accordions={accordionsFor(product)}
+          {/*
+            v2: màu đang chọn dùng chung giữa gallery (đổi bộ ảnh) và khối chọn
+            biến thể. Màu khởi đầu tính đúng như `VariantPicker`: màu đầu tiên
+            còn hàng, theo thứ tự biến thể.
+          */}
+          <MaybeColorStage initial={mauDauTien(product.variants)}>
+            <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2">
+              <ProductGallery
+                images={product.images}
+                name={product.name}
+                loupe={FLAGS.pdpExtras}
               />
 
-              {/* Lưu để mua sau — tab "Sản phẩm yêu thích" ở trang tài khoản. */}
-              <div className="mt-4">
-                <WishlistButton
-                  productId={product.id}
-                  daThich={daThich}
-                  daDangNhap={Boolean(userId)}
+              <div>
+                <div className="label-tech font-bold tracking-[0.1em] text-neutral-400">
+                  {product.brand ? product.brand.name + " · " : ""}
+                  {product.category.name}
+                </div>
+
+                <h1 className="my-3 text-[26px] leading-[1.15] lg:text-[40px] lg:leading-[1.1]">
+                  {product.name}
+                </h1>
+
+                <div className="mb-6 flex items-center gap-2.5 text-[13px] text-muted">
+                  {product.ratingCount > 0 ? (
+                    <>
+                      <Stars value={product.ratingAvg} />
+                      <a href="#danh-gia" className="hover:text-muted">
+                        {product.ratingAvg.toFixed(1)} · {product.ratingCount} đánh giá
+                      </a>
+                    </>
+                  ) : (
+                    <span>Chưa có đánh giá</span>
+                  )}
+                </div>
+
+                <VariantPicker
+                  variants={product.variants.map((v) => ({
+                    id: v.id,
+                    sku: v.sku,
+                    color: v.color,
+                    colorHex: v.colorHex,
+                    size: v.size,
+                    stock: v.stock,
+                    lowStockAt: v.lowStockAt,
+                    priceDelta: v.priceDelta,
+                  }))}
+                  basePrice={product.basePrice}
+                  salePrice={product.salePrice}
+                  sizeChart={bangSize}
+                  fitRanges={FLAGS.sizeFinder && bangSize ? fitRangesFromChart(bangSize) : []}
+                  specs={FLAGS.pdpExtras ? product.specs : undefined}
+                  floatingBar={FLAGS.pdpExtras}
+                  accordions={accordionsFor(product)}
                 />
+
+                {/* Lưu để mua sau — tab "Sản phẩm yêu thích" ở trang tài khoản. */}
+                <div className="mt-4">
+                  <WishlistButton
+                    productId={product.id}
+                    daThich={daThich}
+                    daDangNhap={Boolean(userId)}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </MaybeColorStage>
 
           <ReviewSection
             reviews={product.reviews}
@@ -205,4 +220,20 @@ export default async function ProductPage({ params }: Params) {
       <SiteFooter />
     </>
   );
+}
+
+function MaybeColorStage({ initial, children }: { initial: string; children: React.ReactNode }) {
+  return FLAGS.pdpExtras ? (
+    <ProductColorProvider initial={initial}>{children}</ProductColorProvider>
+  ) : (
+    <>{children}</>
+  );
+}
+
+/** Màu đầu tiên còn hàng (cộng tồn mọi size), theo thứ tự biến thể. */
+function mauDauTien(variants: { color: string; stock: number }[]): string {
+  const ton = new Map<string, number>();
+  for (const v of variants) ton.set(v.color, (ton.get(v.color) ?? 0) + v.stock);
+  for (const [mau, so] of ton) if (so > 0) return mau;
+  return variants[0]?.color ?? "";
 }

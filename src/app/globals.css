@@ -319,6 +319,12 @@
   }
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 @keyframes bump {
   35% {
     transform: scale(1.12);

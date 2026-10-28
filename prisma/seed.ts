@@ -60,6 +60,17 @@ const CATEGORIES = [
   { name: "Phụ kiện", slug: "phu-kien", sizes: ["Freesize"], chart: null },
 ];
 
+/** Chip thông số dưới giá ở trang sản phẩm, theo nhóm hàng. */
+const SPECS: Record<string, string[]> = {
+  "ao-phong": ["Cotton 250gsm", "May đôi", "Co rút 0,8%"],
+  "ao-so-mi": ["Oxford 140gsm", "Đã giặt trước"],
+  "ao-polo": ["Cá sấu 220gsm", "May đôi"],
+  "ao-hoodie": ["Nỉ bông 360gsm", "Mũ hai lớp"],
+  "ao-khoac": ["Chống gió nhẹ", "Lót lưới"],
+  "quan-jeans": ["Denim 12oz", "Co giãn 2%"],
+  "quan-short": ["Linen pha cotton", "Lưng thun"],
+};
+
 const BRANDS = ["MSH Basic", "MSH Heritage", "Nordfelt", "Tân Bình Denim", "Kojima", "Lữ Hành"];
 
 const COLORS = [
@@ -258,6 +269,7 @@ async function main() {
         status: i < 36 ? "ACTIVE" : "DRAFT",
         material: pick(MATERIALS),
         careNote: pick(CARE),
+        specs: SPECS[cat.slug] ?? [],
         images: {
           create: photos.slice(0, 3).map((p, k) => ({
             url: photoUrl(p),
