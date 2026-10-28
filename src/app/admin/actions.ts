@@ -107,7 +107,12 @@ const productSchema = z.object({
   name: z.string().trim().min(2, "Nhập tên sản phẩm").max(160),
   description: z.string().trim().min(10, "Mô tả tối thiểu 10 ký tự").max(2000),
   basePrice: z.coerce.number().int().min(1000, "Giá tối thiểu 1.000 ₫").max(100_000_000),
-  salePrice: z.union([z.coerce.number().int().min(0).max(100_000_000), z.literal("")]).optional(),
+  /*
+   * `z.literal("")` phải đứng **trước**: `z.coerce.number()` biến chuỗi rỗng
+   * thành 0 và qua được `min(0)`, nên đặt nó trước thì ô "Giá sale" để trống
+   * lưu thành giá sale 0 ₫ — sản phẩm bán 0 đồng ở storefront và ở giỏ hàng.
+   */
+  salePrice: z.union([z.literal(""), z.coerce.number().int().min(0).max(100_000_000)]).optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]),
   material: z.string().trim().max(120).optional(),
   careNote: z.string().trim().max(300).optional(),
