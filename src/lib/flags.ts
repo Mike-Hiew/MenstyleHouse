@@ -44,4 +44,14 @@ export const FLAGS = {
    * lên; điện thoại luôn là hero cũ.
    */
   heroStage: flag(process.env.NEXT_PUBLIC_FF_HERO_STAGE, true),
+  /**
+   * Mục 7 — trang đặt hàng thành công dạng hoá đơn in nhiệt (chữ mono, mép
+   * răng cưa, mã QR dẫn về trang tra cứu). Tắt: trang cũ.
+   */
+  receipt: flag(process.env.NEXT_PUBLIC_FF_RECEIPT, true),
+  /**
+   * Mục 7 — header thành viên thuốc kính nổi, cuộn xuống thì ẩn, cuộn lên thì
+   * hiện lại. Tắt: thanh dính đỉnh như cũ.
+   */
+  pillHeader: flag(process.env.NEXT_PUBLIC_FF_PILL_HEADER, true),
 } as const;

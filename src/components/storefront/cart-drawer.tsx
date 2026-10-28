@@ -49,18 +49,28 @@ function reducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/** Header nổi (mục 7) nghe sự kiện này để hiện lại. */
+export const SHOW_HEADER_EVENT = "msh:show-header";
+
 /**
  * Nhân bản ảnh rồi cho bay theo đường cong về nút giỏ. Trả về promise xong khi
  * hạ cánh; không tìm thấy ảnh hoặc nút thì xong ngay.
  */
 function flyToCart(source: HTMLElement | null): Promise<void> {
+  window.dispatchEvent(new Event(SHOW_HEADER_EVENT));
   const target = Array.from(document.querySelectorAll<HTMLElement>("[data-cart-target]")).find(
     (el) => el.offsetParent !== null,
   );
   if (!source || !target || reducedMotion()) return Promise.resolve();
 
+  // Header nổi có thể đang trượt khuất: bay tới chỗ nó sẽ về (vị trí hiện
+  // tại trừ đi đoạn đang dịch lên).
+  const header = target.closest("header");
+  const shift = header ? parseFloat(getComputedStyle(header).translate.split(" ")[1] ?? "") || 0 : 0;
+
   const from = source.getBoundingClientRect();
-  const to = target.getBoundingClientRect();
+  const r = target.getBoundingClientRect();
+  const to = { left: r.left, top: r.top - shift, width: r.width, height: r.height };
   if (from.width === 0 || to.width === 0) return Promise.resolve();
 
   const clone = source.cloneNode(true) as HTMLElement;

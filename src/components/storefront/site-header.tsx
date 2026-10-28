@@ -9,7 +9,8 @@ import { useOverlay } from "@/components/ui/overlay";
 import { AccountMenu, chuTat, type ThanhVien } from "./account-menu";
 import { logoutAction } from "@/app/(tai-khoan)/actions";
 import { Container } from "./shell";
-import { useCartDrawer } from "./cart-drawer";
+import { SHOW_HEADER_EVENT, useCartDrawer } from "./cart-drawer";
+import { FLAGS } from "@/lib/flags";
 
 /**
  * Một cây DOM, gập theo breakpoint (`docs/RESPONSIVE.md`).
@@ -72,16 +73,33 @@ export function SiteHeader({
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
-  return (
-    <header className="sticky top-0 z-70 bg-bg/85 backdrop-blur-xl">
-      <div className="bg-sand/70">
-        <Container className="py-1.5 text-center text-[11.5px] font-semibold text-muted lg:text-[12.5px]">
-          Miễn phí giao từ 500.000 ₫
-        </Container>
-      </div>
+  const pill = FLAGS.pillHeader;
+  const headerRef = React.useRef<HTMLElement>(null);
+  const scrollHidden = useHideOnScroll(pill, headerRef);
+  const hidden = scrollHidden.hidden && !menuOpen && !searchOpen;
 
-      <div className="shadow-[0_1px_0_rgba(21,20,19,0.05)]">
-        <Container className="flex items-center gap-1 py-2 lg:gap-8 lg:py-3">
+  const strip = (
+    <div className="bg-sand/70">
+      <Container className="py-1.5 text-center text-[11.5px] font-semibold text-muted lg:text-[12.5px]">
+        Miễn phí giao từ 500.000 ₫
+      </Container>
+    </div>
+  );
+
+  const navDrawer = (
+    <NavDrawer
+      open={menuOpen}
+      onClose={() => setMenuOpen(false)}
+      categories={categories}
+      isActive={isActive}
+      staffRole={staffRole}
+      member={member}
+    />
+  );
+
+  const bar = (
+    <>
+        <Container className={cn("flex items-center gap-1 lg:gap-8", pill ? "py-1.5 lg:py-2" : "py-2 lg:py-3")}>
           <button
             type="button"
             aria-label="Mở menu"
@@ -234,18 +252,95 @@ export function SiteHeader({
             </form>
           </Container>
         ) : null}
-      </div>
-
-      <NavDrawer
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        categories={categories}
-        isActive={isActive}
-        staffRole={staffRole}
-        member={member}
-      />
-    </header>
+    </>
   );
+
+  if (!pill) {
+    return (
+      <header className="sticky top-0 z-70 bg-bg/85 backdrop-blur-xl">
+        {strip}
+        <div className="shadow-[0_1px_0_rgba(21,20,19,0.05)]">{bar}</div>
+        {navDrawer}
+      </header>
+    );
+  }
+
+  /*
+   * Header thuốc kính nổi (mục 7). Dải "Miễn phí giao" cuộn đi theo trang, chỉ
+   * viên thuốc dính đỉnh. Cuộn xuống thì trượt khuất, cuộn lên thì hiện lại;
+   * tab bàn phím vào trong header cũng kéo nó ra.
+   *
+   * Drawer menu nằm **ngoài** <header>: header có `backdrop-filter` và
+   * `translate`, hai thứ đều biến nó thành khung chứa của con `position: fixed`
+   * — để drawer bên trong thì nó bị nhốt trong viên thuốc.
+   */
+  return (
+    <>
+      {strip}
+      <header
+        ref={headerRef}
+        onFocus={scrollHidden.show}
+        className={cn(
+          "pointer-events-none sticky top-0 z-70 px-2.5 pt-2 lg:px-4 lg:pt-3",
+          "motion-safe:transition-transform motion-safe:duration-500 motion-safe:ease-[var(--ease-out-soft)]",
+          hidden && "-translate-y-[calc(100%+12px)]",
+        )}
+      >
+        <div
+          className={cn(
+            "pointer-events-auto mx-auto max-w-[1360px] bg-surface/75 shadow-soft ring-1 ring-black/5 backdrop-blur-xl lg:max-w-[calc(1360px-32px)]",
+            searchOpen ? "rounded-[28px]" : "rounded-full",
+          )}
+        >
+          {bar}
+        </div>
+      </header>
+      {navDrawer}
+    </>
+  );
+}
+
+/**
+ * Cuộn xuống quá ~160px thì báo ẩn, cuộn lên thì báo hiện. Bỏ qua rung nhỏ
+ * dưới 8px, và không ẩn khi đang có ô/nút trong header được focus.
+ */
+function useHideOnScroll(on: boolean, ref: React.RefObject<HTMLElement | null>) {
+  const [hidden, setHidden] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!on) return;
+    let last = window.scrollY;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const y = window.scrollY;
+        const d = y - last;
+        if (y < 160) {
+          setHidden(false);
+          last = y;
+          return;
+        }
+        if (Math.abs(d) < 8) return;
+        const focused = ref.current?.matches(":focus-within") ?? false;
+        setHidden(d > 0 && !focused);
+        last = y;
+      });
+    };
+    // Thêm vào giỏ thì hiện ra, để món hàng bay tới đúng nút giỏ.
+    const onShow = () => setHidden(false);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener(SHOW_HEADER_EVENT, onShow);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener(SHOW_HEADER_EVENT, onShow);
+      cancelAnimationFrame(raf);
+    };
+  }, [on, ref]);
+
+  const show = React.useCallback(() => setHidden(false), []);
+  return { hidden, show };
 }
 
 function NavDrawer({
