@@ -37,6 +37,10 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/menstylehouse?schema=public
+      # `schema.prisma` khai `directUrl = env("DIRECT_URL")`; thiếu biến này thì
+      # `prisma migrate deploy` dừng ngay với P1012. CI không có pooler nên đặt
+      # bằng đúng DATABASE_URL, giống `.env.example`.
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/menstylehouse?schema=public
       # Auth.js đòi có secret lúc build; giá trị này chỉ dùng trong CI.
       AUTH_SECRET: ci-secret-khong-dung-cho-that
       NEXT_TELEMETRY_DISABLED: "1"
