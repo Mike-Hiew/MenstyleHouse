@@ -44,15 +44,20 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
+/**
+ * `chart`: slug bảng size mà migration `nap_bang_size` đã nạp và gán cho danh
+ * mục này. Seed xoá rồi tạo lại danh mục, nên phải gán lại — không thì DB vừa
+ * seed không có bảng size nào ở trang sản phẩm.
+ */
 const CATEGORIES = [
-  { name: "Áo phông", slug: "ao-phong", sizes: ["S", "M", "L", "XL", "XXL"] },
-  { name: "Áo sơ mi", slug: "ao-so-mi", sizes: ["S", "M", "L", "XL", "XXL"] },
-  { name: "Áo polo", slug: "ao-polo", sizes: ["S", "M", "L", "XL"] },
-  { name: "Áo hoodie", slug: "ao-hoodie", sizes: ["M", "L", "XL", "XXL"] },
-  { name: "Áo khoác", slug: "ao-khoac", sizes: ["M", "L", "XL", "XXL"] },
-  { name: "Quần jeans", slug: "quan-jeans", sizes: ["29", "30", "31", "32", "34", "36"] },
-  { name: "Quần short", slug: "quan-short", sizes: ["29", "30", "31", "32", "34"] },
-  { name: "Phụ kiện", slug: "phu-kien", sizes: ["Freesize"] },
+  { name: "Áo phông", slug: "ao-phong", sizes: ["S", "M", "L", "XL", "XXL"], chart: "ao" },
+  { name: "Áo sơ mi", slug: "ao-so-mi", sizes: ["S", "M", "L", "XL", "XXL"], chart: "ao" },
+  { name: "Áo polo", slug: "ao-polo", sizes: ["S", "M", "L", "XL"], chart: "ao" },
+  { name: "Áo hoodie", slug: "ao-hoodie", sizes: ["M", "L", "XL", "XXL"], chart: "ao" },
+  { name: "Áo khoác", slug: "ao-khoac", sizes: ["M", "L", "XL", "XXL"], chart: "ao" },
+  { name: "Quần jeans", slug: "quan-jeans", sizes: ["29", "30", "31", "32", "34", "36"], chart: "quan-dai" },
+  { name: "Quần short", slug: "quan-short", sizes: ["29", "30", "31", "32", "34"], chart: "quan-short" },
+  { name: "Phụ kiện", slug: "phu-kien", sizes: ["Freesize"], chart: null },
 ];
 
 const BRANDS = ["MSH Basic", "MSH Heritage", "Nordfelt", "Tân Bình Denim", "Kojima", "Lữ Hành"];
@@ -142,9 +147,20 @@ async function main() {
   ]);
 
   // ── Danh mục & thương hiệu ────────────────────────────────
+  // Bảng size không bị seed xoá (do migration nạp); thiếu thì bỏ qua.
+  const charts = new Map(
+    (await db.sizeChart.findMany({ select: { id: true, slug: true } })).map((c) => [c.slug, c.id]),
+  );
   const categories = await Promise.all(
     CATEGORIES.map((c, i) =>
-      db.category.create({ data: { name: c.name, slug: c.slug, sort: i } }),
+      db.category.create({
+        data: {
+          name: c.name,
+          slug: c.slug,
+          sort: i,
+          sizeChartId: (c.chart && charts.get(c.chart)) || null,
+        },
+      }),
     ),
   );
   const brands = await Promise.all(BRANDS.map((name) => db.brand.create({ data: { name } })));
@@ -198,7 +214,7 @@ async function main() {
   }
 
   // ── Kho & nhà cung cấp ────────────────────────────────────
-  const warehouses = await Promise.all([
+  const [khoChinh] = await Promise.all([
     db.warehouse.create({ data: { name: "Kho Tân Bình", address: "128 Trường Chinh, Q. Tân Bình, TP.HCM", isMain: true } }),
     db.warehouse.create({ data: { name: "Kho Long Biên", address: "45 Ngọc Lâm, Q. Long Biên, Hà Nội" } }),
     db.warehouse.create({ data: { name: "Kho Hoà Khánh", address: "12 Âu Cơ, Q. Liên Chiểu, Đà Nẵng" } }),
@@ -315,11 +331,15 @@ async function main() {
   for (const v of allVariants) {
     const qty = rnd() < 0.08 ? int(0, 6) : int(12, 90);
     if (qty === 0) continue;
+    // Tồn đầu kỳ nằm ở kho chính: `StockLevel` phải cộng lại đúng bằng
+    // `Variant.stock` (bất biến `auditWarehouse`), như mọi lối qua `moveStock`.
     await db.$transaction([
       db.variant.update({ where: { id: v.id }, data: { stock: qty } }),
+      db.stockLevel.create({ data: { variantId: v.id, warehouseId: khoChinh.id, qty } }),
       db.inventoryMovement.create({
         data: {
           variantId: v.id,
+          warehouseId: khoChinh.id,
           type: "RECEIPT",
           delta: qty,
           stockAfter: qty,
