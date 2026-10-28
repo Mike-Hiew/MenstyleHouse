@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { getOrderByCode } from "@/server/orders";
+import { placedHere } from "@/server/order-access";
+import { currentUserId } from "@/auth";
 import { formatVnd } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +42,11 @@ export default async function OrderPlacedPage({ params }: Params) {
   const { code } = await params;
   const order = await getOrderByCode(decodeURIComponent(code));
   if (!order) notFound();
+
+  // Mã đơn đoán được, nên chỉ người vừa đặt (cookie có chữ ký) hoặc chủ đơn
+  // đang đăng nhập mới xem chi tiết. Người khác chỉ thấy mã và lời nhắc tra cứu.
+  const owner = order.userId ? order.userId === (await currentUserId()) : false;
+  if (!owner && !(await placedHere(order.code))) return <OrderPlacedMinimal code={order.code} />;
 
   const facts = [
     { k: "MÃ ĐƠN", v: order.code },
@@ -113,6 +120,36 @@ export default async function OrderPlacedPage({ params }: Params) {
           <Link
             href="/"
             className="flex min-h-12 items-center px-6 text-[14px] font-extrabold rounded-full bg-field hover:bg-field-hover"
+          >
+            Về trang chủ
+          </Link>
+        </div>
+      </main>
+      <SiteFooter />
+    </>
+  );
+}
+
+/** Bản rút gọn cho người mở link mà không phải người đặt: không lộ gì ngoài mã. */
+function OrderPlacedMinimal({ code }: { code: string }) {
+  return (
+    <>
+      <Header />
+      <main className="mx-auto w-full max-w-[820px] px-4 pb-20 pt-10 lg:px-8 lg:pt-12">
+        <h1 className="mb-3 text-[30px] leading-[1.1] lg:text-[44px]">Đơn {code}</h1>
+        <p className="mb-7 text-[16px] text-muted">
+          Để xem chi tiết và trạng thái đơn, tra cứu bằng mã đơn và 4 số cuối điện thoại đặt hàng.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={{ pathname: "/tra-cuu-don", query: { ma: code } }}
+            className="flex min-h-12 items-center justify-center rounded-full bg-neutral-900 px-6 text-[14px] font-semibold text-bg"
+          >
+            TRA CỨU ĐƠN NÀY
+          </Link>
+          <Link
+            href="/"
+            className="flex min-h-12 items-center rounded-full bg-field px-6 text-[14px] font-extrabold hover:bg-field-hover"
           >
             Về trang chủ
           </Link>
