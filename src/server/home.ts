@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { cardInclude, type ProductCardData } from "@/server/catalog";
 import { TINH_DA_BAN } from "@/lib/order-status";
 import { formatVnd } from "@/lib/money";
+import type { LookConfig } from "@/content/looks";
 
 /**
  * Dữ liệu cho các khối trang chủ.
@@ -158,4 +159,77 @@ export async function getFlashSale(): Promise<FlashSale | null> {
     phu,
     conLai: con.usageLimit === null ? null : con.usageLimit - con.usedCount,
   };
+}
+
+/* ── Mặc thử nguyên bộ (v2) ──────────────────────────────── */
+
+export type LookItem = {
+  variantId: string;
+  slug: string;
+  name: string;
+  color: string;
+  size: string;
+  /** Giá thật của biến thể: giá sau sale + chênh theo size. */
+  price: number;
+  stock: number;
+  imageUrl: string | null;
+  x: number;
+  y: number;
+};
+
+export type Look = {
+  id: string;
+  title: string;
+  note: string;
+  image: { url: string; alt: string } | null;
+  items: LookItem[];
+};
+
+/**
+ * Đổi cấu hình bộ đồ (`src/content/looks.ts`) thành dữ liệu hiển thị: tra
+ * đúng biến thể màu/size của từng món đang bán. Món không tra được thì bỏ;
+ * bộ còn dưới 2 món thì bỏ cả bộ — "mặc thử nguyên bộ" một món là vô nghĩa.
+ */
+export async function getLooks(configs: LookConfig[]): Promise<Look[]> {
+  const slugs = [...new Set(configs.flatMap((l) => l.items.map((i) => i.product)))];
+  if (slugs.length === 0) return [];
+
+  const products = await db.product.findMany({
+    where: { slug: { in: slugs }, status: "ACTIVE" },
+    include: {
+      images: { orderBy: [{ onBody: "asc" }, { sort: "asc" }], take: 1 },
+      variants: true,
+    },
+  });
+  const bySlug = new Map(products.map((p) => [p.slug, p]));
+
+  return configs
+    .map((l) => {
+      const items = l.items.flatMap((it): LookItem[] => {
+        const p = bySlug.get(it.product);
+        const v = p?.variants.find((x) => x.color === it.color && x.size === it.size);
+        if (!p || !v) return [];
+        return [
+          {
+            variantId: v.id,
+            slug: p.slug,
+            name: p.name,
+            color: v.color,
+            size: v.size,
+            price: (p.salePrice ?? p.basePrice) + v.priceDelta,
+            stock: v.stock,
+            imageUrl: p.images[0]?.url ?? null,
+            x: it.x,
+            y: it.y,
+          },
+        ];
+      });
+      // Chưa có ảnh lookbook thật thì mượn ảnh món có điểm chấm ở giữa ảnh.
+      const fallback = items[Math.floor(items.length / 2)];
+      const image =
+        l.image ??
+        (fallback?.imageUrl ? { url: fallback.imageUrl, alt: l.title } : null);
+      return { id: l.id, title: l.title, note: l.note, image, items };
+    })
+    .filter((l) => l.items.length >= 2);
 }

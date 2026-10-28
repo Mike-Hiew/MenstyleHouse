@@ -5,6 +5,7 @@ import { cn } from "@/lib/cn";
 import {
   deleteImageAction,
   setImageColorAction,
+  setImageOnBodyAction,
   uploadImageAction,
   type AdminActionState,
 } from "@/app/admin/actions";
@@ -18,6 +19,8 @@ export type ProductImageRow = {
   blobId: string | null;
   /** Màu ảnh này thuộc về; `null` = dùng cho mọi màu. */
   color: string | null;
+  /** Ảnh mặc trên người — thẻ sản phẩm đổi sang ảnh này khi rê chuột. */
+  onBody: boolean;
 };
 
 /**
@@ -41,9 +44,14 @@ export function ProductImages({
   );
   const [delState, remove] = useActionState<AdminActionState, FormData>(deleteImageAction, {});
   const [mauState, ganMau] = useActionState<AdminActionState, FormData>(setImageColorAction, {});
+  const [nguoiState, ganNguoi] = useActionState<AdminActionState, FormData>(
+    setImageOnBodyAction,
+    {},
+  );
 
-  const notice = upState.message ?? delState.message ?? mauState.message;
-  const noticeOk = upState.message ? upState.ok : delState.message ? delState.ok : mauState.ok;
+  const last = [upState, delState, mauState, nguoiState].find((s) => s.message);
+  const notice = last?.message;
+  const noticeOk = last?.ok;
 
   return (
     <section>
@@ -93,6 +101,20 @@ export function ProductImages({
                       </option>
                     ))}
                   </select>
+                </label>
+              </form>
+              <form action={ganNguoi} className="border-t border-hairline px-2 py-1.5">
+                <input type="hidden" name="slug" value={slug} />
+                <input type="hidden" name="imageId" value={img.id} />
+                <input type="hidden" name="onBody" value={img.onBody ? "0" : "1"} />
+                <label className="flex min-h-9 cursor-pointer items-center gap-2 text-[12.5px]">
+                  <input
+                    type="checkbox"
+                    checked={img.onBody}
+                    onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                    className="h-4 w-4 accent-neutral-900"
+                  />
+                  Ảnh mặc trên người
                 </label>
               </form>
               <div className="flex items-center justify-between gap-2 border-t border-hairline px-2 py-1.5">

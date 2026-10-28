@@ -165,6 +165,8 @@ model ProductImage {
   /// Ảnh này thuộc màu nào (khớp `Variant.color`). Trống = dùng cho mọi màu.
   /// Trang sản phẩm đổi bộ ảnh theo màu khách chọn.
   color     String?
+  /// Ảnh mặc trên người: thẻ sản phẩm đổi sang ảnh này khi rê chuột.
+  onBody    Boolean @default(false)
 
   /// Nhiều ảnh dùng chung một blob được: hai sản phẩm cùng một tấm lookbook thì
   /// chỉ lưu bytes một lần. Đặt `@unique` ở đây là vô hiệu hoá luôn việc dùng

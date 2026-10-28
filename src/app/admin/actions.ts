@@ -284,6 +284,51 @@ export async function setImageColorAction(
   return { ok: true, message: color ? "Đã gắn ảnh với màu " + color + "." : "Ảnh dùng cho mọi màu." };
 }
 
+/**
+ * Đánh dấu ảnh mặc trên người: thẻ sản phẩm đổi sang ảnh này khi rê chuột.
+ * Mỗi sản phẩm chỉ một ảnh được đánh dấu — bật ảnh này là tắt ảnh khác, để
+ * thẻ luôn biết chắc đổi sang ảnh nào.
+ */
+export async function setImageOnBodyAction(
+  _prev: AdminActionState,
+  form: FormData,
+): Promise<AdminActionState> {
+  const slug = String(form.get("slug") ?? "");
+  const imageId = String(form.get("imageId") ?? "");
+  const onBody = form.get("onBody") === "1";
+
+  try {
+    await assertPermission("san-pham.sua");
+    const img = await db.productImage.findFirst({
+      where: { id: imageId, product: { slug } },
+      select: { productId: true },
+    });
+    if (!img) return { ok: false, message: "Không tìm thấy ảnh." };
+    await db.$transaction([
+      ...(onBody
+        ? [
+            db.productImage.updateMany({
+              where: { productId: img.productId, NOT: { id: imageId } },
+              data: { onBody: false },
+            }),
+          ]
+        : []),
+      db.productImage.update({ where: { id: imageId }, data: { onBody } }),
+    ]);
+  } catch (e) {
+    if (e instanceof ForbiddenError) return { ok: false, message: e.message };
+    console.error(e);
+    return { ok: false, message: "Không lưu được ảnh mặc trên người." };
+  }
+
+  revalidatePath("/admin/san-pham/" + slug);
+  revalidateTag(TAG.catalog);
+  return {
+    ok: true,
+    message: onBody ? "Đã đặt làm ảnh mặc trên người." : "Đã bỏ đánh dấu ảnh mặc trên người.",
+  };
+}
+
 export async function deleteImageAction(
   _prev: AdminActionState,
   form: FormData,
