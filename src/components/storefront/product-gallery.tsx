@@ -55,7 +55,8 @@ export function ProductGallery({ images, name }: { images: Shot[]; name: string 
         </div>
       ) : null}
 
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-card bg-subtle">
+      {/* `data-fly-source`: ảnh này được nhân bản để bay vào giỏ sau khi thêm hàng. */}
+      <div data-fly-source className="relative aspect-[3/4] w-full overflow-hidden rounded-card bg-subtle">
         <Photo
           src={current.url}
           alt={current.alt}

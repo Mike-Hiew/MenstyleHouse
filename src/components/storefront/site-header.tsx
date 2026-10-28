@@ -9,6 +9,7 @@ import { useOverlay } from "@/components/ui/overlay";
 import { AccountMenu, chuTat, type ThanhVien } from "./account-menu";
 import { logoutAction } from "@/app/(tai-khoan)/actions";
 import { Container } from "./shell";
+import { useCartDrawer } from "./cart-drawer";
 
 /**
  * Một cây DOM, gập theo breakpoint (`docs/RESPONSIVE.md`).
@@ -37,6 +38,9 @@ const ACCOUNT = [
 
 export type HeaderMember = ThanhVien;
 
+/** Huy hiệu nảy khi vừa thêm hàng — chỉ sau lần thêm đầu, không phải mỗi lần tải trang. */
+const BUMP = "motion-safe:animate-[bump_.55s_var(--ease-out-soft)]";
+
 export function SiteHeader({
   categories = [],
   cartCount = 0,
@@ -56,6 +60,10 @@ export function SiteHeader({
   staffRole?: string | null;
 }) {
   const pathname = usePathname();
+  const drawer = useCartDrawer();
+  // Đang ở trang giỏ hoặc thanh toán thì nút giỏ vẫn chỉ là link, mở thêm
+  // ngăn kéo đè lên đúng nội dung ấy chỉ tổ rối.
+  const drawerHere = drawer && !/^\/(gio-hang|thanh-toan)(\/|$)/.test(pathname);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
 
@@ -168,17 +176,37 @@ export function SiteHeader({
             {/* Mobile: icon 44px kèm huy hiệu như mockup. Desktop: nút đỏ có chữ. */}
             <Link
               href={{ pathname: "/gio-hang" }}
+              data-cart-target
               aria-label={"Giỏ hàng, " + cartCount + " sản phẩm"}
+              aria-haspopup={drawerHere ? "dialog" : undefined}
+              onClick={(e) => {
+                // Ctrl/⌘/Shift-click vẫn mở trang giỏ ở tab mới như link thường.
+                if (!drawerHere || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                e.preventDefault();
+                drawer.open();
+              }}
               className="relative flex h-11 w-11 items-center justify-center rounded-full lg:h-11 lg:w-auto lg:gap-2 lg:bg-neutral-900 lg:pl-4 lg:pr-2 lg:text-[13.5px] lg:font-semibold lg:text-bg"
             >
               <ShoppingBag size={20} className="lg:hidden" aria-hidden />
               {cartCount > 0 ? (
-                <span className="absolute right-0.5 top-1 min-w-[17px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[17px] text-bg lg:hidden">
+                <span
+                  key={"m" + (drawer?.bump ?? 0)}
+                  className={cn(
+                    "absolute right-0.5 top-1 min-w-[17px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[17px] text-bg lg:hidden",
+                    drawer?.bump && BUMP,
+                  )}
+                >
                   {cartCount}
                 </span>
               ) : null}
               <span className="hidden lg:inline">Giỏ</span>
-              <span className="hidden h-[26px] min-w-[26px] place-items-center rounded-full bg-accent px-1.5 text-[12px] lg:grid">
+              <span
+                key={"d" + (drawer?.bump ?? 0)}
+                className={cn(
+                  "hidden h-[26px] min-w-[26px] place-items-center rounded-full bg-accent px-1.5 text-[12px] lg:grid",
+                  drawer?.bump && BUMP,
+                )}
+              >
                 {cartCount}
               </span>
             </Link>
