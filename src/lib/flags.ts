@@ -19,4 +19,9 @@ export const FLAGS = {
   cartDrawer: flag(process.env.NEXT_PUBLIC_FF_CART_DRAWER, true),
   /** Mục 3: bộ gợi ý size (khối ở trang chủ + sheet ở trang sản phẩm). */
   sizeFinder: flag(process.env.NEXT_PUBLIC_FF_SIZE_FINDER, true),
+  /**
+   * Mục 4: bổ sung trang sản phẩm — kính lúp, chip thông số, đổi ảnh theo màu,
+   * thanh mua nổi trên mobile.
+   */
+  pdpExtras: flag(process.env.NEXT_PUBLIC_FF_PDP_EXTRAS, true),
 } as const;

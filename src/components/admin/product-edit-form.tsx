@@ -29,6 +29,7 @@ export function ProductEditForm({
     sizeChartId: string | null;
     material: string | null;
     careNote: string | null;
+    specs: string[];
     code: string;
     seoTitle: string | null;
     seoDescription: string | null;
@@ -139,6 +140,18 @@ export function ProductEditForm({
           <input name="careNote" defaultValue={product.careNote ?? ""} className={input} />
         </Row>
       </div>
+
+      <Row
+        label="Chip thông số"
+        hint="Hiện dưới giá ở trang sản phẩm. Phân tách bằng dấu phẩy, tối đa 6. “Đổi size 15 ngày” tự có."
+      >
+        <input
+          name="specs"
+          defaultValue={product.specs.join(", ")}
+          placeholder="250gsm, May đôi, Co rút 0,8%"
+          className={input}
+        />
+      </Row>
 
       {/* Khối SEO đúng mockup `aProductEdit`. */}
       <fieldset className="border border-border-soft p-4">
