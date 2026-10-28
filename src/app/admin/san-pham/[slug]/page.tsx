@@ -118,6 +118,7 @@ export default async function AdminProductEditPage({ params }: Params) {
               sort: i.sort,
               blobId: i.blobId,
               color: i.color,
+              onBody: i.onBody,
             }))}
           />
         </div>

@@ -24,4 +24,18 @@ export const FLAGS = {
    * thanh mua nổi trên mobile.
    */
   pdpExtras: flag(process.env.NEXT_PUBLIC_FF_PDP_EXTRAS, true),
+  /**
+   * Mục 5 — thẻ sản phẩm: nền ám màu sản phẩm, rê chuột đổi sang ảnh mặc trên
+   * người, hàng nút size thêm nhanh.
+   */
+  cardExtras: flag(process.env.NEXT_PUBLIC_FF_CARD_EXTRAS, true),
+  /** Mục 5 — "Mới về tuần này" thành dải cuộn ngang (tắt: lưới 4 ô như cũ). */
+  homeRail: flag(process.env.NEXT_PUBLIC_FF_HOME_RAIL, true),
+  /** Mục 5 — khối "Mặc thử nguyên bộ" (shop the look) ở trang chủ. */
+  lookbook: flag(process.env.NEXT_PUBLIC_FF_LOOKBOOK, true),
+  /**
+   * Mục 5 — khối Fit Lab. **Mặc định TẮT**: số liệu trong
+   * `src/content/fit-lab.ts` còn là số giữ chỗ, chỉ bật khi đã có số đo thật.
+   */
+  fitLab: flag(process.env.NEXT_PUBLIC_FF_FIT_LAB, false),
 } as const;

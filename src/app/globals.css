@@ -325,6 +325,25 @@
   }
 }
 
+/* Vòng sáng quanh điểm chấm trên ảnh lookbook. */
+@keyframes ping-soft {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
 @keyframes bump {
   35% {
     transform: scale(1.12);

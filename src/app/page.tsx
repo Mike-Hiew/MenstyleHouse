@@ -3,14 +3,18 @@ import type { Route } from "next";
 import { Header } from "@/components/storefront/header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { ProductCard, ProductGrid } from "@/components/storefront/product-card";
+import { ProductRail } from "@/components/storefront/product-rail";
 import { NewsletterForm } from "@/components/storefront/newsletter-form";
 import { Container } from "@/components/storefront/shell";
 import { getLatestProducts } from "@/server/catalog";
 import { getNavCategories } from "@/server/navigation";
-import { getBestsellers, getFlashSale, getHomeReviews } from "@/server/home";
+import { getBestsellers, getFlashSale, getHomeReviews, getLooks } from "@/server/home";
 import { Photo } from "@/components/ui/photo";
 import { SizeFinder } from "@/components/storefront/size-finder";
 import { khoangGoiYTrangChu } from "@/server/size-charts";
+import { ShopTheLook } from "@/components/storefront/shop-the-look";
+import { FitLab } from "@/components/storefront/fit-lab";
+import { LOOKS } from "@/content/looks";
 import { FLAGS } from "@/lib/flags";
 
 export const dynamic = "force-dynamic";
@@ -33,13 +37,15 @@ const cta =
   "inline-flex h-[52px] items-center justify-center rounded-full px-[26px] text-[14px] font-semibold transition-[background-color,box-shadow,transform] hover:shadow-raised active:scale-[0.97]";
 
 export default async function HomePage() {
-  const [products, categories, banChay, loiKhach, sale, khoangSize] = await Promise.all([
-    getLatestProducts(4),
+  const [products, categories, banChay, loiKhach, sale, khoangSize, looks] = await Promise.all([
+    // Dải cuộn ngang (v2) cần nhiều thẻ hơn lưới 4 ô.
+    getLatestProducts(FLAGS.homeRail ? 10 : 4),
     getNavCategories(),
     getBestsellers(4),
     getHomeReviews(3),
     getFlashSale(),
     FLAGS.sizeFinder ? khoangGoiYTrangChu() : Promise.resolve([]),
+    FLAGS.lookbook ? getLooks(LOOKS) : Promise.resolve([]),
   ]);
 
   // Mockup dùng ảnh lookbook riêng; ở đây mượn ảnh sản phẩm mới nhất làm hero.
@@ -121,37 +127,58 @@ export default async function HomePage() {
           </ul>
         </nav>
 
-        <Container className="py-14">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <h2 className="text-[28px]">Mới về tuần này</h2>
-            <Link
-              href={"/san-pham" as Route}
-              className="flex min-h-11 items-center rounded-full bg-field px-4 text-[13px] font-semibold hover:bg-field-hover"
-            >
-              Xem tất cả →
-            </Link>
-          </div>
+        {/* Mục 5 (v2): mặc thử nguyên bộ. Bộ đồ cấu hình ở src/content/looks.ts. */}
+        {looks[0] ? (
+          <Container className="pt-16">
+            <SectionHead
+              title="Mặc thử nguyên bộ"
+              note="Bấm vào từng món trên ảnh để xem. Bỏ món bạn đã có, thêm phần còn lại trong một lần."
+            />
+            <ShopTheLook look={looks[0]} />
+          </Container>
+        ) : null}
 
-          {products.length === 0 ? (
-            <p className="py-16 text-center text-muted">
-              Chưa có sản phẩm. Chạy <code className="font-mono">npm run db:seed</code> để nạp dữ liệu mẫu.
-            </p>
-          ) : (
-            <ProductGrid products={products} />
-          )}
-        </Container>
+        {FLAGS.homeRail && products.length > 0 ? (
+          // Mục 5 (v2): dải cuộn ngang, dùng lại thẻ sản phẩm.
+          <div className="py-14">
+            <ProductRail
+              title="Mới về tuần này"
+              products={products}
+              moreHref={"/san-pham" as Route}
+            />
+          </div>
+        ) : (
+          <Container className="py-14">
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <h2 className="text-[28px]">Mới về tuần này</h2>
+              <Link
+                href={"/san-pham" as Route}
+                className="flex min-h-11 items-center rounded-full bg-field px-4 text-[13px] font-semibold hover:bg-field-hover"
+              >
+                Xem tất cả →
+              </Link>
+            </div>
+
+            {products.length === 0 ? (
+              <p className="py-16 text-center text-muted">
+                Chưa có sản phẩm. Chạy <code className="font-mono">npm run db:seed</code> để nạp dữ liệu mẫu.
+              </p>
+            ) : (
+              <ProductGrid products={products.slice(0, 4)} />
+            )}
+          </Container>
+        )}
+
+        {/* Mục 5 (v2): Fit Lab — cờ mặc định TẮT cho tới khi có số đo thật. */}
+        {FLAGS.fitLab ? <FitLab /> : null}
 
         {/* Mục 3 (v2): bộ gợi ý size. Số đo đọc từ cột "Gợi ý" của bảng size áo. */}
         {khoangSize.length > 0 ? (
           <Container className="pb-14">
-            <div className="mb-8 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-              <h2 className="max-w-[14ch] text-[clamp(36px,5.4vw,78px)] font-extrabold leading-[0.92] tracking-[-0.035em] [font-variation-settings:'wdth'_84]">
-                Size của bạn, trong 10 giây
-              </h2>
-              <p className="max-w-[34ch] text-muted">
-                Kéo chiều cao và cân nặng. Gợi ý theo bảng size MSH cho người 45–90kg.
-              </p>
-            </div>
+            <SectionHead
+              title="Size của bạn, trong 10 giây"
+              note="Kéo chiều cao và cân nặng. Gợi ý theo bảng size MSH cho người 45–90kg."
+            />
             <SizeFinder ranges={khoangSize} />
           </Container>
         ) : null}
@@ -249,6 +276,18 @@ export default async function HomePage() {
 
       <SiteFooter />
     </>
+  );
+}
+
+/** Tiêu đề khối kiểu mockup v2: chữ lớn co bề ngang, ghi chú nhỏ bên phải. */
+function SectionHead({ title, note }: { title: string; note: string }) {
+  return (
+    <div className="mb-8 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+      <h2 className="max-w-[14ch] text-[clamp(36px,5.4vw,78px)] font-extrabold leading-[0.92] tracking-[-0.035em] [font-variation-settings:'wdth'_84]">
+        {title}
+      </h2>
+      <p className="max-w-[34ch] text-muted">{note}</p>
+    </div>
   );
 }
 

@@ -47,6 +47,34 @@ export async function addToCartAction(form: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+const manySchema = z.array(z.string().min(1)).min(1).max(10);
+
+export type AddManyResult = { ok: true; added: number; skipped: number } | { ok: false; message: string };
+
+/**
+ * Thêm nhiều biến thể cùng lúc, mỗi món 1 cái — nút "Thêm cả bộ vào giỏ" của
+ * khối Mặc thử nguyên bộ. Đi qua đúng `addToCart` như thêm từng món; món nào
+ * hết hàng thì bỏ qua và báo lại số món bỏ qua, không làm hỏng cả lượt.
+ */
+export async function addManyToCartAction(variantIds: string[]): Promise<AddManyResult> {
+  const parsed = manySchema.safeParse(variantIds);
+  if (!parsed.success) return { ok: false, message: "Chưa chọn món nào." };
+
+  let added = 0;
+  for (const id of new Set(parsed.data)) {
+    try {
+      const cart = await addToCart(id, 1);
+      if (cart.lines.some((l) => l.variantId === id)) added++;
+    } catch {
+      // Biến thể không tồn tại (cấu hình bộ đồ cũ, hoặc id bị sửa tay) — bỏ qua món đó.
+    }
+  }
+
+  revalidatePath("/gio-hang");
+  if (added === 0) return { ok: false, message: "Các món này đang hết hàng." };
+  return { ok: true, added, skipped: new Set(parsed.data).size - added };
+}
+
 export async function updateCartItemAction(form: FormData): Promise<ActionResult> {
   const parsed = itemSchema.safeParse({
     itemId: form.get("itemId"),
