@@ -5,6 +5,7 @@ Giao diện storefront theo bản v2 "borderless editorial" (nền #F3F1ED, mự
 
 Mockup gốc và tài liệu bàn giao: `docs/` — mockup desktop `docs/mockup/mockup.html`,
 mockup mobile `docs/mockup/Men Style House Mobile.dc.html`.
+Mockup vẽ lại từ code đang chạy (storefront + admin): `docs/mockup/he-thong-hien-tai.html`.
 
 ## Chạy lần đầu
 
