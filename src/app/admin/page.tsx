@@ -4,7 +4,7 @@ import { cn } from "@/lib/cn";
 import { deltaPercent, loadDashboard } from "@/server/admin/dashboard";
 import { formatVnd } from "@/lib/money";
 import { FLAGS } from "@/lib/flags";
-import { CountUp } from "@/components/admin/count-up";
+import { KpiCards } from "@/components/admin/kpi-cards";
 
 export const dynamic = "force-dynamic";
 
@@ -24,51 +24,14 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      <dl
-        className={cn(
-          "mb-7 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4",
-          g ? "adm-stagger gap-3" : "border-b-2 border-t-2 border-border-soft",
-        )}
-      >
-        {data.kpis.map((k, i) => {
-          const delta = deltaPercent(k.value, k.prev);
-          return (
-            <div
-              key={k.label}
-              className={cn(
-                g
-                  ? cn("adm-card px-5 py-[18px]", i === 0 && "adm-card-mint")
-                  : cn("py-5 pr-6", i < data.kpis.length - 1 && "border-b border-hairline xl:border-b-0 xl:border-r"),
-              )}
-            >
-              <dt className="label-tech font-bold">{k.label}</dt>
-              <dd>
-                <span
-                  className={cn(
-                    "mb-1.5 mt-2.5 block tracking-[-0.025em] tabular-nums",
-                    g ? "whitespace-nowrap text-[26px] font-semibold" : "text-[26px] font-extrabold lg:text-[30px]",
-                  )}
-                >
-                  {g ? <CountUp value={k.value} money={k.money} /> : k.money ? formatVnd(k.value) : k.value}
-                </span>
-                <span className="block text-[12.5px] font-extrabold">
-                  {delta === null ? (
-                    <span className="text-faint">Chưa có kỳ trước để so</span>
-                  ) : (
-                    <span className={cn(g && "adm-delta", g && delta < 0 && "down")}>
-                      <span className={g ? undefined : delta >= 0 ? "text-text" : "text-accent-700"}>
-                        {delta >= 0 ? "+" : ""}
-                        {delta}%
-                      </span>{" "}
-                      <span className="font-normal text-faint">so với kỳ trước</span>
-                    </span>
-                  )}
-                </span>
-              </dd>
-            </div>
-          );
-        })}
-      </dl>
+      <KpiCards
+        items={data.kpis.map((k) => ({
+          label: k.label,
+          value: k.value,
+          kind: k.money ? "money" : "number",
+          delta: deltaPercent(k.value, k.prev),
+        }))}
+      />
 
       <div className="mb-7 grid gap-7 xl:grid-cols-[1.6fr_1fr]">
         <section className={cn(g && "adm-card adm-static min-w-0 p-5")}>

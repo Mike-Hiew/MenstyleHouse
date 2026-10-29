@@ -66,6 +66,7 @@ export function DataTable({
   csvName,
   hangLoat,
   onHangLoat,
+  summary,
 }: {
   basePath: string;
   /** Query string hiện tại, không có dấu `?`. */
@@ -73,6 +74,8 @@ export function DataTable({
   title: string;
   subtitle?: string;
   action?: { label: string; href: string };
+  /** Khối đặt giữa tiêu đề và tab — thẻ số liệu của màn. */
+  summary?: React.ReactNode;
   tabs?: Tab[];
   filters?: Filter[];
   columns: ColumnMeta[];
@@ -150,6 +153,8 @@ export function DataTable({
           </a>
         ) : null}
       </div>
+
+      {summary}
 
       {tabs && tabs.length > 0 ? (
         <div className="adm-tabs mb-[18px] flex overflow-x-auto border-b border-hairline">
