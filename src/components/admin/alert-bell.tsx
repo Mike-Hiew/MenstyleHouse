@@ -49,13 +49,13 @@ export function AlertBell({ viec }: { viec: Viec[] }) {
         aria-label={tong > 0 ? `Việc cần làm, ${tong} mục` : "Việc cần làm — không có gì mới"}
         onClick={() => setMo((v) => !v)}
         className={cn(
-          "relative flex h-[38px] w-[38px] items-center justify-center border border-border-soft",
+          "adm-round relative flex h-[38px] w-[38px] items-center justify-center border border-border-soft",
           mo && "bg-subtle",
         )}
       >
         <Bell size={16} aria-hidden />
         {tong > 0 ? (
-          <span className="absolute -right-px -top-px block h-2 w-2 bg-accent" aria-hidden />
+          <span className="adm-round adm-dot absolute -right-px -top-px block h-2 w-2 bg-accent" aria-hidden />
         ) : null}
       </button>
 
@@ -63,7 +63,7 @@ export function AlertBell({ viec }: { viec: Viec[] }) {
         <div
           role="menu"
           aria-label="Việc cần làm"
-          className="absolute right-0 top-[calc(100%+8px)] z-90 w-[300px] border-2 border-divider bg-bg shadow-[6px_6px_0_0_rgba(32,30,29,0.12)]"
+          className="adm-pop absolute right-0 top-[calc(100%+8px)] z-90 w-[300px] border-2 border-divider bg-bg shadow-[6px_6px_0_0_rgba(32,30,29,0.12)]"
         >
           <p className="label-tech border-b-2 border-divider px-4 py-3 font-bold">VIỆC CẦN LÀM</p>
 

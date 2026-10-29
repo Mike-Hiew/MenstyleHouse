@@ -243,6 +243,512 @@
   color: var(--color-text);
 }
 
+/*
+ * ── Admin: Modernist Glass ──
+ *
+ * Bản quản trị mới theo mockup `MSH Admin Glass.html` (cờ `adminGlass`): kính
+ * mờ trên nền gradient ấm. Cũng như `.theme-modernist`, chỉ đặt lại biến là cả
+ * cây admin đổi theo; phần dưới chỉ thêm những gì token không làm được (nền,
+ * kính, bảng, tab, chuyển động).
+ *
+ * Nền `bg`/`surface` là màu **trong**: nhiều chỗ trong admin tô `bg-bg` cho ô
+ * chọn, ô cảnh báo, thanh dính — để đặc thì chúng thành mảng đục giữa tấm kính.
+ */
+.theme-glass {
+  --color-bg: rgba(252, 248, 243, 0.55);
+  --color-surface: rgba(255, 253, 250, 0.72);
+  --color-subtle: rgba(255, 255, 255, 0.45);
+  --color-sand: rgba(255, 255, 255, 0.45);
+  --color-stone: rgba(42, 36, 32, 0.14);
+  --color-text: #2a2420;
+  --color-muted: rgba(42, 36, 32, 0.78);
+  --color-faint: rgba(42, 36, 32, 0.62);
+  /* Viền là mép sáng của tấm kính chứ không phải nét mực. */
+  --color-divider: rgba(255, 255, 255, 0.7);
+  --color-hairline: rgba(255, 255, 255, 0.62);
+  --color-border-soft: rgba(255, 255, 255, 0.7);
+
+  --color-field: rgba(255, 255, 255, 0.66);
+  --color-field-hover: #ffffff;
+  --color-ring: rgba(229, 85, 62, 0.18);
+  --color-focus-line: rgba(229, 85, 62, 0.55);
+  --color-scrim: rgba(42, 36, 32, 0.3);
+  --scrim-blur: 8px;
+  --photo-filter: none;
+
+  --color-accent: #e5553e;
+  --color-accent-100: rgba(229, 85, 62, 0.14);
+  --color-accent-200: rgba(229, 85, 62, 0.28);
+  --color-accent-300: #f39483;
+  --color-accent-400: #ee6650;
+  --color-accent-500: #e5553e;
+  --color-accent-600: #c8412b;
+  --color-accent-700: #a2301e;
+  --color-accent-800: #7f2414;
+  --color-accent-900: #531005;
+
+  --color-ok: #17805f;
+
+  --color-neutral-100: rgba(255, 255, 255, 0.6);
+  --color-neutral-200: rgba(255, 255, 255, 0.6);
+  --color-neutral-300: rgba(42, 36, 32, 0.14);
+  --color-neutral-400: rgba(42, 36, 32, 0.45);
+  --color-neutral-500: rgba(42, 36, 32, 0.62);
+  --color-neutral-600: #57524d;
+  --color-neutral-700: #3b3530;
+  --color-neutral-800: #2a2420;
+  --color-neutral-900: #1d1a18;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
+  --radius-3xl: 26px;
+  --radius-card: 22px;
+  --radius-panel: 26px;
+  --radius-full: 9999px;
+
+  --shadow-soft: 0 6px 24px rgba(60, 40, 20, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --shadow-raised: 0 30px 80px rgba(60, 40, 20, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --shadow-lift: 0 16px 34px rgba(60, 40, 20, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --glass-blur: blur(34px) saturate(150%);
+  --glass-edge: rgba(255, 255, 255, 0.62);
+  --mint: #2fae86;
+  --mint-600: #17805f;
+
+  --font-label: var(--font-mono);
+  --label-tracking: 0.08em;
+
+  color: var(--color-text);
+  background:
+    radial-gradient(40% 50% at 82% 70%, rgba(255, 198, 130, 0.75), transparent 70%),
+    radial-gradient(35% 45% at 12% 78%, rgba(75, 71, 67, 0.45), transparent 70%),
+    radial-gradient(30% 40% at 30% 70%, rgba(95, 138, 61, 0.35), transparent 70%),
+    linear-gradient(180deg, #f3eee7 0%, #e6ddd2 58%, #c49668 64%, #b58658 100%);
+  background-attachment: fixed;
+}
+
+/* Tấm kính: nền trong + mép sáng + làm mờ phía sau. */
+.theme-glass .glass {
+  background: rgba(252, 248, 243, 0.66);
+  border: 1px solid var(--glass-edge);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+/* Hộp thoại, menu xổ xuống: nền trong mà không làm mờ thì chữ phía sau xuyên qua. */
+.theme-glass :where([role="dialog"], [role="menu"], [role="listbox"]) {
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+/* Bảng: một tấm kính bo tròn, hàng sáng lên khi rê chuột. */
+@media (min-width: 1024px) {
+  .theme-glass .adm-table {
+    background: var(--color-surface);
+    border: 1px solid var(--glass-edge);
+    border-radius: 22px;
+    box-shadow: var(--shadow-soft);
+  }
+  .theme-glass .adm-table > table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .theme-glass .adm-table th {
+    border-bottom-width: 1px;
+    border-color: var(--color-hairline);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+    padding-top: 14px;
+  }
+  .theme-glass .adm-table th:first-child,
+  .theme-glass .adm-table td:first-child {
+    padding-left: 18px;
+  }
+  .theme-glass .adm-table th:last-child,
+  .theme-glass .adm-table td:last-child {
+    padding-right: 18px;
+  }
+  .theme-glass .adm-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .theme-glass .adm-table tbody tr {
+    transition: background-color 0.2s;
+  }
+  .theme-glass .adm-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+}
+@media (max-width: 1023px) {
+  /* Bảng thu thành thẻ: mỗi thẻ là một tấm kính nhỏ. */
+  .theme-glass .adm-table tbody tr {
+    border: 1px solid var(--glass-edge);
+    border-radius: 18px;
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+/* Tab trạng thái: dải thuốc, tab đang chọn tô đen. */
+.theme-glass .adm-tabs {
+  width: fit-content;
+  max-width: 100%;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.62);
+  scrollbar-width: none;
+}
+.theme-glass .adm-tab {
+  margin: 0;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 9999px;
+  font-size: 14px;
+  transition: background-color 0.25s, color 0.25s;
+}
+.theme-glass .adm-tab:hover {
+  color: var(--color-text);
+}
+.theme-glass .adm-tab[aria-pressed="true"] {
+  background: var(--color-neutral-900);
+  color: #fff;
+  font-weight: 600;
+}
+.theme-glass .adm-tab[aria-pressed="true"] span {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Ô tìm, bộ lọc, nút phụ cạnh bảng: thuốc kính. */
+.theme-glass .adm-pill {
+  border: 1px solid var(--glass-edge);
+  border-radius: 9999px;
+  background: var(--color-field);
+  padding-inline: 16px;
+  transition: background-color 0.2s;
+}
+.theme-glass .adm-pill:hover {
+  background: #fff;
+}
+.theme-glass .adm-cta {
+  border-radius: 9999px;
+  background: var(--color-neutral-900);
+  color: #fff;
+  font-weight: 600;
+  transition: transform 0.2s var(--ease-out-soft), background-color 0.2s;
+}
+.theme-glass .adm-cta:hover {
+  background: #000;
+}
+.theme-glass .adm-cta:active,
+.theme-glass .adm-pill:active {
+  transform: scale(0.97);
+}
+.theme-glass .adm-bulk {
+  border: 0;
+  border-radius: 9999px;
+  background: var(--color-neutral-900);
+  color: #fff;
+  padding-left: 20px;
+}
+.theme-glass .adm-bulk button:not(:last-child) {
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+/* Tiêu đề trang: bỏ nét gạch dưới — tấm kính đã đủ tách các khối. */
+.theme-glass .adm-page-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Thẻ số liệu: kính, nhấc lên khi rê chuột; thẻ đầu xanh bạc hà. */
+.theme-glass .adm-card {
+  background: var(--color-surface);
+  border: 1px solid var(--glass-edge);
+  border-radius: 22px;
+  box-shadow: var(--shadow-soft);
+  transition: translate 0.25s var(--ease-out-soft), box-shadow 0.25s;
+}
+.theme-glass .adm-card:hover {
+  translate: 0 -5px;
+  box-shadow: var(--shadow-lift);
+}
+/* Khối lớn (biểu đồ, danh sách) không nhấc — cả mảng lớn nhảy lên thì rối mắt. */
+.theme-glass .adm-card.adm-static:hover {
+  translate: none;
+  box-shadow: var(--shadow-soft);
+}
+.theme-glass .adm-card.adm-card-mint {
+  background: linear-gradient(150deg, #45c79c, var(--mint-600));
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+.theme-glass .adm-card-mint :is(dt, .text-faint, .text-muted) {
+  color: rgba(255, 255, 255, 0.85);
+}
+.theme-glass .adm-delta {
+  display: inline-flex;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  background: rgba(47, 174, 134, 0.14);
+  color: var(--mint-600);
+}
+.theme-glass .adm-delta.down {
+  background: rgba(229, 85, 62, 0.14);
+  color: #b5371f;
+}
+.theme-glass .adm-card-mint .adm-delta {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/*
+ * Nhãn trạng thái: nền màu nhạt, chữ thường. Bản Modernist tô đen/đỏ đặc —
+ * trên kính thì mảng đặc thành lỗ thủng giữa tấm, nên đổi sang sắc độ nhạt.
+ */
+.theme-glass [data-tone] {
+  padding: 4px 11px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+.theme-glass [data-tone="ok"] {
+  background: rgba(47, 174, 134, 0.15);
+  color: var(--mint-600);
+}
+.theme-glass [data-tone="warn"],
+.theme-glass [data-tone="accent"] {
+  background: rgba(229, 85, 62, 0.14);
+  color: #a2301e;
+}
+.theme-glass [data-tone="neutral"],
+.theme-glass [data-tone="outline"] {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--glass-edge);
+  color: var(--color-muted);
+}
+
+/*
+ * ── Phần còn lại của các màn admin ──
+ *
+ * Hơn ba mươi màn quản trị tự viết ô nhập, nút, khung và bảng bằng class
+ * Tailwind vuông vức của hệ Modernist. Sửa từng file là đổi hàng trăm chỗ và
+ * mất đường lùi về Modernist; nên ở đây bo lại những mẫu lặp lại đó trong
+ * phạm vi nội dung admin (`.adm-page`), còn markup giữ nguyên.
+ */
+.theme-glass
+  .adm-page
+  :is(
+    input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"]),
+    select,
+    textarea
+  ):not(.border-0, .adm-pill) {
+  border-width: 1px;
+  border-color: var(--glass-edge);
+  border-radius: 14px;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+.theme-glass .adm-page :is(input, select, textarea):not(.border-0, .adm-pill):focus {
+  border-color: var(--color-focus-line);
+  box-shadow: 0 0 0 4px var(--color-ring);
+  outline: none;
+}
+/* Nút chính: thuốc. Nút đỏ thêm chút gradient như nút đỏ của mockup. */
+.theme-glass .adm-page :is(button, a, input[type="submit"]):is(.bg-accent, .bg-neutral-900) {
+  border-radius: 9999px;
+  transition: transform 0.2s var(--ease-out-soft), filter 0.2s;
+}
+.theme-glass .adm-page :is(button, a, input[type="submit"]).bg-accent {
+  background-image: linear-gradient(150deg, #f0583f, var(--color-accent));
+  box-shadow: 0 10px 24px -10px rgba(232, 52, 26, 0.6);
+}
+.theme-glass .adm-page :is(button, a):is(.bg-accent, .bg-neutral-900):hover {
+  filter: brightness(1.06);
+}
+.theme-glass .adm-page :is(button, a):is(.bg-accent, .bg-neutral-900):active {
+  transform: scale(0.97);
+}
+/* Nút phụ viền mảnh: thuốc kính. */
+.theme-glass .adm-page :is(button, a).border.border-border-soft {
+  border-radius: 9999px;
+  border-color: var(--glass-edge);
+  background-color: var(--color-field);
+}
+/* Khung nội dung viền đậm 2px: tấm kính bo góc. */
+.theme-glass .adm-page .border-2:not(table, tr, td, th, input, select, textarea, button, a, label) {
+  border-width: 1px;
+  border-radius: 22px;
+}
+.theme-glass .adm-page .border-2:is(.border-divider, .border-border-soft):not(table, tr, td, th, input, select, textarea, button, a, label) {
+  border-color: var(--glass-edge);
+  border-radius: 22px;
+  box-shadow: var(--shadow-soft);
+}
+.theme-glass .adm-page .border.border-dashed {
+  border-radius: 22px;
+}
+
+/* Bảng tự viết trong từng màn (bảng size, báo cáo, chi tiết khách…). */
+.theme-glass .adm-page table:not(.adm-table table, #to-hoa-don table) {
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--glass-edge);
+  border-radius: 22px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+.theme-glass .adm-page table:not(.adm-table table, #to-hoa-don table) th {
+  border-bottom: 1px solid var(--color-hairline);
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+  padding-top: 12px;
+}
+.theme-glass .adm-page table:not(.adm-table table, #to-hoa-don table) :is(th, td):first-child {
+  padding-left: 16px;
+}
+.theme-glass .adm-page table:not(.adm-table table, #to-hoa-don table) :is(th, td):last-child {
+  padding-right: 16px;
+}
+.theme-glass .adm-page table:not(.adm-table table, #to-hoa-don table) tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* In phiếu giao / hoá đơn: giấy trắng, không nền gradient, không kính. */
+@media print {
+  .theme-glass {
+    background: #fff;
+  }
+  .theme-glass .glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Thanh trên: chuông, ảnh đại diện tròn; menu xổ xuống là tấm kính. */
+.theme-glass .adm-round {
+  border-radius: 9999px;
+}
+.theme-glass .adm-round.border {
+  border-color: var(--glass-edge);
+  background-color: var(--color-field);
+}
+.theme-glass .adm-dot {
+  width: 9px;
+  height: 9px;
+  top: 1px;
+  right: 1px;
+  box-shadow: 0 0 0 2px #fff;
+}
+.theme-glass .adm-pop {
+  overflow: hidden;
+  border-width: 1px;
+  border-color: var(--glass-edge);
+  border-radius: 20px;
+  background: rgba(252, 248, 243, 0.9);
+  box-shadow: var(--shadow-raised);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  animation: adm-in 0.3s var(--ease-out-soft);
+}
+.theme-glass .adm-pop .border-b-2 {
+  border-bottom-width: 1px;
+  border-color: var(--color-hairline);
+}
+
+/* ── Chuyển động: hiện dần lúc vào trang ──
+ *
+ * Khối nội dung, hàng bảng, thẻ số liệu lần lượt mờ → rõ. Chỉ dùng
+ * `opacity`/`transform`/`filter` nên không đẩy bố cục; quy tắc
+ * `prefers-reduced-motion` cuối file tắt hết.
+ */
+@keyframes adm-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(8px);
+  }
+}
+@keyframes adm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes adm-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes adm-growx {
+  from {
+    transform: scaleX(0);
+  }
+}
+.theme-glass .adm-page > * {
+  animation: adm-in 0.55s var(--ease-out-soft) backwards;
+}
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *) {
+  animation: adm-rise 0.45s var(--ease-out-soft) backwards;
+}
+.theme-glass .adm-bar {
+  transform-origin: bottom;
+  animation: adm-grow 0.9s var(--ease-out-soft) backwards;
+}
+.theme-glass .adm-track > i {
+  transform-origin: left;
+  animation: adm-growx 1s var(--ease-out-soft) 0.45s backwards;
+}
+.theme-glass .adm-page > :nth-child(1) { animation-delay: 120ms; }
+.theme-glass .adm-page > :nth-child(2) { animation-delay: 180ms; }
+.theme-glass .adm-page > :nth-child(3) { animation-delay: 240ms; }
+.theme-glass .adm-page > :nth-child(4) { animation-delay: 300ms; }
+.theme-glass .adm-page > :nth-child(5) { animation-delay: 360ms; }
+.theme-glass .adm-page > :nth-child(6) { animation-delay: 420ms; }
+.theme-glass .adm-page > :nth-child(7) { animation-delay: 480ms; }
+.theme-glass .adm-page > :nth-child(8) { animation-delay: 540ms; }
+.theme-glass .adm-page > :nth-child(9) { animation-delay: 600ms; }
+.theme-glass .adm-page > :nth-child(10) { animation-delay: 660ms; }
+.theme-glass .adm-page > :nth-child(11) { animation-delay: 720ms; }
+.theme-glass .adm-page > :nth-child(12) { animation-delay: 780ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(1) { animation-delay: 265ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(2) { animation-delay: 310ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(3) { animation-delay: 355ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(4) { animation-delay: 400ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(5) { animation-delay: 445ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(6) { animation-delay: 490ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(7) { animation-delay: 535ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(8) { animation-delay: 580ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(9) { animation-delay: 625ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(10) { animation-delay: 670ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(11) { animation-delay: 715ms; }
+.theme-glass :is(.adm-table tbody tr, .adm-stagger > *):nth-child(12) { animation-delay: 760ms; }
+.theme-glass .adm-bars > :nth-child(1) .adm-bar { animation-delay: 450ms; }
+.theme-glass .adm-bars > :nth-child(2) .adm-bar { animation-delay: 520ms; }
+.theme-glass .adm-bars > :nth-child(3) .adm-bar { animation-delay: 590ms; }
+.theme-glass .adm-bars > :nth-child(4) .adm-bar { animation-delay: 660ms; }
+.theme-glass .adm-bars > :nth-child(5) .adm-bar { animation-delay: 730ms; }
+.theme-glass .adm-bars > :nth-child(6) .adm-bar { animation-delay: 800ms; }
+.theme-glass .adm-bars > :nth-child(7) .adm-bar { animation-delay: 870ms; }
+.theme-glass .adm-bars > :nth-child(8) .adm-bar { animation-delay: 940ms; }
+.theme-glass .adm-bars > :nth-child(9) .adm-bar { animation-delay: 1010ms; }
+.theme-glass .adm-bars > :nth-child(10) .adm-bar { animation-delay: 1080ms; }
+.theme-glass .adm-bars > :nth-child(11) .adm-bar { animation-delay: 1150ms; }
+.theme-glass .adm-bars > :nth-child(12) .adm-bar { animation-delay: 1220ms; }
+
 /* Nhãn nút trong admin dồn trái — quy tắc Modernist. */
 .theme-modernist .ui-btn {
   justify-content: flex-start;
@@ -403,6 +909,8 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    /* Trễ vẫn tính dù hiệu ứng chỉ 0,01ms: khối có `backwards` sẽ vô hình suốt quãng trễ. */
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }

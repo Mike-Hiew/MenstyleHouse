@@ -136,7 +136,7 @@ export function DataTable({
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b-2 border-border-soft pb-3.5">
+      <div className="adm-page-head mb-5 flex flex-wrap items-end justify-between gap-4 border-b-2 border-border-soft pb-3.5">
         <div>
           <h1 className="text-[26px] lg:text-[34px]">{title}</h1>
           {subtitle ? <p className="mt-1.5 text-[13.5px] text-muted">{subtitle}</p> : null}
@@ -144,7 +144,7 @@ export function DataTable({
         {action ? (
           <a
             href={action.href}
-            className="flex min-h-11 items-center bg-accent px-5 text-[13.5px] font-extrabold text-bg"
+            className="adm-cta flex min-h-11 items-center bg-accent px-5 text-[13.5px] font-extrabold text-bg"
           >
             {action.label}
           </a>
@@ -152,7 +152,7 @@ export function DataTable({
       </div>
 
       {tabs && tabs.length > 0 ? (
-        <div className="mb-[18px] flex overflow-x-auto border-b border-hairline">
+        <div className="adm-tabs mb-[18px] flex overflow-x-auto border-b border-hairline">
           {tabs.map((t) => {
             const on = t.key === activeTab;
             return (
@@ -162,7 +162,7 @@ export function DataTable({
                 aria-pressed={on}
                 onClick={() => go(withParam(current, "tab", t.key || null))}
                 className={cn(
-                  "mr-[18px] flex-none whitespace-nowrap border-b-[3px] pb-2.5 pr-[18px] pt-3 text-[13.5px]",
+                  "adm-tab mr-[18px] flex-none whitespace-nowrap border-b-[3px] pb-2.5 pr-[18px] pt-3 text-[13.5px]",
                   on ? "border-accent font-extrabold" : "border-transparent font-normal text-muted",
                 )}
               >
@@ -178,7 +178,7 @@ export function DataTable({
 
       <div className="mb-[18px] flex flex-wrap items-center gap-2.5">
         <form
-          className="flex w-full items-center gap-2 border border-border-soft bg-subtle px-3 py-2.5 sm:w-[300px]"
+          className="adm-pill flex w-full items-center gap-2 border border-border-soft bg-subtle px-3 py-2.5 sm:w-[300px]"
           onSubmit={(e) => {
             e.preventDefault();
             const value = new FormData(e.currentTarget).get("q");
@@ -201,7 +201,7 @@ export function DataTable({
             aria-label={f.label}
             value={current.get(f.key) ?? ""}
             onChange={(e) => go(withParam(current, f.key, e.target.value || null))}
-            className="min-h-11 border border-border-soft bg-bg px-3.5 text-[13px] font-semibold"
+            className="adm-pill min-h-11 border border-border-soft bg-bg px-3.5 text-[13px] font-semibold"
           >
             <option value="">{f.label}</option>
             {f.options.map((o) => (
@@ -215,7 +215,7 @@ export function DataTable({
         <button
           type="button"
           onClick={() => setCsvOpen(true)}
-          className="ml-auto min-h-11 border border-border-soft px-4 text-[12.5px] font-extrabold"
+          className="adm-pill ml-auto min-h-11 border border-border-soft px-4 text-[12.5px] font-extrabold"
         >
           Xuất CSV{picked.size > 0 ? ` (${picked.size})` : ""}
         </button>
@@ -230,7 +230,7 @@ export function DataTable({
         <div
           role="group"
           aria-label="Thao tác hàng loạt"
-          className="mb-3.5 flex flex-wrap items-center gap-2 border-2 border-divider bg-subtle px-3.5 py-2.5"
+          className="adm-bulk mb-3.5 flex flex-wrap items-center gap-2 border-2 border-divider bg-subtle px-3.5 py-2.5"
         >
           <span className="text-[13px] font-extrabold">Đã chọn {picked.size} dòng</span>
           {hangLoat.map((h) => (
@@ -291,7 +291,7 @@ export function DataTable({
         </div>
       ) : (
         <>
-          <div className="lg:overflow-x-auto">
+          <div className="adm-table lg:overflow-x-auto">
             <table className="bang-quan-tri w-full border-collapse max-lg:block max-lg:space-y-2.5 lg:min-w-[760px]">
               <thead className="max-lg:hidden">
                 <tr>

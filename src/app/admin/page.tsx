@@ -3,16 +3,19 @@ import type { Route } from "next";
 import { cn } from "@/lib/cn";
 import { deltaPercent, loadDashboard } from "@/server/admin/dashboard";
 import { formatVnd } from "@/lib/money";
+import { FLAGS } from "@/lib/flags";
+import { CountUp } from "@/components/admin/count-up";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   const data = await loadDashboard(30);
   const peak = Math.max(1, ...data.monthly.map((m) => m.value));
+  const g = FLAGS.adminGlass;
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b-2 border-border-soft pb-3.5">
+      <div className="adm-page-head mb-6 flex flex-wrap items-end justify-between gap-4 border-b-2 border-border-soft pb-3.5">
         <div>
           <h1 className="text-[26px] lg:text-[34px]">Tổng quan</h1>
           <p className="mt-1.5 text-[13.5px] text-muted">
@@ -21,33 +24,44 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      <dl className="mb-7 grid grid-cols-1 border-b-2 border-t-2 border-border-soft sm:grid-cols-2 xl:grid-cols-4">
+      <dl
+        className={cn(
+          "mb-7 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4",
+          g ? "adm-stagger gap-3" : "border-b-2 border-t-2 border-border-soft",
+        )}
+      >
         {data.kpis.map((k, i) => {
           const delta = deltaPercent(k.value, k.prev);
           return (
             <div
               key={k.label}
               className={cn(
-                "py-5 pr-6",
-                i < data.kpis.length - 1 && "border-b border-hairline xl:border-b-0 xl:border-r",
+                g
+                  ? cn("adm-card px-5 py-[18px]", i === 0 && "adm-card-mint")
+                  : cn("py-5 pr-6", i < data.kpis.length - 1 && "border-b border-hairline xl:border-b-0 xl:border-r"),
               )}
             >
               <dt className="label-tech font-bold">{k.label}</dt>
               <dd>
-                <span className="mb-1.5 mt-2.5 block text-[26px] font-extrabold tracking-[-0.025em] lg:text-[30px]">
-                  {k.money ? formatVnd(k.value) : k.value}
+                <span
+                  className={cn(
+                    "mb-1.5 mt-2.5 block tracking-[-0.025em] tabular-nums",
+                    g ? "whitespace-nowrap text-[26px] font-semibold" : "text-[26px] font-extrabold lg:text-[30px]",
+                  )}
+                >
+                  {g ? <CountUp value={k.value} money={k.money} /> : k.money ? formatVnd(k.value) : k.value}
                 </span>
                 <span className="block text-[12.5px] font-extrabold">
                   {delta === null ? (
                     <span className="text-faint">Chưa có kỳ trước để so</span>
                   ) : (
-                    <>
-                      <span className={delta >= 0 ? "text-text" : "text-accent-700"}>
+                    <span className={cn(g && "adm-delta", g && delta < 0 && "down")}>
+                      <span className={g ? undefined : delta >= 0 ? "text-text" : "text-accent-700"}>
                         {delta >= 0 ? "+" : ""}
                         {delta}%
                       </span>{" "}
                       <span className="font-normal text-faint">so với kỳ trước</span>
-                    </>
+                    </span>
                   )}
                 </span>
               </dd>
@@ -57,16 +71,32 @@ export default async function AdminDashboardPage() {
       </dl>
 
       <div className="mb-7 grid gap-7 xl:grid-cols-[1.6fr_1fr]">
-        <section>
+        <section className={cn(g && "adm-card adm-static min-w-0 p-5")}>
           <h2 className="mb-4 text-[20px]">Doanh thu 6 tháng gần nhất</h2>
-          <div className="flex h-[220px] items-end gap-3.5 border-b-2 border-border-soft">
-            {data.monthly.map((m) => (
+          <div
+            className={cn(
+              "flex h-[220px] items-end gap-3.5",
+              g ? "adm-bars border-b border-hairline" : "border-b-2 border-border-soft",
+            )}
+          >
+            {data.monthly.map((m, i) => (
               <div key={m.label} className="flex flex-1 flex-col items-center justify-end gap-2">
                 <span className="font-mono text-[10px] text-faint">
                   {m.value > 0 ? Math.round(m.value / 1_000_000) + "tr" : "—"}
                 </span>
                 <div
-                  className="w-full bg-accent"
+                  className={cn(
+                    "w-full",
+                    g
+                      ? cn(
+                          "adm-bar rounded-[10px_10px_4px_4px]",
+                          // Cột tháng này tô đen để tách khỏi các tháng đã chốt.
+                          i === data.monthly.length - 1
+                            ? "bg-neutral-900"
+                            : "bg-[linear-gradient(180deg,#5fd0aa,var(--mint))]",
+                        )
+                      : "bg-accent",
+                  )}
                   style={{ height: Math.max(2, (m.value / peak) * 170) }}
                   aria-hidden
                 />
@@ -82,14 +112,17 @@ export default async function AdminDashboardPage() {
           </div>
         </section>
 
-        <section>
+        <section className={cn(g && "adm-card adm-static min-w-0 p-5")}>
           <h2 className="mb-4 text-[20px]">Top sản phẩm bán chạy</h2>
           {data.top.length === 0 ? (
             <p className="text-[13.5px] text-muted">Chưa có đơn nào để xếp hạng.</p>
           ) : (
-            <ol className="border-t border-hairline">
+            <ol className={cn("border-t border-hairline", g && "adm-stagger")}>
               {data.top.map((p, i) => (
-                <li key={p.name} className="flex items-center gap-3 border-b border-hairline py-3">
+                <li
+                  key={p.name}
+                  className={cn("flex items-center gap-3 border-b border-hairline py-3", g && "last:border-b-0")}
+                >
                   <span className="label-tech w-5 flex-none">{String(i + 1).padStart(2, "0")}</span>
                   <span className="min-w-0 flex-1 truncate text-[13.5px]">{p.name}</span>
                   <span className="flex-none font-mono text-[12px] text-faint">{p.qty} cái</span>
@@ -108,9 +141,14 @@ export default async function AdminDashboardPage() {
         {data.lowStock.length === 0 ? (
           <p className="text-[13.5px] text-muted">Không có SKU nào dưới ngưỡng cảnh báo.</p>
         ) : (
-          <ul className="grid gap-px bg-hairline sm:grid-cols-2 xl:grid-cols-4">
+          <ul
+            className={cn(
+              "grid sm:grid-cols-2 xl:grid-cols-4",
+              g ? "adm-stagger gap-3" : "gap-px bg-hairline",
+            )}
+          >
             {data.lowStock.map((v) => (
-              <li key={v.id} className="bg-bg p-3.5">
+              <li key={v.id} className={g ? "adm-card px-4 py-3.5" : "bg-bg p-3.5"}>
                 <Link
                   href={("/san-pham/" + v.product.slug) as Route}
                   className="flex min-h-11 items-center text-[13.5px] font-semibold hover:text-accent-700 lg:min-h-0"

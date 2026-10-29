@@ -50,11 +50,11 @@ export function AdminAccountMenu({
         aria-label={`Tài khoản của ${user.name}, vai trò ${user.roleLabel}`}
         onClick={() => setMo((v) => !v)}
         className={cn(
-          "flex min-h-11 items-center gap-2.5 px-1 py-1",
+          "adm-round flex min-h-11 items-center gap-2.5 px-1 py-1",
           mo && "bg-subtle",
         )}
       >
-        <span className="grid h-8 w-8 flex-none place-items-center bg-neutral-900 font-heading text-[12px] font-extrabold text-bg">
+        <span className="adm-round grid h-8 w-8 flex-none place-items-center bg-neutral-900 font-heading text-[12px] font-extrabold text-bg">
           {chuTat(user.name)}
         </span>
         <span className="hidden text-left sm:block">
@@ -72,7 +72,7 @@ export function AdminAccountMenu({
         <div
           role="menu"
           aria-label="Tài khoản quản trị"
-          className="absolute right-0 top-[calc(100%+8px)] z-90 w-[268px] border-2 border-divider bg-bg shadow-[6px_6px_0_0_rgba(32,30,29,0.12)]"
+          className="adm-pop absolute right-0 top-[calc(100%+8px)] z-90 w-[268px] border-2 border-divider bg-bg shadow-[6px_6px_0_0_rgba(32,30,29,0.12)]"
         >
           <div className="bg-neutral-900 p-4 text-bg">
             <p className="text-[14.5px] font-extrabold leading-tight">{user.name}</p>
