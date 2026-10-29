@@ -7,6 +7,7 @@ import { requirePermission } from "@/server/admin/guard";
 import { getTicket } from "@/server/admin/tickets";
 import { TICKET_STATUS_LABEL } from "@/server/tickets";
 import { formatDateTime } from "@/lib/format";
+import { Sao } from "@/components/storefront/ticket-rating";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,23 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ co
         <aside className="border-2 border-border-soft p-5">
           <p className="label-tech mb-2 font-bold">THÔNG TIN</p>
           <dl className="flex flex-col gap-2.5 text-[13.5px]">
+            <div>
+              <dt className="text-muted">Khách đánh giá</dt>
+              {t.rating ? (
+                <>
+                  <dd className="mt-0.5 flex items-center gap-2">
+                    <Sao n={t.rating} size={16} />
+                    <span className="font-semibold">{t.rating}/5</span>
+                  </dd>
+                  {t.ratingNote ? <dd className="mt-1 text-[13px] italic">“{t.ratingNote}”</dd> : null}
+                  {t.ratedAt ? (
+                    <dd className="mt-0.5 text-[12px] text-faint">{formatDateTime(t.ratedAt)}</dd>
+                  ) : null}
+                </>
+              ) : (
+                <dd className="text-[13px] text-faint">Chưa đánh giá</dd>
+              )}
+            </div>
             <div>
               <dt className="text-muted">Kênh gửi</dt>
               <dd className="font-semibold">{t.channel === "web" ? "Form liên hệ" : t.channel}</dd>

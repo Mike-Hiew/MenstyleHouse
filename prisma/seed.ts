@@ -416,7 +416,9 @@ async function main() {
     { subject: "Xuất hoá đơn công ty cho đơn đã đặt", status: "PENDING" as const, ten: "Phạm Anh Tuấn", lienHe: "ketoan@abc.vn" },
     { subject: "Áo bị lỗi đường may ở vai", status: "PENDING" as const, ten: "Nguyễn Hải Đăng", lienHe: "0912345678" },
     { subject: "Hỏi chất liệu quần jeans MSH-106", status: "RESOLVED" as const, ten: "Võ Thành Long", lienHe: "long.vo@gmail.com" },
-    { subject: "Hoàn tiền đơn đã huỷ", status: "CLOSED" as const, ten: "Đỗ Khánh Linh", lienHe: "0987654321" },
+    // Đã chấm sẵn để thẻ "Hài lòng" ở admin có số; yêu cầu RESOLVED phía trên để
+    // trống, dùng thử luồng khách tự chấm ở /ho-tro/tra-cuu.
+    { subject: "Hoàn tiền đơn đã huỷ", status: "CLOSED" as const, ten: "Đỗ Khánh Linh", lienHe: "0987654321", rating: 5 },
   ];
 
   for (let i = 0; i < YEU_CAU.length; i++) {
@@ -429,6 +431,9 @@ async function main() {
         status: y.status,
         channel: "web",
         createdAt: gui,
+        ...("rating" in y
+          ? { rating: y.rating, ratingNote: "Hoàn tiền nhanh, cảm ơn shop.", ratedAt: new Date(gui.getTime() + 5 * 36e5) }
+          : {}),
         messages: {
           create: [
             {

@@ -83,6 +83,7 @@ export function mailTraLoiHoTro(input: {
 ${appUrl()}/ho-tro/tra-cuu?ma=${input.maYeuCau}
 
 ` +
+      `Cũng ở trang đó, bạn chấm giúp cửa hàng mức hài lòng (1–5 sao) — mất chừng 5 giây.\n\n` +
       `Cần trao đổi tiếp thì gửi yêu cầu mới tại ${appUrl()}/ho-tro, ` +
       `ghi kèm mã ${input.maYeuCau}.` +
       CHAN(input.hotline),

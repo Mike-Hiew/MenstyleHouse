@@ -98,6 +98,9 @@ export async function getTicket(code: string) {
       orderCode: true,
       channel: true,
       createdAt: true,
+      rating: true,
+      ratingNote: true,
+      ratedAt: true,
       user: { select: { name: true, phone: true, email: true } },
       messages: {
         orderBy: { createdAt: "asc" },

@@ -10,6 +10,7 @@ import { getTicketByCode } from "@/server/tickets";
 import { TICKET_STATUS_LABEL } from "@/lib/tickets";
 import { rateLimit } from "@/server/rate-limit";
 import { TicketReply } from "@/components/storefront/ticket-reply";
+import { TicketRating } from "@/components/storefront/ticket-rating";
 import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -131,6 +132,14 @@ export default async function TicketLookupPage({
                   </li>
                 ))}
               </ol>
+
+              {/* Chỉ mời chấm khi cửa hàng đã trả lời ít nhất một lần. */}
+              {yc.messages.some((m) => m.isStaff) ? (
+                <TicketRating
+                  code={yc.code}
+                  rated={yc.rating ? { rating: yc.rating, note: yc.ratingNote } : null}
+                />
+              ) : null}
 
               <TicketReply code={yc.code} daDong={yc.status === "CLOSED"} />
             </article>
