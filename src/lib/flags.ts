@@ -54,4 +54,10 @@ export const FLAGS = {
    * hiện lại. Tắt: thanh dính đỉnh như cũ.
    */
   pillHeader: flag(process.env.NEXT_PUBLIC_FF_PILL_HEADER, true),
+  /**
+   * Khu quản trị kiểu "Modernist Glass" (mockup `MSH Admin Glass.html`): kính
+   * mờ trên nền gradient ấm, thanh bên và thanh trên nổi, bảng và thẻ bo tròn,
+   * hiệu ứng hiện dần khi vào trang. Tắt: admin về hệ Modernist cũ.
+   */
+  adminGlass: flag(process.env.NEXT_PUBLIC_FF_ADMIN_GLASS, true),
 } as const;

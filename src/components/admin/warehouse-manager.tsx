@@ -59,7 +59,8 @@ export function WarehouseManager({ khos }: { khos: Kho[] }) {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_320px] lg:items-start">
-      <div>
+      {/* `min-w-0`: cột lưới mặc định không co dưới bề rộng bảng, đẩy cả trang cuộn ngang trên điện thoại. */}
+      <div className="min-w-0">
         <Bao
           state={
             sState.message ? sState : cState.message ? cState : xState.message ? xState : tState

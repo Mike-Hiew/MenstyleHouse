@@ -16,7 +16,7 @@ export function Table({
   children: React.ReactNode;
 }) {
   return (
-    <div className="w-full lg:overflow-x-auto lg:border-2 lg:border-divider lg:bg-surface">
+    <div className="adm-table w-full lg:overflow-x-auto lg:border-2 lg:border-divider lg:bg-surface">
       <table
         className={cn(
           "w-full border-collapse text-[14px]",
