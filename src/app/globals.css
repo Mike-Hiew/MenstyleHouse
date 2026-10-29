@@ -505,6 +505,10 @@
   background: rgba(229, 85, 62, 0.14);
   color: #b5371f;
 }
+.theme-glass .adm-delta.neutral {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-muted);
+}
 .theme-glass .adm-card-mint .adm-delta {
   background: rgba(255, 255, 255, 0.22);
   color: #fff;

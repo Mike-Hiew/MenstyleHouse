@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnMeta, type TableRow } from "@/components/admin/data-table";
 import { requirePermission } from "@/server/admin/guard";
 import { listCustomers } from "@/server/admin/customers";
+import { loadCustomerKpis } from "@/server/admin/kpis";
+import { KpiCards } from "@/components/admin/kpi-cards";
 import { getSettings } from "@/server/settings";
 import { tierTone } from "@/lib/tiers";
 import {
@@ -42,7 +44,11 @@ export default async function AdminCustomersPage({
   await requirePermission("khach-hang.xem");
 
   const query = parseTableQuery(await searchParams);
-  const [{ rows, total }, caiDat] = await Promise.all([listCustomers(query), getSettings()]);
+  const [{ rows, total }, caiDat, kpis] = await Promise.all([
+    listCustomers(query),
+    getSettings(),
+    loadCustomerKpis(),
+  ]);
   const batHang = caiDat.tiersEnabled;
 
   const tableRows: TableRow[] = rows.map((c) => ({
@@ -92,6 +98,7 @@ export default async function AdminCustomersPage({
           : `${total} khách hàng`
       }
       action={{ label: "+ THÊM KHÁCH HÀNG", href: "/admin/khach-hang/moi" }}
+      summary={<KpiCards items={kpis} />}
       columns={cotCho(batHang)}
       rows={tableRows}
       total={total}

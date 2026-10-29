@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnMeta, type TableRow } from "@/components/admin/data-table";
 import { requirePermission } from "@/server/admin/guard";
 import { listTickets } from "@/server/admin/tickets";
+import { loadSupportKpis } from "@/server/admin/kpis";
+import { KpiCards } from "@/components/admin/kpi-cards";
 import { TICKET_STATUS_LABEL } from "@/server/tickets";
 import {
   parseTableQuery,
@@ -39,7 +41,10 @@ export default async function AdminSupportPage({
   await requirePermission("ho-tro.tra-loi");
 
   const query = parseTableQuery(await searchParams);
-  const { rows, total, tabs, chuaXuLy } = await listTickets(query);
+  const [{ rows, total, tabs, chuaXuLy }, kpis] = await Promise.all([
+    listTickets(query),
+    loadSupportKpis(),
+  ]);
 
   const tableRows: TableRow[] = rows.map((t) => {
     const khach = t.messages[0]?.authorName ?? "—";
@@ -83,6 +88,7 @@ export default async function AdminSupportPage({
       params={serializeTableQuery(query).toString()}
       title="Hỗ trợ"
       subtitle={`${total} yêu cầu từ form liên hệ · ${chuaXuLy} yêu cầu chưa xử lý`}
+      summary={<KpiCards items={kpis} />}
       tabs={tabs}
       columns={COLUMNS}
       rows={tableRows}
