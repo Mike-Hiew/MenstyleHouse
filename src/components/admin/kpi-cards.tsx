@@ -56,6 +56,8 @@ function GiaTri({ k, dem }: { k: Kpi; dem: boolean }) {
       return <>{k.value}%</>;
     case "duration":
       return <>{k.value ? dinhDangThoiGian(k.value) : "—"}</>;
+    case "score":
+      return <>{k.value ? k.value.toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + "/5" : "—"}</>;
     default:
       return dem ? (
         <CountUp value={k.value} money={k.kind === "money"} />

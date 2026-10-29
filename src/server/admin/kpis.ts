@@ -17,7 +17,7 @@ import { deltaPercent } from "./dashboard";
 export type Kpi = {
   label: string;
   value: number;
-  kind: "number" | "money" | "percent" | "duration";
+  kind: "number" | "money" | "percent" | "duration" | "score";
   /** % so với kỳ trước. `null`: kỳ trước bằng 0, không so được. Bỏ trống: không so. */
   delta?: number | null;
   /** Giảm mới là tốt (thời gian phản hồi). */
@@ -106,7 +106,7 @@ export async function loadSupportKpis(days = 30): Promise<Kpi[]> {
   const now = new Date();
   const tin = { select: { isStaff: true, createdAt: true } } as const;
 
-  const [dangMo, gan] = await Promise.all([
+  const [dangMo, gan, danhGia] = await Promise.all([
     db.ticket.findMany({
       where: { status: { in: ["OPEN", "PENDING"] } },
       select: { createdAt: true, messages: tin },
@@ -114,6 +114,13 @@ export async function loadSupportKpis(days = 30): Promise<Kpi[]> {
     db.ticket.findMany({
       where: { createdAt: { gte: prevSince } },
       select: { createdAt: true, status: true, messages: tin },
+    }),
+    // Theo ngày **chấm**, không theo ngày gửi: yêu cầu cũ được chấm hôm nay vẫn
+    // là tiếng nói của khách trong kỳ này.
+    db.ticket.aggregate({
+      where: { ratedAt: { gte: since } },
+      _avg: { rating: true },
+      _count: { rating: true },
     }),
   ]);
 
@@ -140,11 +147,13 @@ export async function loadSupportKpis(days = 30): Promise<Kpi[]> {
       lowerIsBetter: true,
     },
     {
-      label: `YÊU CẦU MỚI ${days} NGÀY`,
-      value: kyNay.length,
-      kind: "number",
-      delta: deltaPercent(kyNay.length, kyTruoc.length),
-      neutral: true,
+      label: "HÀI LÒNG",
+      // Một chữ số thập phân: 4,66 hiện 4,7 — đủ để thấy xu hướng, không giả vờ chính xác.
+      value: Math.round((danhGia._avg.rating ?? 0) * 10) / 10,
+      kind: "score",
+      note: danhGia._count.rating
+        ? `từ ${danhGia._count.rating} đánh giá · ${days} ngày`
+        : "Chưa có đánh giá nào",
     },
     {
       label: "ĐÃ TRẢ LỜI / ĐÓNG",

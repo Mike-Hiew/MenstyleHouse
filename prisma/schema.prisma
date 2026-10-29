@@ -593,6 +593,14 @@ model Ticket {
   channel   String
   messages  TicketMessage[]
   createdAt DateTime        @default(now())
+
+  /// Khách chấm mức hài lòng (1–5) sau khi cửa hàng đã trả lời. Chấm một lần;
+  /// `null` = chưa chấm. Khoảng 1–5 có CHECK trong migration, không chỉ ở form.
+  rating     Int?
+  ratingNote String?
+  ratedAt    DateTime?
+
+  @@index([ratedAt])
 }
 
 model TicketMessage {

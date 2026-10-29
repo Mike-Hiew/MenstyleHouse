@@ -83,6 +83,8 @@ export async function getTicketByCode(code: string) {
       status: true,
       orderCode: true,
       createdAt: true,
+      rating: true,
+      ratingNote: true,
       messages: {
         orderBy: { createdAt: "asc" },
         select: { id: true, authorName: true, isStaff: true, body: true, createdAt: true },
@@ -140,6 +142,51 @@ export async function traLoiTicket(input: z.infer<typeof traLoiSchema>) {
       await tx.ticket.update({ where: { id: yc.id }, data: { status: "OPEN" } });
     }
   });
+
+  return { ok: true as const };
+}
+
+export const danhGiaSchema = z.object({
+  code: z.string().trim().min(3).max(40),
+  rating: z.coerce
+    .number({ message: "Chọn số sao" })
+    .int()
+    .min(1, "Chọn số sao")
+    .max(5, "Chọn số sao"),
+  note: z.string().trim().max(500, "Tối đa 500 ký tự").optional(),
+});
+
+export class DanhGiaError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DanhGiaError";
+  }
+}
+
+/**
+ * Khách chấm mức hài lòng cho một yêu cầu.
+ *
+ * - **Chỉ chấm khi cửa hàng đã trả lời.** Chấm một yêu cầu chưa ai đụng tới là
+ *   chấm sự im lặng — con số đó kéo điểm "Hài lòng" xuống mà không nói được
+ *   nhân viên trả lời tốt hay dở.
+ * - **Chấm một lần.** `updateMany … rating: null` làm việc kiểm và ghi trong một
+ *   câu lệnh: bấm đúp hay hai tab cùng gửi thì chỉ lần đầu ăn, không đè nhau.
+ */
+export async function danhGiaTicket(input: z.infer<typeof danhGiaSchema>) {
+  const yc = await db.ticket.findUnique({
+    where: { code: input.code.trim().toUpperCase() },
+    select: { id: true, messages: { where: { isStaff: true }, select: { id: true }, take: 1 } },
+  });
+  if (!yc) return null;
+  if (yc.messages.length === 0) {
+    throw new DanhGiaError("Cửa hàng chưa trả lời yêu cầu này nên chưa chấm được.");
+  }
+
+  const { count } = await db.ticket.updateMany({
+    where: { id: yc.id, rating: null },
+    data: { rating: input.rating, ratingNote: input.note || null, ratedAt: new Date() },
+  });
+  if (count === 0) throw new DanhGiaError("Yêu cầu này đã được đánh giá rồi. Cảm ơn bạn!");
 
   return { ok: true as const };
 }
