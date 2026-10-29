@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { Badge } from "@/components/ui/badge";
+import { UsageBar } from "@/components/admin/usage-bar";
 import { DataTable, type ColumnMeta, type TableRow } from "@/components/admin/data-table";
 import { requirePermission } from "@/server/admin/guard";
 import { COUPON_TYPE_LABEL, dangChay, listCoupons } from "@/server/admin/coupons";
@@ -75,9 +76,7 @@ export default async function AdminPromosPage({
         <span key="min" className="font-mono text-muted">
           {c.minSubtotal > 0 ? formatVnd(c.minSubtotal) : "—"}
         </span>,
-        <span key="uses" className="font-mono">
-          {c.usageLimit ? `${c.usedCount}/${c.usageLimit}` : c.usedCount}
-        </span>,
+        <UsageBar key="uses" used={c.usedCount} limit={c.usageLimit} />,
         <span key="end" className="label-tech">
           {formatDate(c.endsAt)}
         </span>,
